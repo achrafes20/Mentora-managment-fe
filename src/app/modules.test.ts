@@ -6,7 +6,9 @@ describe('modules', () => {
     expect(modules).toHaveLength(10)
   })
 
-  it('has none enabled yet (Phase 0)', () => {
-    expect(modules.every((m) => !m.enabled)).toBe(true)
+  it('has only auth enabled (Phase 1)', () => {
+    const enabledModules = modules.filter((m) => m.enabled)
+    expect(enabledModules).toHaveLength(1)
+    expect(enabledModules[0].key).toBe('auth')
   })
 })

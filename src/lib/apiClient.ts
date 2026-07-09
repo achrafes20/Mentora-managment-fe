@@ -26,9 +26,12 @@ export interface ApiError {
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Le backend retourne { success: false, error: "..." } — on lit le champ 'error'
+    const backendMessage: string | undefined =
+      error.response?.data?.error ?? error.response?.data?.message
     const apiError: ApiError = {
       status: error.response?.status ?? 0,
-      message: error.response?.data?.message ?? error.message ?? 'Erreur réseau',
+      message: backendMessage ?? error.message ?? 'Erreur réseau',
     }
     return Promise.reject(apiError)
   },

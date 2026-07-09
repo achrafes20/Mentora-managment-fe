@@ -1,0 +1,124 @@
+# =====================================================================
+#  docker-compose.yml — Version Frontend
+#  Démarre toute la stack (PostgreSQL + n8n + Mailpit + Backend + Frontend)
+#  depuis le dossier du Frontend.
+# =====================================================================
+
+services:
+
+  # --- Base de données PostgreSQL 14 ---
+  db:
+    image: postgres:14-alpine
+    container_name: rh_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-rh_dev}
+      POSTGRES_USER: ${POSTGRES_USER:-rh_dev}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me_dev_only}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - rh_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-rh_dev} -d ${POSTGRES_DB:-rh_dev}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # --- Application Spring Boot (dossier frère be) ---
+  backend:
+    build:
+      context: ../Mentora-managment-be
+      dockerfile: Dockerfile
+    container_name: rh_backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-rh_dev}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-rh_dev}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-change_me_dev_only}
+      SERVER_PORT: 8080
+      JWT_SECRET: ${JWT_SECRET:-changeme_dev_jwt_secret_must_be_at_least_64_chars_long_x}
+    ports:
+      - "${API_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/api/auth/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 3
+
+  # --- Frontend React/Vite (dossier courant) ---
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rh_frontend
+    restart: unless-stopped
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8080}
+    volumes:
+      - .:/app
+      - /app/node_modules
+    ports:
+      - "${FRONTEND_PORT:-5173}:5173"
+
+  # --- Mailpit : capture les e-mails en local ---
+  mailpit:
+    image: axllent/mailpit:v1.30.3
+    container_name: rh_mailpit
+    restart: unless-stopped
+    ports:
+      - "${MAILPIT_SMTP_PORT:-1025}:1025"
+      - "${MAILPIT_UI_PORT:-8025}:8025"
+
+  # --- n8n (workflows dans le dossier frère be) ---
+  n8n:
+    image: n8nio/n8n:2.29.8
+    container_name: rh_n8n
+    restart: unless-stopped
+    depends_on:
+      - mailpit
+    environment:
+      N8N_HOST: ${N8N_HOST:-localhost}
+      N8N_PORT: 5678
+      N8N_PROTOCOL: http
+      WEBHOOK_URL: ${N8N_WEBHOOK_URL:-http://localhost:5678/}
+      GENERIC_TIMEZONE: Africa/Casablanca
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:-change_me_dev_only_n8n_encryption_key}
+      N8N_RUNNERS_ENABLED: "true"
+    ports:
+      - "${N8N_PORT:-5678}:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ../Mentora-managment-be/n8n/workflows:/n8n/workflows
+
+  # --- pgAdmin : Interface d'administration pour PostgreSQL ---
+  pgadmin:
+    image: dpage/pgadmin4:8.4
+    container_name: rh_pgadmin
+    restart: unless-stopped
+    user: root
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@hbdev.ma}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      PGADMIN_SERVER_JSON_FILE: /pgadmin4/servers.json
+      POSTGRES_USER: ${POSTGRES_USER:-rh_dev}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me_dev_only}
+    volumes:
+      - ../Mentora-managment-be/pgadmin/servers.json:/pgadmin4/servers.json:ro
+    entrypoint: ["/bin/sh", "-c", "echo db:5432:*:$$POSTGRES_USER:$$POSTGRES_PASSWORD > /pgpass && chmod 600 /pgpass && chown pgadmin /pgpass && /entrypoint.sh"]
+    ports:
+      - "${PGADMIN_PORT:-8082}:80"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  rh_pgdata:
+    name: rh_pgdata
+  n8n_data:
+    name: rh_n8n_data

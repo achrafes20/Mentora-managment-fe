@@ -8,7 +8,7 @@ export interface ModuleNavEntry {
 // Les 10 modules métier du cahier des charges. Toutes désactivées tant
 // que le module correspondant n'est pas construit (mis à jour phase après phase).
 export const modules: ModuleNavEntry[] = [
-  { key: 'auth', label: 'Comptes & authentification', path: '/comptes', enabled: false },
+  { key: 'auth', label: 'Comptes & authentification', path: '/comptes', enabled: true },
   { key: 'employees', label: 'Employés', path: '/employes', enabled: false },
   { key: 'attendance', label: 'Présence', path: '/presence', enabled: false },
   { key: 'recruitment', label: 'Recrutement', path: '/recrutement', enabled: false },
