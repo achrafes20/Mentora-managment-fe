@@ -1,17 +1,13 @@
 import { Tabs } from 'antd'
-import { ModulePlaceholder } from '../../app/ModulePlaceholder'
 import { DepartementsTab } from './DepartementsTab'
+import { EmployesListTab } from './EmployesListTab'
 
 export function EmployesPage() {
   return (
     <Tabs
-      defaultActiveKey="departements"
+      defaultActiveKey="employes"
       items={[
-        {
-          key: 'employes',
-          label: 'Employés',
-          children: <ModulePlaceholder label="Dossier employé (T1.B2)" />,
-        },
+        { key: 'employes', label: 'Employés', children: <EmployesListTab /> },
         { key: 'departements', label: 'Départements', children: <DepartementsTab /> },
       ]}
     />

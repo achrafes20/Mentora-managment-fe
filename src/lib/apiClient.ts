@@ -28,7 +28,7 @@ apiClient.interceptors.response.use(
   (error) => {
     const apiError: ApiError = {
       status: error.response?.status ?? 0,
-      message: error.response?.data?.message ?? error.message ?? 'Erreur réseau',
+      message: error.response?.data?.error ?? error.message ?? 'Erreur réseau',
     }
     return Promise.reject(apiError)
   },
