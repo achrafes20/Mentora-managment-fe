@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react'
 import { createBrowserRouter } from 'react-router-dom'
+import { EmployeDetailPage } from '../features/employee/EmployeDetailPage'
 import { EmployesPage } from '../features/employee/EmployesPage'
 import { AppLayout } from './AppLayout'
 import { ModulePlaceholder } from './ModulePlaceholder'
@@ -17,6 +18,7 @@ export const router = createBrowserRouter([
     element: <AppLayout />,
     children: [
       { index: true, element: <ModulePlaceholder label="Bienvenue" /> },
+      { path: 'employes/:id', element: <EmployeDetailPage /> },
       ...modules.map((m) => ({
         path: m.path.slice(1),
         element: ecransParModule[m.key] ?? <ModulePlaceholder label={m.label} />,

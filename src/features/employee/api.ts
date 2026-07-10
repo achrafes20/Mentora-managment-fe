@@ -29,3 +29,8 @@ export async function modifierDepartement(
 export async function desactiverDepartement(id: string): Promise<void> {
   await apiClient.delete(`/api/departements/${id}`)
 }
+
+export async function activerDepartement(id: string): Promise<Departement> {
+  const { data } = await apiClient.post<ApiResponse<Departement>>(`/api/departements/${id}/activer`)
+  return data.data as Departement
+}

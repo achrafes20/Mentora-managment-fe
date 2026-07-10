@@ -4,6 +4,7 @@ import type { ApiError } from '../../lib/apiClient'
 import type { Departement, DepartementRequete } from './api'
 import { DepartementFormModal, type DepartementFormValues } from './DepartementFormModal'
 import {
+  useActiverDepartement,
   useCreerDepartement,
   useDepartements,
   useDesactiverDepartement,
@@ -15,6 +16,7 @@ export function DepartementsTab() {
   const creerMutation = useCreerDepartement()
   const modifierMutation = useModifierDepartement()
   const desactiverMutation = useDesactiverDepartement()
+  const activerMutation = useActiverDepartement()
 
   const [modalOuvert, setModalOuvert] = useState(false)
   const [departementEnEdition, setDepartementEnEdition] = useState<Departement | null>(null)
@@ -78,18 +80,36 @@ export function DepartementsTab() {
           <Button size="small" onClick={() => ouvrirEdition(depart)}>
             Modifier
           </Button>
-          <Popconfirm
-            title="Désactiver ce département ?"
-            description="Le blocage si des employés actifs y sont rattachés arrive avec le module Employés (T1.B2)."
-            okText="Désactiver"
-            cancelText="Annuler"
-            disabled={depart.statut === 'inactif'}
-            onConfirm={() => depart.id && desactiverMutation.mutate(depart.id)}
-          >
-            <Button size="small" danger disabled={depart.statut === 'inactif'}>
-              Désactiver
+          {depart.statut === 'inactif' ? (
+            <Button
+              size="small"
+              onClick={() =>
+                depart.id &&
+                activerMutation.mutate(depart.id, {
+                  onError: (err) => void message.error(err.message),
+                })
+              }
+            >
+              Activer
             </Button>
-          </Popconfirm>
+          ) : (
+            <Popconfirm
+              title="Désactiver ce département ?"
+              description="Bloqué si des employés actifs y sont encore rattachés."
+              okText="Désactiver"
+              cancelText="Annuler"
+              onConfirm={() =>
+                depart.id &&
+                desactiverMutation.mutate(depart.id, {
+                  onError: (err) => void message.error(err.message),
+                })
+              }
+            >
+              <Button size="small" danger>
+                Désactiver
+              </Button>
+            </Popconfirm>
+          )}
         </Space>
       ),
     },

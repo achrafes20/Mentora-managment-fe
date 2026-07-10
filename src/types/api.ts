@@ -4,6 +4,22 @@
  */
 
 export interface paths {
+    "/api/employes/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["detail"];
+        put: operations["modifier"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/departements/{id}": {
         parameters: {
             query?: never;
@@ -12,9 +28,73 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put: operations["modifier"];
+        put: operations["modifier_1"];
         post?: never;
         delete: operations["desactiver"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/employes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["lister"];
+        put?: never;
+        post: operations["creer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/employes/{id}/transferer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["transferer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/employes/{id}/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listerDocuments"];
+        put?: never;
+        post: operations["attacherDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/employes/{id}/desactiver": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["desactiver_1"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -27,9 +107,25 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["lister"];
+        get: operations["lister_1"];
         put?: never;
-        post: operations["creer"];
+        post: operations["creer_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/departements/{id}/activer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["activer"];
         delete?: never;
         options?: never;
         head?: never;
@@ -52,10 +148,89 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/employes/{id}/transferts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["historiqueTransferts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/employes/{id}/documents/{documentId}/telecharger": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["telechargerDocument"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        EmployeModificationRequete: {
+            nom: string;
+            prenom: string;
+            email?: string;
+            telephone?: string;
+            poste?: string;
+            /** Format: date */
+            dateEmbauche: string;
+            /** @enum {string} */
+            typeContrat: "CDI" | "CDD" | "STAGIAIRE" | "STAGIAIRE_REMUNERE";
+            /** Format: date */
+            dateFinContratPrevue?: string;
+        };
+        ApiResponseEmployeReponse: {
+            success?: boolean;
+            data?: components["schemas"]["EmployeReponse"];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        EmployeReponse: {
+            /** Format: uuid */
+            id?: string;
+            nom?: string;
+            prenom?: string;
+            email?: string;
+            telephone?: string;
+            poste?: string;
+            /** Format: uuid */
+            departementId?: string;
+            departementNom?: string;
+            /** Format: uuid */
+            managerId?: string;
+            /** Format: date */
+            dateEmbauche?: string;
+            typeContrat?: string;
+            /** Format: date */
+            dateFinContratPrevue?: string;
+            /** Format: date */
+            dateDepart?: string;
+            motifDepart?: string;
+            statut?: string;
+            /** Format: date-time */
+            creeLe?: string;
+            /** Format: date-time */
+            modifieLe?: string;
+        };
         DepartementRequete: {
             nom: string;
             /** Format: uuid */
@@ -80,16 +255,121 @@ export interface components {
             /** Format: date-time */
             modifieLe?: string;
         };
-        ApiResponseListDepartementReponse: {
+        EmployeRequete: {
+            nom: string;
+            prenom: string;
+            email?: string;
+            telephone?: string;
+            poste?: string;
+            /** Format: uuid */
+            departementId: string;
+            /** Format: uuid */
+            managerId?: string;
+            /** Format: date */
+            dateEmbauche: string;
+            /** @enum {string} */
+            typeContrat: "CDI" | "CDD" | "STAGIAIRE" | "STAGIAIRE_REMUNERE";
+            /** Format: date */
+            dateFinContratPrevue?: string;
+        };
+        TransfertRequete: {
+            /** Format: uuid */
+            nouveauDepartementId: string;
+            /** Format: uuid */
+            nouveauManagerId?: string;
+            /** Format: date */
+            dateEffet: string;
+        };
+        ApiResponseEmployeDocumentReponse: {
             success?: boolean;
-            data?: components["schemas"]["DepartementReponse"][];
+            data?: components["schemas"]["EmployeDocumentReponse"];
             error?: string;
             /** Format: date-time */
             timestamp?: string;
         };
+        EmployeDocumentReponse: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            fichierId?: string;
+            nomOriginal?: string;
+            typeMime?: string;
+            typeDocument?: string;
+            /** Format: date-time */
+            creeLe?: string;
+        };
+        DesactivationRequete: {
+            /** @enum {string} */
+            motif: "demission" | "licenciement" | "fin_cdd" | "rupture" | "autre";
+            /** Format: date */
+            dateDepart: string;
+        };
         ApiResponseVoid: {
             success?: boolean;
             data?: unknown;
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        Pageable: {
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            size?: number;
+            sort?: string[];
+        };
+        ApiResponsePagedResponseEmployeReponse: {
+            success?: boolean;
+            data?: components["schemas"]["PagedResponseEmployeReponse"];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        PagedResponseEmployeReponse: {
+            content?: components["schemas"]["EmployeReponse"][];
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            size?: number;
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+            last?: boolean;
+        };
+        ApiResponseListEmployeTransfertReponse: {
+            success?: boolean;
+            data?: components["schemas"]["EmployeTransfertReponse"][];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        EmployeTransfertReponse: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            ancienDepartementId?: string;
+            /** Format: uuid */
+            nouveauDepartementId?: string;
+            /** Format: uuid */
+            ancienManagerId?: string;
+            /** Format: uuid */
+            nouveauManagerId?: string;
+            /** Format: date */
+            dateEffet?: string;
+            /** Format: date-time */
+            creeLe?: string;
+        };
+        ApiResponseListEmployeDocumentReponse: {
+            success?: boolean;
+            data?: components["schemas"]["EmployeDocumentReponse"][];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        ApiResponseListDepartementReponse: {
+            success?: boolean;
+            data?: components["schemas"]["DepartementReponse"][];
             error?: string;
             /** Format: date-time */
             timestamp?: string;
@@ -103,7 +383,55 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    detail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseEmployeReponse"];
+                };
+            };
+        };
+    };
     modifier: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmployeModificationRequete"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseEmployeReponse"];
+                };
+            };
+        };
+    };
+    modifier_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -153,6 +481,161 @@ export interface operations {
     };
     lister: {
         parameters: {
+            query: {
+                departementId?: string;
+                managerId?: string;
+                typeContrat?: "CDI" | "CDD" | "STAGIAIRE" | "STAGIAIRE_REMUNERE";
+                statut?: "actif" | "inactif";
+                recherche?: string;
+                pageable: components["schemas"]["Pageable"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePagedResponseEmployeReponse"];
+                };
+            };
+        };
+    };
+    creer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmployeRequete"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseEmployeReponse"];
+                };
+            };
+        };
+    };
+    transferer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransfertRequete"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseEmployeReponse"];
+                };
+            };
+        };
+    };
+    listerDocuments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListEmployeDocumentReponse"];
+                };
+            };
+        };
+    };
+    attacherDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** Format: binary */
+                    fichier: string;
+                    typeDocument?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseEmployeDocumentReponse"];
+                };
+            };
+        };
+    };
+    desactiver_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DesactivationRequete"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    lister_1: {
+        parameters: {
             query?: never;
             header?: never;
             path?: never;
@@ -171,7 +654,7 @@ export interface operations {
             };
         };
     };
-    creer: {
+    creer_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -195,11 +678,78 @@ export interface operations {
             };
         };
     };
+    activer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDepartementReponse"];
+                };
+            };
+        };
+    };
     healthCheck: {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
+    historiqueTransferts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListEmployeTransfertReponse"];
+                };
+            };
+        };
+    };
+    telechargerDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                documentId: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
