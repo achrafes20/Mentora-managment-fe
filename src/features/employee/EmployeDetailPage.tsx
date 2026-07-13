@@ -24,7 +24,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { z } from 'zod'
 import { useAuth } from '../../lib/AuthContext'
 import type { ApiError } from '../../lib/apiClient'
-import { urlTelechargementDocument } from './employesApi'
+import { ouvrirDocument } from './employesApi'
 import { useDepartements } from './useDepartements'
 import { EmployeFormModal, type EmployeFormValues } from './EmployeFormModal'
 import {
@@ -154,9 +154,12 @@ export function EmployeDetailPage() {
           renderItem={(doc) => (
             <List.Item>
               <a
-                href={urlTelechargementDocument(id as string, doc.id as string)}
-                target="_blank"
-                rel="noreferrer"
+                onClick={(e) => {
+                  e.preventDefault()
+                  ouvrirDocument(id as string, doc.id as string).catch(
+                    (err: ApiError) => void message.error(err.message),
+                  )
+                }}
               >
                 {doc.nomOriginal}
               </a>{' '}

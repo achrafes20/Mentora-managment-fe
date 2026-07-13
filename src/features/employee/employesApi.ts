@@ -93,6 +93,16 @@ export async function historiqueTransfertsEmploye(id: string): Promise<EmployeTr
   return data.data ?? []
 }
 
-export function urlTelechargementDocument(employeId: string, documentId: string): string {
-  return `${apiClient.defaults.baseURL}/api/employes/${employeId}/documents/${documentId}/telecharger`
+// Le lien direct vers l'API (sans passer par apiClient) ne porte pas le jeton JWT — l'intercepteur
+// Authorization ne s'applique qu'aux requêtes axios de l'app, pas à une navigation <a href> brute.
+// Depuis le RBAC réel (T1.C1), l'endpoint l'exige : on télécharge en Blob via apiClient, puis on
+// ouvre ce Blob dans un nouvel onglet.
+export async function ouvrirDocument(employeId: string, documentId: string): Promise<void> {
+  const { data } = await apiClient.get<Blob>(
+    `/api/employes/${employeId}/documents/${documentId}/telecharger`,
+    { responseType: 'blob' },
+  )
+  const url = URL.createObjectURL(data)
+  window.open(url, '_blank', 'noreferrer')
+  setTimeout(() => URL.revokeObjectURL(url), 60_000)
 }

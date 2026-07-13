@@ -4,6 +4,24 @@
  */
 
 export interface paths {
+    "/api/users/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Détail d'un compte */
+        get: operations["findById"];
+        /** Mise à jour du rôle, nom et prénom */
+        put: operations["update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/employes/{id}": {
         parameters: {
             query?: never;
@@ -31,6 +49,24 @@ export interface paths {
         put: operations["modifier_1"];
         post?: never;
         delete: operations["desactiver"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Liste tous les comptes */
+        get: operations["findAll"];
+        put?: never;
+        /** Création d'un compte admin ou manager */
+        post: operations["create"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -132,20 +168,106 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/health": {
+    "/api/auth/reset-password": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["healthCheck"];
+        get?: never;
+        put?: never;
+        /** Réinitialisation du mot de passe */
+        post: operations["resetPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Déconnexion */
+        post: operations["logout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Connexion utilisateur */
+        post: operations["login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/forgot-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Demande de réinitialisation de mot de passe */
+        post: operations["forgotPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/{id}/deactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         put?: never;
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /** Désactivation d'un compte (+ révocation des sessions) */
+        patch: operations["deactivate"];
+        trace?: never;
+    };
+    "/api/users/{id}/activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Réactivation d'un compte */
+        patch: operations["activate"];
         trace?: never;
     };
     "/api/employes/{id}/transferts": {
@@ -180,10 +302,55 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Profil de l'utilisateur connecté */
+        get: operations["me"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        UserUpdateRequest: {
+            /** @enum {string} */
+            role: "admin" | "manager";
+            nom: string;
+            prenom: string;
+        };
+        ApiResponseUserResponse: {
+            success?: boolean;
+            data?: components["schemas"]["UserResponse"];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        UserResponse: {
+            /** Format: uuid */
+            id?: string;
+            email?: string;
+            /** @enum {string} */
+            role?: "admin" | "manager";
+            nom?: string;
+            prenom?: string;
+            /** @enum {string} */
+            statut?: "actif" | "inactif";
+            /** Format: date-time */
+            creeLe?: string;
+            /** Format: date-time */
+            modifieLe?: string;
+        };
         EmployeModificationRequete: {
             nom: string;
             prenom: string;
@@ -255,6 +422,15 @@ export interface components {
             /** Format: date-time */
             modifieLe?: string;
         };
+        UserCreateRequest: {
+            /** Format: email */
+            email: string;
+            motDePasse: string;
+            /** @enum {string} */
+            role: "admin" | "manager";
+            nom: string;
+            prenom: string;
+        };
         EmployeRequete: {
             nom: string;
             prenom: string;
@@ -307,6 +483,37 @@ export interface components {
         ApiResponseVoid: {
             success?: boolean;
             data?: unknown;
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        ResetPasswordRequest: {
+            token: string;
+            nouveauMotDePasse: string;
+        };
+        LoginRequest: {
+            /** Format: email */
+            email: string;
+            motDePasse: string;
+        };
+        ApiResponseLoginResponse: {
+            success?: boolean;
+            data?: components["schemas"]["LoginResponse"];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        LoginResponse: {
+            token?: string;
+            user?: components["schemas"]["UserResponse"];
+        };
+        ForgotPasswordRequest: {
+            /** Format: email */
+            email: string;
+        };
+        ApiResponseListUserResponse: {
+            success?: boolean;
+            data?: components["schemas"]["UserResponse"][];
             error?: string;
             /** Format: date-time */
             timestamp?: string;
@@ -383,6 +590,54 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    findById: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseUserResponse"];
+                };
+            };
+        };
+    };
+    update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseUserResponse"];
+                };
+            };
+        };
+    };
     detail: {
         parameters: {
             query?: never;
@@ -475,6 +730,50 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    findAll: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListUserResponse"];
+                };
+            };
+        };
+    };
+    create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseUserResponse"];
                 };
             };
         };
@@ -700,10 +999,36 @@ export interface operations {
             };
         };
     };
-    healthCheck: {
+    resetPassword: {
         parameters: {
             query?: never;
             header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResetPasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    logout: {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -715,7 +1040,99 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": string;
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    login: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseLoginResponse"];
+                };
+            };
+        };
+    };
+    forgotPassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ForgotPasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    deactivate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseUserResponse"];
+                };
+            };
+        };
+    };
+    activate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseUserResponse"];
                 };
             };
         };
@@ -761,6 +1178,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": string;
+                };
+            };
+        };
+    };
+    me: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseUserResponse"];
                 };
             };
         };
