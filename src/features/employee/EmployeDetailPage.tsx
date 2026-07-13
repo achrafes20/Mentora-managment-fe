@@ -22,8 +22,9 @@ import { useState } from 'react'
 import { Controller, type FieldError, useForm } from 'react-hook-form'
 import { useNavigate, useParams } from 'react-router-dom'
 import { z } from 'zod'
+import { useAuth } from '../../lib/AuthContext'
 import type { ApiError } from '../../lib/apiClient'
-import { urlTelechargementDocument } from './employesApi'
+import { ouvrirDocument } from './employesApi'
 import { useDepartements } from './useDepartements'
 import { EmployeFormModal, type EmployeFormValues } from './EmployeFormModal'
 import {
@@ -41,6 +42,8 @@ const MOTIFS_DEPART = ['demission', 'licenciement', 'fin_cdd', 'rupture', 'autre
 export function EmployeDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { role } = useAuth()
+  const estAdmin = role === 'admin'
   const { data: employe, isLoading, error } = useEmploye(id)
   const { data: departements } = useDepartements()
   const { data: documents } = useDocumentsEmploye(id)
@@ -75,17 +78,24 @@ export function EmployeDetailPage() {
         </Typography.Title>
         <Space>
           <Button onClick={() => navigate('/employes')}>Retour à la liste</Button>
-          <Button onClick={() => setModaleEdition(true)}>Modifier</Button>
-          <Button onClick={() => setModaleTransfert(true)} disabled={employe.statut === 'inactif'}>
-            Transférer
-          </Button>
-          <Button
-            danger
-            onClick={() => setModaleDesactivation(true)}
-            disabled={employe.statut === 'inactif'}
-          >
-            Désactiver
-          </Button>
+          {estAdmin && (
+            <>
+              <Button onClick={() => setModaleEdition(true)}>Modifier</Button>
+              <Button
+                onClick={() => setModaleTransfert(true)}
+                disabled={employe.statut === 'inactif'}
+              >
+                Transférer
+              </Button>
+              <Button
+                danger
+                onClick={() => setModaleDesactivation(true)}
+                disabled={employe.statut === 'inactif'}
+              >
+                Désactiver
+              </Button>
+            </>
+          )}
         </Space>
       </Space>
 
@@ -132,9 +142,11 @@ export function EmployeDetailPage() {
       </Card>
 
       <Card title="Documents" style={{ marginBottom: 16 }}>
-        <UploadDocument
-          onUpload={(fichier, typeDocument) => attacherMutation.mutate({ fichier, typeDocument })}
-        />
+        {estAdmin && (
+          <UploadDocument
+            onUpload={(fichier, typeDocument) => attacherMutation.mutate({ fichier, typeDocument })}
+          />
+        )}
         <List
           style={{ marginTop: 16 }}
           dataSource={documents}
@@ -142,9 +154,12 @@ export function EmployeDetailPage() {
           renderItem={(doc) => (
             <List.Item>
               <a
-                href={urlTelechargementDocument(id as string, doc.id as string)}
-                target="_blank"
-                rel="noreferrer"
+                onClick={(e) => {
+                  e.preventDefault()
+                  ouvrirDocument(id as string, doc.id as string).catch(
+                    (err: ApiError) => void message.error(err.message),
+                  )
+                }}
               >
                 {doc.nomOriginal}
               </a>{' '}

@@ -1,6 +1,7 @@
 import { Alert, Button, Input, Select, Space, Table, Tag, message } from 'antd'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../../lib/AuthContext'
 import type { ApiError } from '../../lib/apiClient'
 import { EmployeFormModal, type EmployeFormValues } from './EmployeFormModal'
 import { useDepartements } from './useDepartements'
@@ -11,6 +12,8 @@ const TYPES_CONTRAT = ['CDI', 'CDD', 'STAGIAIRE', 'STAGIAIRE_REMUNERE']
 
 export function EmployesListTab() {
   const navigate = useNavigate()
+  const { role } = useAuth()
+  const estAdmin = role === 'admin'
   const { data: departements } = useDepartements()
   const [filtres, setFiltres] = useState<FiltresEmployes>({ page: 0, size: 10 })
   const [modaleCreation, setModaleCreation] = useState(false)
@@ -65,11 +68,13 @@ export function EmployesListTab() {
 
   return (
     <div>
-      <Space style={{ marginBottom: 16, justifyContent: 'space-between', display: 'flex' }}>
-        <Button type="primary" onClick={() => setModaleCreation(true)}>
-          + Nouvel employé
-        </Button>
-      </Space>
+      {estAdmin && (
+        <Space style={{ marginBottom: 16, justifyContent: 'space-between', display: 'flex' }}>
+          <Button type="primary" onClick={() => setModaleCreation(true)}>
+            + Nouvel employé
+          </Button>
+        </Space>
+      )}
       <Space style={{ marginBottom: 16, flexWrap: 'wrap' }}>
         <Input.Search
           placeholder="Rechercher par nom, prénom, e-mail"
