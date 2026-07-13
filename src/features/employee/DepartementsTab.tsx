@@ -1,5 +1,6 @@
 import { Alert, Button, Popconfirm, Space, Table, Tag, Typography, message } from 'antd'
 import { useState } from 'react'
+import { useAuth } from '../../lib/AuthContext'
 import type { ApiError } from '../../lib/apiClient'
 import type { Departement, DepartementRequete } from './api'
 import { DepartementFormModal, type DepartementFormValues } from './DepartementFormModal'
@@ -12,6 +13,8 @@ import {
 } from './useDepartements'
 
 export function DepartementsTab() {
+  const { role } = useAuth()
+  const estAdmin = role === 'admin'
   const { data: departements, isLoading, error } = useDepartements()
   const creerMutation = useCreerDepartement()
   const modifierMutation = useModifierDepartement()
@@ -72,47 +75,51 @@ export function DepartementsTab() {
         <Tag color={statut === 'actif' ? 'green' : 'default'}>{statut}</Tag>
       ),
     },
-    {
-      title: 'Actions',
-      key: 'actions',
-      render: (_: unknown, depart: Departement) => (
-        <Space>
-          <Button size="small" onClick={() => ouvrirEdition(depart)}>
-            Modifier
-          </Button>
-          {depart.statut === 'inactif' ? (
-            <Button
-              size="small"
-              onClick={() =>
-                depart.id &&
-                activerMutation.mutate(depart.id, {
-                  onError: (err) => void message.error(err.message),
-                })
-              }
-            >
-              Activer
-            </Button>
-          ) : (
-            <Popconfirm
-              title="Désactiver ce département ?"
-              description="Bloqué si des employés actifs y sont encore rattachés."
-              okText="Désactiver"
-              cancelText="Annuler"
-              onConfirm={() =>
-                depart.id &&
-                desactiverMutation.mutate(depart.id, {
-                  onError: (err) => void message.error(err.message),
-                })
-              }
-            >
-              <Button size="small" danger>
-                Désactiver
-              </Button>
-            </Popconfirm>
-          )}
-        </Space>
-      ),
-    },
+    ...(estAdmin
+      ? [
+          {
+            title: 'Actions',
+            key: 'actions',
+            render: (_: unknown, depart: Departement) => (
+              <Space>
+                <Button size="small" onClick={() => ouvrirEdition(depart)}>
+                  Modifier
+                </Button>
+                {depart.statut === 'inactif' ? (
+                  <Button
+                    size="small"
+                    onClick={() =>
+                      depart.id &&
+                      activerMutation.mutate(depart.id, {
+                        onError: (err) => void message.error(err.message),
+                      })
+                    }
+                  >
+                    Activer
+                  </Button>
+                ) : (
+                  <Popconfirm
+                    title="Désactiver ce département ?"
+                    description="Bloqué si des employés actifs y sont encore rattachés."
+                    okText="Désactiver"
+                    cancelText="Annuler"
+                    onConfirm={() =>
+                      depart.id &&
+                      desactiverMutation.mutate(depart.id, {
+                        onError: (err) => void message.error(err.message),
+                      })
+                    }
+                  >
+                    <Button size="small" danger>
+                      Désactiver
+                    </Button>
+                  </Popconfirm>
+                )}
+              </Space>
+            ),
+          },
+        ]
+      : []),
   ]
 
   return (
@@ -121,9 +128,11 @@ export function DepartementsTab() {
         <Typography.Text type="secondary">
           {departements?.length ?? 0} département(s)
         </Typography.Text>
-        <Button type="primary" onClick={ouvrirCreation}>
-          + Nouveau département
-        </Button>
+        {estAdmin && (
+          <Button type="primary" onClick={ouvrirCreation}>
+            + Nouveau département
+          </Button>
+        )}
       </Space>
       {error && (
         <Alert
