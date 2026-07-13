@@ -6,7 +6,6 @@ import {
   DatePicker,
   Descriptions,
   Form as AntForm,
-  Input,
   List,
   Modal,
   Select,
@@ -36,6 +35,7 @@ import {
   useModifierEmploye,
   useTransfererEmploye,
 } from './useEmployes'
+import { libelleManager, type Manager, useManagers } from './useManagers'
 
 const MOTIFS_DEPART = ['demission', 'licenciement', 'fin_cdd', 'rupture', 'autre'] as const
 
@@ -46,6 +46,7 @@ export function EmployeDetailPage() {
   const estAdmin = role === 'admin'
   const { data: employe, isLoading, error } = useEmploye(id)
   const { data: departements } = useDepartements()
+  const { data: managers } = useManagers()
   const { data: documents } = useDocumentsEmploye(id)
   const { data: transferts } = useHistoriqueTransferts(id)
 
@@ -186,6 +187,7 @@ export function EmployeDetailPage() {
         mode="edition"
         employe={employe}
         departements={departements ?? []}
+        managers={managers ?? []}
         onCancel={() => setModaleEdition(false)}
         submitting={modifierMutation.isPending}
         errorMessage={erreur}
@@ -215,6 +217,7 @@ export function EmployeDetailPage() {
       <TransfertModal
         open={modaleTransfert}
         departements={departements ?? []}
+        managers={managers ?? []}
         submitting={transfererMutation.isPending}
         onCancel={() => setModaleTransfert(false)}
         onSubmit={(valeurs) => {
@@ -287,12 +290,14 @@ type ValeursTransfert = z.infer<typeof schemaTransfert>
 function TransfertModal({
   open,
   departements,
+  managers,
   submitting,
   onCancel,
   onSubmit,
 }: {
   open: boolean
   departements: { id?: string; nom?: string }[]
+  managers: Manager[]
   submitting: boolean
   onCancel: () => void
   onSubmit: (valeurs: {
@@ -346,14 +351,21 @@ function TransfertModal({
           />
         </AntForm.Item>
         <AntForm.Item
-          label="Nouveau manager (UUID, temporaire — T1.A1)"
+          label="Nouveau manager"
           validateStatus={errors.nouveauManagerId ? 'error' : ''}
           help={errors.nouveauManagerId?.message}
         >
           <Controller
             name="nouveauManagerId"
             control={control}
-            render={({ field }) => <Input {...field} placeholder="Optionnel" />}
+            render={({ field }) => (
+              <Select
+                {...field}
+                allowClear
+                placeholder="Aucun (optionnel)"
+                options={managers.map((m) => ({ label: libelleManager(m), value: m.id }))}
+              />
+            )}
           />
         </AntForm.Item>
         <AntForm.Item

@@ -1,0 +1,6 @@
+# Force LF regardless of the checkout platform. Windows checkouts default to
+# CRLF (core.autocrlf=true), which makes Prettier flag every file as
+# non-conforming even though the committed blobs are already LF — git
+# converts back to LF on commit either way, so this just keeps local
+# checkouts consistent with what `npm run format:check` / CI expect.
+* text=auto eol=lf

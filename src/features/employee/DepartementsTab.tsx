@@ -11,11 +11,13 @@ import {
   useDesactiverDepartement,
   useModifierDepartement,
 } from './useDepartements'
+import { libelleManager, useManagers } from './useManagers'
 
 export function DepartementsTab() {
   const { role } = useAuth()
   const estAdmin = role === 'admin'
   const { data: departements, isLoading, error } = useDepartements()
+  const { data: managers } = useManagers()
   const creerMutation = useCreerDepartement()
   const modifierMutation = useModifierDepartement()
   const desactiverMutation = useDesactiverDepartement()
@@ -65,7 +67,10 @@ export function DepartementsTab() {
       title: 'Manager',
       dataIndex: 'managerId',
       key: 'managerId',
-      render: (managerId?: string) => managerId ?? '—',
+      render: (managerId?: string) => {
+        const manager = managers?.find((m) => m.id === managerId)
+        return manager ? libelleManager(manager) : '—'
+      },
     },
     {
       title: 'Statut',
@@ -152,6 +157,7 @@ export function DepartementsTab() {
       <DepartementFormModal
         open={modalOuvert}
         depart={departementEnEdition}
+        managers={managers ?? []}
         onCancel={fermerModal}
         onSubmit={soumettre}
         submitting={creerMutation.isPending || modifierMutation.isPending}

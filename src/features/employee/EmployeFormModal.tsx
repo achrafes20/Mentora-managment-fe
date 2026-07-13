@@ -6,6 +6,7 @@ import { Controller, type FieldError, useForm } from 'react-hook-form'
 import { z } from 'zod'
 import type { Departement } from './api'
 import type { Employe } from './employesApi'
+import { libelleManager, type Manager } from './useManagers'
 
 const TYPES_CONTRAT = ['CDI', 'CDD', 'STAGIAIRE', 'STAGIAIRE_REMUNERE'] as const
 
@@ -17,7 +18,6 @@ const schema = z
     telephone: z.string(),
     poste: z.string(),
     departementId: z.string().min(1, 'Le département est requis'),
-    // Pas encore de sélecteur manager : T1.A1 (comptes) n'est pas mergé, cf. DepartementFormModal.
     managerId: z.union([z.string().uuid('UUID manager invalide'), z.literal('')]),
     dateEmbauche: z.instanceof(dayjs as unknown as new (...args: never[]) => Dayjs, {
       message: "La date d'embauche est requise",
@@ -39,6 +39,7 @@ interface Props {
   mode: 'creation' | 'edition'
   employe?: Employe | null
   departements: Departement[]
+  managers: Manager[]
   onCancel: () => void
   onSubmit: (values: EmployeFormValues) => void
   submitting: boolean
@@ -50,6 +51,7 @@ export function EmployeFormModal({
   mode,
   employe,
   departements,
+  managers,
   onCancel,
   onSubmit,
   submitting,
@@ -171,14 +173,21 @@ export function EmployeFormModal({
               />
             </AntForm.Item>
             <AntForm.Item
-              label="Manager rattaché (UUID, temporaire — T1.A1)"
+              label="Manager rattaché"
               validateStatus={errors.managerId ? 'error' : ''}
               help={errors.managerId?.message}
             >
               <Controller
                 name="managerId"
                 control={control}
-                render={({ field }) => <Input {...field} placeholder="Optionnel" />}
+                render={({ field }) => (
+                  <Select
+                    {...field}
+                    allowClear
+                    placeholder="Aucun (optionnel)"
+                    options={managers.map((m) => ({ label: libelleManager(m), value: m.id }))}
+                  />
+                )}
               />
             </AntForm.Item>
           </>

@@ -6,6 +6,7 @@ import type { ApiError } from '../../lib/apiClient'
 import { EmployeFormModal, type EmployeFormValues } from './EmployeFormModal'
 import { useDepartements } from './useDepartements'
 import { useCreerEmploye, useEmployes } from './useEmployes'
+import { useManagers } from './useManagers'
 import type { Employe, FiltresEmployes } from './employesApi'
 
 const TYPES_CONTRAT = ['CDI', 'CDD', 'STAGIAIRE', 'STAGIAIRE_REMUNERE']
@@ -15,6 +16,7 @@ export function EmployesListTab() {
   const { role } = useAuth()
   const estAdmin = role === 'admin'
   const { data: departements } = useDepartements()
+  const { data: managers } = useManagers()
   const [filtres, setFiltres] = useState<FiltresEmployes>({ page: 0, size: 10 })
   const [modaleCreation, setModaleCreation] = useState(false)
   const [erreur, setErreur] = useState<string | null>(null)
@@ -146,6 +148,7 @@ export function EmployesListTab() {
         open={modaleCreation}
         mode="creation"
         departements={departements ?? []}
+        managers={managers ?? []}
         onCancel={() => {
           setModaleCreation(false)
           setErreur(null)
