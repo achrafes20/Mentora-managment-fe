@@ -36,6 +36,8 @@ import {
   useTransfererEmploye,
 } from './useEmployes'
 import { libelleManager, type Manager, useManagers } from './useManagers'
+import { EmployeTeletravailCard } from '../attendance/EmployeTeletravailCard'
+import { EmployeQrCodeCard } from '../attendance/EmployeQrCodeCard'
 
 const MOTIFS_DEPART = ['demission', 'licenciement', 'fin_cdd', 'rupture', 'autre'] as const
 
@@ -136,11 +138,16 @@ export function EmployeDetailPage() {
         </Descriptions>
       </Card>
 
-      <Card title="Planning télétravail" style={{ marginBottom: 16 }}>
-        <Typography.Text type="secondary">
-          Aucun planning pour l'instant — branché en T2.A1 (encart en lecture seule).
-        </Typography.Text>
-      </Card>
+      {employe.id && (
+        <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
+          <div style={{ flex: 1 }}>
+            <EmployeQrCodeCard employeId={employe.id} estAdmin={estAdmin} />
+          </div>
+          <div style={{ flex: 2 }}>
+            <EmployeTeletravailCard employeId={employe.id} estAdmin={estAdmin} />
+          </div>
+        </div>
+      )}
 
       <Card title="Documents" style={{ marginBottom: 16 }}>
         {estAdmin && (

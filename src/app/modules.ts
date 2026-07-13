@@ -10,7 +10,7 @@ export interface ModuleNavEntry {
 export const modules: ModuleNavEntry[] = [
   { key: 'auth', label: 'Comptes & authentification', path: '/comptes', enabled: true },
   { key: 'employees', label: 'Employés', path: '/employes', enabled: true },
-  { key: 'attendance', label: 'Présence', path: '/presence', enabled: false },
+  { key: 'attendance', label: 'Présence', path: '/presence', enabled: true },
   { key: 'recruitment', label: 'Recrutement', path: '/recrutement', enabled: false },
   { key: 'admin-requests', label: 'Demandes administratives', path: '/demandes', enabled: false },
   { key: 'documents', label: 'Documents RH', path: '/documents', enabled: false },

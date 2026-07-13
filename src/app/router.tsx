@@ -10,11 +10,14 @@ import { LoginPage } from '@/features/auth/LoginPage'
 import { ForgotPasswordPage } from '@/features/auth/ForgotPasswordPage'
 import { ResetPasswordPage } from '@/features/auth/ResetPasswordPage'
 import { UserManagementPage } from '@/features/auth/UserManagementPage'
+import { KiosquePage } from '../features/attendance/KiosquePage'
+import { PresencePage } from '../features/attendance/PresencePage'
 
 // Modules avec un écran réel — le reste retombe sur ModulePlaceholder tant que
 // leur tâche n'est pas construite.
 const ecransParModule: Partial<Record<string, ReactElement>> = {
   employees: <EmployesPage />,
+  attendance: <PresencePage />,
 }
 
 export const router = createBrowserRouter([
@@ -38,6 +41,10 @@ export const router = createBrowserRouter([
   {
     path: '/reinitialiser-mot-de-passe',
     element: <ResetPasswordPage />, // accessible même connecté (lien depuis e-mail)
+  },
+  {
+    path: '/kiosque',
+    element: <KiosquePage />, // page publique
   },
 
   // ---- Routes protégées (nécessitent authentification) ----
