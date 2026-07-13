@@ -1,4 +1,7 @@
+import type { ReactElement } from 'react'
 import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { EmployeDetailPage } from '../features/employee/EmployeDetailPage'
+import { EmployesPage } from '../features/employee/EmployesPage'
 import { AppLayout } from './AppLayout'
 import { ModulePlaceholder } from './ModulePlaceholder'
 import { modules } from './modules'
@@ -7,6 +10,12 @@ import { LoginPage } from '@/features/auth/LoginPage'
 import { ForgotPasswordPage } from '@/features/auth/ForgotPasswordPage'
 import { ResetPasswordPage } from '@/features/auth/ResetPasswordPage'
 import { UserManagementPage } from '@/features/auth/UserManagementPage'
+
+// Modules avec un écran réel — le reste retombe sur ModulePlaceholder tant que
+// leur tâche n'est pas construite.
+const ecransParModule: Partial<Record<string, ReactElement>> = {
+  employees: <EmployesPage />,
+}
 
 export const router = createBrowserRouter([
   // ---- Routes publiques (redirige si déjà connecté) ----
@@ -52,12 +61,14 @@ export const router = createBrowserRouter([
         ),
       },
 
+      { path: 'employes/:id', element: <EmployeDetailPage /> },
+
       // Modules métier (placeholders — activés phase par phase)
       ...modules
         .filter((m) => m.path !== '/comptes')
         .map((m) => ({
           path: m.path.slice(1),
-          element: <ModulePlaceholder label={m.label} />,
+          element: ecransParModule[m.key] ?? <ModulePlaceholder label={m.label} />,
         })),
 
       // Fallback 404

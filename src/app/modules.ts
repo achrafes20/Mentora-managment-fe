@@ -9,7 +9,7 @@ export interface ModuleNavEntry {
 // que le module correspondant n'est pas construit (mis à jour phase après phase).
 export const modules: ModuleNavEntry[] = [
   { key: 'auth', label: 'Comptes & authentification', path: '/comptes', enabled: true },
-  { key: 'employees', label: 'Employés', path: '/employes', enabled: false },
+  { key: 'employees', label: 'Employés', path: '/employes', enabled: true },
   { key: 'attendance', label: 'Présence', path: '/presence', enabled: false },
   { key: 'recruitment', label: 'Recrutement', path: '/recrutement', enabled: false },
   { key: 'admin-requests', label: 'Demandes administratives', path: '/demandes', enabled: false },
