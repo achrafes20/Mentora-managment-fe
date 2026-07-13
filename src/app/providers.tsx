@@ -1,16 +1,27 @@
 import type { PropsWithChildren } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ConfigProvider } from 'antd'
+import { App as AntApp, ConfigProvider } from 'antd'
 import frFR from 'antd/locale/fr_FR'
 import { hbTheme } from './theme'
+import { AuthProvider } from '@/lib/AuthContext'
 
-const queryClient = new QueryClient()
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      staleTime: 30_000,
+    },
+  },
+})
 
 export function AppProviders({ children }: PropsWithChildren) {
   return (
     <QueryClientProvider client={queryClient}>
       <ConfigProvider locale={frFR} theme={hbTheme}>
-        {children}
+        {/* AntApp expose message/modal/notification en dehors des composants */}
+        <AntApp>
+          <AuthProvider>{children}</AuthProvider>
+        </AntApp>
       </ConfigProvider>
     </QueryClientProvider>
   )
