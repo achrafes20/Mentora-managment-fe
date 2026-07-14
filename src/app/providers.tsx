@@ -4,6 +4,7 @@ import { App as AntApp, ConfigProvider } from 'antd'
 import frFR from 'antd/locale/fr_FR'
 import { hbTheme } from './theme'
 import { AuthProvider } from '@/lib/AuthContext'
+import { NotifProvider } from '@/lib/NotifContext'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -20,7 +21,9 @@ export function AppProviders({ children }: PropsWithChildren) {
       <ConfigProvider locale={frFR} theme={hbTheme}>
         {/* AntApp expose message/modal/notification en dehors des composants */}
         <AntApp>
-          <AuthProvider>{children}</AuthProvider>
+          <AuthProvider>
+            <NotifProvider>{children}</NotifProvider>
+          </AuthProvider>
         </AntApp>
       </ConfigProvider>
     </QueryClientProvider>

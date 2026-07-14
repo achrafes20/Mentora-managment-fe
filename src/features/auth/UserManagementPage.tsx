@@ -1,24 +1,8 @@
 import { useState } from 'react'
-import {
-  Alert,
-  Badge,
-  Button,
-  Form,
-  Input,
-  Modal,
-  Select,
-  Space,
-  Table,
-  Tag,
-  Typography,
-  message,
-} from 'antd'
-import {
-  CheckCircleOutlined,
-  PauseCircleOutlined,
-  PlusOutlined,
-  StopOutlined,
-} from '@ant-design/icons'
+import { Alert, Button, Form, Input, Modal, Select, Typography, message } from 'antd'
+import { Plus } from 'lucide-react'
+import { PageHeader } from '@/components/ui/StatCard'
+import { StatusTag } from '@/components/ui/StatusTag'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   type RoleUtilisateur,
@@ -30,7 +14,7 @@ import {
   updateUser,
 } from '@/lib/authApi'
 
-const { Title, Text } = Typography
+const { Text } = Typography
 const { Option } = Select
 
 const ROLE_LABELS: Record<RoleUtilisateur, string> = {
@@ -296,208 +280,130 @@ export function UserManagementPage() {
     },
   })
 
-  const columns = [
-    {
-      title: 'Nom',
-      key: 'nom',
-      render: (_: unknown, u: UserResponse) => (
-        <Text strong style={{ color: '#1B2A41' }}>
-          {u.prenom} {u.nom}
-        </Text>
-      ),
-    },
-    {
-      title: 'E-mail',
-      dataIndex: 'email',
-      key: 'email',
-      render: (email: string) => (
-        <Text style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, color: '#1B2A41' }}>
-          {email}
-        </Text>
-      ),
-    },
-    {
-      title: 'Rôle',
-      dataIndex: 'role',
-      key: 'role',
-      render: (role: RoleUtilisateur) => (
-        <Tag
-          color={role === 'admin' ? '#1B2A41' : '#4A7C6B'}
-          style={{ borderRadius: 6, fontSize: 12, fontWeight: 500 }}
-        >
-          {ROLE_LABELS[role]}
-        </Tag>
-      ),
-    },
-    {
-      title: 'Statut',
-      dataIndex: 'statut',
-      key: 'statut',
-      render: (statut: string) =>
-        statut === 'actif' ? (
-          <Badge
-            status="success"
-            text={<Text style={{ color: '#4A7C6B', fontSize: 13 }}>Actif</Text>}
-          />
-        ) : (
-          <Badge
-            status="default"
-            text={<Text style={{ color: '#6B7280', fontSize: 13 }}>Inactif</Text>}
-          />
-        ),
-    },
-    {
-      title: 'Dernière connexion',
-      dataIndex: 'modifieLe',
-      key: 'modifieLe',
-      render: (d: string) => (
-        <Text style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: '#6B7280' }}>
-          {new Date(d).toLocaleDateString('fr-FR')}
-        </Text>
-      ),
-    },
-    {
-      title: 'Actions',
-      key: 'actions',
-      render: (_: unknown, u: UserResponse) => (
-        <Space size="small">
-          <Button
-            size="small"
-            onClick={() => setEditUser(u)}
-            style={{ borderRadius: 6, borderColor: '#D8D4CC', color: '#1B2A41', fontSize: 13 }}
-          >
-            Modifier
-          </Button>
-          {u.statut === 'actif' ? (
-            <Button
-              size="small"
-              icon={<StopOutlined />}
-              danger
-              onClick={() => {
-                Modal.confirm({
-                  title: 'Désactiver ce compte ?',
-                  content: `${u.prenom} ${u.nom} ne pourra plus se connecter.`,
-                  okText: 'Désactiver',
-                  cancelText: 'Annuler',
-                  okButtonProps: {
-                    danger: true,
-                    style: { borderRadius: 8 },
-                  },
-                  onOk: () => deactivateMutation.mutate(u.id),
-                })
-              }}
-              style={{ borderRadius: 6, fontSize: 13 }}
-            >
-              Désactiver
-            </Button>
-          ) : (
-            <Button
-              size="small"
-              icon={<CheckCircleOutlined />}
-              onClick={() => activateMutation.mutate(u.id)}
-              style={{
-                borderRadius: 6,
-                borderColor: '#4A7C6B',
-                color: '#4A7C6B',
-                fontSize: 13,
-              }}
-            >
-              Réactiver
-            </Button>
-          )}
-        </Space>
-      ),
-    },
-  ]
-
   return (
-    <div style={{ padding: '32px 0' }}>
-      {/* En-tête */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          marginBottom: 24,
-        }}
-      >
-        <div>
-          <Title
-            level={3}
-            style={{
-              margin: 0,
-              color: '#1B2A41',
-              fontFamily: "'Source Serif 4', Georgia, serif",
-              fontWeight: 600,
-            }}
+    <div className="flex-1 overflow-auto p-8">
+      <PageHeader
+        title="Comptes utilisateurs"
+        subtitle={`${users.length} compte${users.length !== 1 ? 's' : ''} — admin et managers`}
+        actions={
+          <button
+            id="create-user-btn"
+            onClick={() => setCreateOpen(true)}
+            className="flex items-center gap-1.5 rounded-lg bg-[#1B2A41] px-4 py-2 text-[12px] font-medium text-white transition-colors hover:bg-[#243650]"
           >
-            Comptes utilisateurs
-          </Title>
-          <Text style={{ color: '#6B7280', fontSize: 14 }}>
-            {users.length} compte{users.length !== 1 ? 's' : ''} — admin et managers
-          </Text>
-        </div>
-        <Button
-          id="create-user-btn"
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => setCreateOpen(true)}
-          style={{
-            height: 40,
-            borderRadius: 8,
-            background: '#1B2A41',
-            borderColor: '#1B2A41',
-            fontFamily: "'IBM Plex Sans', system-ui, sans-serif",
-            fontWeight: 500,
-          }}
-        >
-          Créer un compte
-        </Button>
-      </div>
+            <Plus size={13} /> Créer un compte
+          </button>
+        }
+      />
 
-      {/* Erreur de chargement */}
       {error && (
-        <Alert
-          type="error"
-          message="Impossible de charger les comptes utilisateurs."
-          style={{ marginBottom: 16, borderRadius: 8 }}
-          showIcon
-        />
+        <div className="mb-4 rounded-lg border border-[#C1495A]/20 bg-[#C1495A]/8 p-3 text-[13px] text-[#C1495A]">
+          Impossible de charger les comptes utilisateurs.
+        </div>
       )}
 
-      {/* Tableau */}
-      <div
-        style={{
-          background: '#ffffff',
-          borderRadius: 12,
-          border: '1px solid #D8D4CC',
-          overflow: 'hidden',
-        }}
-      >
-        <Table<UserResponse>
-          dataSource={users}
-          columns={columns}
-          rowKey="id"
-          loading={isLoading}
-          pagination={{ pageSize: 20, hideOnSinglePage: true }}
-          size="middle"
-          locale={{ emptyText: 'Aucun compte utilisateur.' }}
-          style={{ fontFamily: "'IBM Plex Sans', system-ui, sans-serif" }}
-        />
+      <div className="overflow-hidden rounded-xl border border-[#D8D4CC] bg-white">
+        {isLoading ? (
+          <p className="p-8 text-center text-[13px] text-[#9CA3AF]">Chargement…</p>
+        ) : users.length === 0 ? (
+          <p className="p-8 text-center text-[13px] text-[#9CA3AF]">Aucun compte utilisateur.</p>
+        ) : (
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-[#D8D4CC] bg-[#F7F7F4]">
+                {['Nom', 'E-mail', 'Rôle', 'Statut', 'Dernière connexion', 'Actions'].map((h) => (
+                  <th
+                    key={h}
+                    className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider text-[#9CA3AF] uppercase first:pl-5 last:pr-5"
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {users.map((u) => (
+                <tr
+                  key={u.id}
+                  className="border-b border-[#D8D4CC]/50 transition-colors last:border-0 hover:bg-[#F7F7F4]"
+                >
+                  <td className="pl-5 pr-4 py-3.5 text-[13px] font-medium text-[#1B2A41]">
+                    {u.prenom} {u.nom}
+                  </td>
+                  <td
+                    style={{ fontFamily: 'var(--font-code)' }}
+                    className="px-4 py-3.5 text-[13px] text-[#1B2A41]"
+                  >
+                    {u.email}
+                  </td>
+                  <td className="px-4 py-3.5">
+                    <span
+                      className={`rounded px-2 py-0.5 text-[11px] font-medium ${
+                        u.role === 'admin'
+                          ? 'bg-[#1B2A41]/10 text-[#1B2A41]'
+                          : 'bg-[#4A7C6B]/10 text-[#4A7C6B]'
+                      }`}
+                    >
+                      {ROLE_LABELS[u.role]}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3.5">
+                    <StatusTag statut={u.statut === 'actif' ? 'Actif' : 'Inactif'} />
+                  </td>
+                  <td
+                    style={{ fontFamily: 'var(--font-code)' }}
+                    className="px-4 py-3.5 text-[12px] text-[#6B7280]"
+                  >
+                    {new Date(u.modifieLe).toLocaleDateString('fr-FR')}
+                  </td>
+                  <td className="pr-5 py-3.5">
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setEditUser(u)}
+                        className="rounded-lg border border-[#D8D4CC] px-2.5 py-1 text-[11px] text-[#1B2A41] hover:border-[#1B2A41]"
+                      >
+                        Modifier
+                      </button>
+                      {u.statut === 'actif' ? (
+                        <button
+                          onClick={() => {
+                            Modal.confirm({
+                              title: 'Désactiver ce compte ?',
+                              content: `${u.prenom} ${u.nom} ne pourra plus se connecter.`,
+                              okText: 'Désactiver',
+                              cancelText: 'Annuler',
+                              okButtonProps: { danger: true },
+                              onOk: () => deactivateMutation.mutate(u.id),
+                            })
+                          }}
+                          className="rounded-lg border border-[#C1495A]/30 px-2.5 py-1 text-[11px] text-[#C1495A] hover:bg-[#C1495A]/8"
+                        >
+                          Désactiver
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => activateMutation.mutate(u.id)}
+                          className="rounded-lg border border-[#4A7C6B]/30 px-2.5 py-1 text-[11px] text-[#4A7C6B] hover:bg-[#4A7C6B]/8"
+                        >
+                          Réactiver
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
-      {/* Modales */}
       <CreateUserModal open={createOpen} onClose={() => setCreateOpen(false)} />
       <EditUserModal user={editUser} onClose={() => setEditUser(null)} />
 
-      {/* Note sécurité */}
-      <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 6 }}>
-        <PauseCircleOutlined style={{ color: '#6B7280', fontSize: 13 }} />
-        <Text style={{ color: '#6B7280', fontSize: 13 }}>
-          Ce tableau ne contient pas les fiches employés (EMP-XXX). Les comptes ici donnent
-          uniquement accès à la plateforme (rôle Admin ou Manager).
-        </Text>
-      </div>
+      <p className="mt-4 text-[12px] text-[#9CA3AF]">
+        Ce tableau ne contient pas les fiches employés. Les comptes ici donnent uniquement accès à
+        la plateforme (rôle Admin ou Manager).
+      </p>
     </div>
   )
 }

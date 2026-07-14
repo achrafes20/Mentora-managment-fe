@@ -8,6 +8,7 @@ import type { ThemeConfig } from 'antd'
 export const hbTheme: ThemeConfig = {
   token: {
     colorPrimary: '#1B2A41', // Encre Marine — actions
+    colorTextLightSolid: '#ffffff',
     colorSuccess: '#4A7C6B', // Sauge Administrative — actif / approuvé / embauché
     colorWarning: '#C87F3A', // Ambre Vigilance — en attente / à traiter
     colorError: '#C1495A', // Corail Alerte — anomalie / rejeté / bloqué
@@ -17,5 +18,15 @@ export const hbTheme: ThemeConfig = {
     colorTextBase: '#1B2A41',
     borderRadius: 8,
     fontFamily: "'IBM Plex Sans', system-ui, sans-serif",
+  },
+  components: {
+    Button: {
+      colorPrimary: '#1B2A41',
+      colorPrimaryHover: '#243650',
+      colorPrimaryActive: '#1a2332',
+      primaryColor: '#ffffff',
+      colorTextLightSolid: '#ffffff',
+      fontWeight: 500,
+    },
   },
 }

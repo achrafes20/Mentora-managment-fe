@@ -106,3 +106,50 @@ export async function ouvrirDocument(employeId: string, documentId: string): Pro
   window.open(url, '_blank', 'noreferrer')
   setTimeout(() => URL.revokeObjectURL(url), 60_000)
 }
+
+export async function televerserPhotoEmploye(id: string, photo: File): Promise<Employe> {
+  const formData = new FormData()
+  formData.append('photo', photo)
+  const { data } = await apiClient.post<ApiResponse<Employe>>(
+    `/api/employes/${id}/photo`,
+    formData,
+    { headers: { 'Content-Type': 'multipart/form-data' } },
+  )
+  return data.data as Employe
+}
+
+export async function chargerPhotoEmploye(id: string): Promise<string> {
+  const { data } = await apiClient.get<Blob>(`/api/employes/${id}/photo`, {
+    responseType: 'blob',
+  })
+  return URL.createObjectURL(data)
+}
+
+export async function supprimerDocumentEmploye(
+  employeId: string,
+  documentId: string,
+): Promise<void> {
+  await apiClient.delete(`/api/employes/${employeId}/documents/${documentId}`)
+}
+
+export async function remplacerDocumentEmploye(
+  employeId: string,
+  documentId: string,
+  fichier: File,
+): Promise<EmployeDocument> {
+  const formData = new FormData()
+  formData.append('fichier', fichier)
+  const { data } = await apiClient.put<ApiResponse<EmployeDocument>>(
+    `/api/employes/${employeId}/documents/${documentId}`,
+    formData,
+    { headers: { 'Content-Type': 'multipart/form-data' } },
+  )
+  return data.data as EmployeDocument
+}
+
+export async function envoyerCarteParEmail(
+  employeId: string,
+  payload: { objet: string; corps: string; destinataire?: string },
+): Promise<void> {
+  await apiClient.post(`/api/employes/${employeId}/carte/envoyer-email`, payload)
+}

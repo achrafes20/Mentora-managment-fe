@@ -1,15 +1,17 @@
-import { Button, Select, Space, Table, Tag, message } from 'antd'
-import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
-import { useAuth } from '../../lib/AuthContext'
+import { message } from 'antd'
+import { useAuth } from '@/lib/AuthContext'
+import { StatusTag } from '@/components/ui/StatusTag'
 import { listerAnomalies, resoudreAnomalie, type AnomaliePointageReponse } from './api'
+import { listerEmployes } from '../employee/employesApi'
 
-const TYPES_LABELS: Record<string, { label: string; color: string }> = {
-  retard: { label: 'Retard', color: 'orange' },
-  depart_anticipe: { label: 'Départ anticipé', color: 'volcano' },
-  absence_checkout: { label: 'Absence checkout', color: 'red' },
-  presence_incomplete: { label: 'Présence incomplète', color: 'magenta' },
+const TYPES_LABELS: Record<string, string> = {
+  retard: 'Retard',
+  depart_anticipe: 'Départ anticipé',
+  absence_checkout: 'Absence de check-out',
+  presence_incomplete: 'Présence incomplète',
 }
 
 export function AnomaliesPage() {
@@ -19,6 +21,7 @@ export function AnomaliesPage() {
   const [loading, setLoading] = useState(false)
   const [page, setPage] = useState(0)
   const [total, setTotal] = useState(0)
+  const [employes, setEmployes] = useState<Record<string, string>>({})
   const [filtreResolue, setFiltreResolue] = useState<boolean | undefined>(false)
   const pageSize = 20
 
@@ -29,110 +32,160 @@ export function AnomaliesPage() {
       setData(res.content)
       setTotal(res.totalElements)
     } catch {
-      message.error('Erreur au chargement des anomalies')
+      void message.error('Erreur au chargement des anomalies')
     } finally {
       setLoading(false)
     }
   }, [page, filtreResolue])
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    charger()
+    void charger()
+    const chargerEmployes = async () => {
+      try {
+        const res = await listerEmployes({ size: 1000 })
+        const map: Record<string, string> = {}
+        for (const e of res.content ?? []) {
+          if (!e.id) continue
+          map[e.id] = `${e.nom} ${e.prenom}`
+        }
+        setEmployes(map)
+      } catch {
+        // ignore
+      }
+    }
+    void chargerEmployes()
   }, [charger])
 
-  async function handleResoudre(id: string) {
+  async function handleResoudre(anomalieId: string) {
     try {
-      await resoudreAnomalie(id)
-      message.success('Anomalie marquée comme résolue')
-      charger()
+      await resoudreAnomalie(anomalieId)
+      void message.success('Anomalie marquée comme résolue')
+      void charger()
     } catch {
-      message.error('Erreur lors de la résolution')
+      void message.error('Erreur lors de la résolution')
     }
   }
 
-  const columns: ColumnsType<AnomaliePointageReponse> = [
-    {
-      title: 'Employé (ID)',
-      dataIndex: 'employeId',
-      key: 'employeId',
-      ellipsis: true,
-      render: (v: string) => v.substring(0, 8) + '…',
-    },
-    {
-      title: 'Date',
-      dataIndex: 'datePointage',
-      key: 'datePointage',
-      render: (v: string) => dayjs(v).format('DD/MM/YYYY'),
-    },
-    {
-      title: 'Type',
-      dataIndex: 'typeAnomalie',
-      key: 'typeAnomalie',
-      render: (v: string) => {
-        const info = TYPES_LABELS[v] ?? { label: v, color: 'default' }
-        return <Tag color={info.color}>{info.label}</Tag>
-      },
-    },
-    {
-      title: 'Statut',
-      dataIndex: 'resolue',
-      key: 'resolue',
-      render: (v: boolean) =>
-        v ? <Tag color="green">Résolue</Tag> : <Tag color="red">Non résolue</Tag>,
-    },
-    {
-      title: 'Créé le',
-      dataIndex: 'creeLe',
-      key: 'creeLe',
-      render: (v: string) => dayjs(v).format('DD/MM/YYYY HH:mm'),
-    },
-    ...(estAdmin
-      ? [
-          {
-            title: 'Action',
-            key: 'action',
-            render: (_: unknown, record: AnomaliePointageReponse) =>
-              !record.resolue ? (
-                <Button type="link" onClick={() => handleResoudre(record.id)}>
-                  Marquer résolue
-                </Button>
-              ) : null,
-          },
-        ]
-      : []),
-  ]
+  const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
   return (
-    <Space direction="vertical" size="large" style={{ width: '100%' }}>
-      <Space>
-        <span>Filtre :</span>
-        <Select
-          style={{ width: 200 }}
+    <div>
+      <div className="mb-4 flex items-center gap-3">
+        <span className="text-[12px] text-[#6B7280]">Filtre :</span>
+        <select
           value={filtreResolue === undefined ? 'all' : filtreResolue ? 'true' : 'false'}
-          onChange={(v) => {
+          onChange={(e) => {
             setPage(0)
+            const v = e.target.value
             setFiltreResolue(v === 'all' ? undefined : v === 'true')
           }}
-          options={[
-            { label: 'Toutes', value: 'all' },
-            { label: 'Non résolues', value: 'false' },
-            { label: 'Résolues', value: 'true' },
-          ]}
-        />
-      </Space>
-      <Table
-        rowKey="id"
-        columns={columns}
-        dataSource={data}
-        loading={loading}
-        pagination={{
-          current: page + 1,
-          pageSize,
-          total,
-          onChange: (p) => setPage(p - 1),
-          showTotal: (t) => `${t} anomalies`,
-        }}
-      />
-    </Space>
+          className="rounded-lg border border-[#D8D4CC] bg-white px-3 py-2 text-[13px] text-[#6B7280] focus:border-[#1B2A41] focus:outline-none"
+        >
+          <option value="all">Toutes</option>
+          <option value="false">Non résolues</option>
+          <option value="true">Résolues</option>
+        </select>
+      </div>
+
+      <div className="overflow-hidden rounded-xl border border-[#D8D4CC] bg-white">
+        {loading ? (
+          <p className="p-8 text-center text-[13px] text-[#9CA3AF]">Chargement…</p>
+        ) : data.length === 0 ? (
+          <p className="p-8 text-center text-[13px] text-[#9CA3AF]">Aucune anomalie</p>
+        ) : (
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-[#D8D4CC] bg-[#F7F7F4]">
+                {[
+                  'Employé',
+                  'Date',
+                  'Type',
+                  'Statut',
+                  'Créé le',
+                  ...(estAdmin ? ['Action'] : []),
+                ].map((h) => (
+                  <th
+                    key={h}
+                    className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider text-[#9CA3AF] uppercase first:pl-5 last:pr-5"
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {data.map((a) => (
+                <tr
+                  key={a.id}
+                  className="border-b border-[#D8D4CC]/50 transition-colors last:border-0 hover:bg-[#F7F7F4]"
+                >
+                  <td className="pl-5 pr-4 py-3.5 text-[13px] text-[#1B2A41]">
+                    {employes[a.employeId] ?? `${a.employeId.substring(0, 8)}…`}
+                  </td>
+                  <td
+                    style={{ fontFamily: 'var(--font-code)' }}
+                    className="px-4 py-3.5 text-[13px] text-[#1B2A41]"
+                  >
+                    {dayjs(a.datePointage).format('DD/MM/YYYY')}
+                  </td>
+                  <td className="px-4 py-3.5">
+                    <StatusTag statut={TYPES_LABELS[a.typeAnomalie] ?? a.typeAnomalie} />
+                  </td>
+                  <td className="px-4 py-3.5">
+                    <StatusTag statut={a.resolue ? 'Actif' : 'En attente'} />
+                    <span className="ml-1 text-[11px] text-[#6B7280]">
+                      {a.resolue ? 'Résolue' : 'Non résolue'}
+                    </span>
+                  </td>
+                  <td
+                    style={{ fontFamily: 'var(--font-code)' }}
+                    className="px-4 py-3.5 text-[11px] text-[#9CA3AF]"
+                  >
+                    {dayjs(a.creeLe).format('DD/MM/YYYY HH:mm')}
+                  </td>
+                  {estAdmin && (
+                    <td className="pr-5 py-3.5">
+                      {!a.resolue && (
+                        <button
+                          onClick={() => void handleResoudre(a.id)}
+                          className="text-[12px] text-[#4A7C6B] hover:underline"
+                        >
+                          Marquer résolue
+                        </button>
+                      )}
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {total > pageSize && (
+        <div className="mt-4 flex items-center justify-between">
+          <p className="text-[12px] text-[#9CA3AF]">{total} anomalies</p>
+          <div className="flex items-center gap-2">
+            <button
+              disabled={page === 0}
+              onClick={() => setPage((p) => p - 1)}
+              className="rounded-lg border border-[#D8D4CC] p-1.5 disabled:opacity-40"
+            >
+              <ChevronLeft size={14} />
+            </button>
+            <span className="text-[12px] text-[#6B7280]">
+              {page + 1} / {totalPages}
+            </span>
+            <button
+              disabled={page >= totalPages - 1}
+              onClick={() => setPage((p) => p + 1)}
+              className="rounded-lg border border-[#D8D4CC] p-1.5 disabled:opacity-40"
+            >
+              <ChevronRight size={14} />
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   )
 }

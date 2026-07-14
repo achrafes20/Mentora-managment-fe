@@ -1,195 +1,163 @@
-import { Avatar, Button, Layout, Menu, Modal, Typography } from 'antd'
-import { LogoutOutlined, SettingOutlined, UserOutlined } from '@ant-design/icons'
+import {
+  Briefcase,
+  Clock,
+  FileText,
+  FolderOpen,
+  LayoutDashboard,
+  LogOut,
+  Settings,
+  UserCheck2,
+  UserCog,
+  Users,
+  Bell,
+} from 'lucide-react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/lib/AuthContext'
-import { modules } from './modules'
+import { useNotifications } from '@/lib/NotifContext'
+import { HBLogo } from '@/components/ui/HBLogo'
+import { NotifPanel } from '@/components/ui/NotifPanel'
+import { ROSE_MARQUE, ROSE_MARQUE_UI } from '@/components/ui/tokens'
+import { mainNavItems, adminBottomNavItems } from './modules'
 
-const { Sider, Content } = Layout
-const { Text } = Typography
-
-/**
- * Layout principal — navigation latérale conforme au design system HB.
- * Palette : Blanc Papier #F7F7F4, Encre Marine #1B2A41, Gris Dossier #D8D4CC.
- * Indicateur actif : Rose Marque (bordure gauche).
- */
 export function AppLayout() {
   const navigate = useNavigate()
   const location = useLocation()
   const { user, role, signOut } = useAuth()
+  const { unreadCount, togglePanel } = useNotifications()
 
-  // Seuls les modules activés sont cliquables (le module Comptes est géré à part via adminItems)
-  const navItems = modules
-    .filter((m) => m.enabled && m.path !== '/comptes')
-    .map((m) => ({
-      key: m.path,
-      label: m.label,
-    }))
-
-  // Entrée "Comptes" visible uniquement pour admin
-  const adminItems =
-    role === 'admin'
-      ? [
-          {
-            key: '/comptes',
-            label: 'Comptes utilisateurs',
-            icon: <SettingOutlined />,
-          },
-        ]
-      : []
-
-  function handleLogout() {
-    Modal.confirm({
-      title: 'Se déconnecter ?',
-      content: 'Votre session sera fermée.',
-      okText: 'Déconnexion',
-      cancelText: 'Annuler',
-      okButtonProps: { danger: true, style: { borderRadius: 8 } },
-      cancelButtonProps: { style: { borderRadius: 8 } },
-      onOk: () => signOut(),
-    })
+  const isActive = (path: string) => {
+    if (path === '/employes') {
+      return location.pathname === '/employes' || location.pathname.startsWith('/employes/')
+    }
+    return location.pathname === path || location.pathname.startsWith(`${path}/`)
   }
 
   return (
-    <Layout style={{ minHeight: '100vh', background: '#F7F7F4' }}>
-      {/* ---- Navigation latérale ---- */}
-      <Sider
-        width={240}
-        style={{
-          background: '#F7F7F4',
-          borderRight: '1px solid #D8D4CC',
-          display: 'flex',
-          flexDirection: 'column',
-          position: 'fixed',
-          height: '100vh',
-          overflow: 'hidden',
-        }}
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-          {/* Logo / Titre */}
-          <div
-            style={{
-              padding: '28px 20px 20px',
-              borderBottom: '1px solid #D8D4CC',
-            }}
-          >
-            <Text
-              style={{
-                display: 'block',
-                fontFamily: "'Source Serif 4', Georgia, serif",
-                fontWeight: 600,
-                fontSize: 17,
-                color: '#1B2A41',
-                lineHeight: 1.2,
-              }}
+    <div className="flex h-screen overflow-hidden bg-[#F7F7F4]">
+      <NotifPanel />
+      <aside className="sticky top-0 flex h-screen w-[212px] flex-shrink-0 flex-col border-r border-[#D8D4CC] bg-[#F7F7F4]">
+        <div className="border-b border-[#D8D4CC] px-5 py-4">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-[#1B2A41]">
+              <HBLogo size={20} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] leading-snug font-semibold text-[#1B2A41]">
+                HB Développement
+              </p>
+              <p style={{ fontFamily: 'var(--font-code)' }} className="text-[10px] text-[#9CA3AF]">
+                {role === 'admin' ? 'Admin RH' : 'Manager'}
+              </p>
+            </div>
+            <button
+              onClick={togglePanel}
+              className="relative flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg transition-colors hover:bg-[#D8D4CC]/40"
             >
-              HB Développement
-            </Text>
-            <div
-              style={{
-                width: 32,
-                height: 3,
-                background: '#C92B6A',
-                borderRadius: 2,
-                marginTop: 6,
-              }}
-            />
-            <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 4, display: 'block' }}>
-              Mentora — Gestion RH
-            </Text>
-          </div>
-
-          {/* Menu principal */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: '12px 0' }}>
-            <Menu
-              mode="inline"
-              selectedKeys={[location.pathname]}
-              items={[...navItems, ...adminItems]}
-              onClick={({ key }) => navigate(key)}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                fontFamily: "'IBM Plex Sans', system-ui, sans-serif",
-                fontSize: 14,
-              }}
-              theme="light"
-            />
-            {navItems.length === 0 && adminItems.length === 0 && (
-              <div style={{ padding: '8px 20px' }}>
-                <Text style={{ color: '#6B7280', fontSize: 13 }}>
-                  Aucun module activé pour l'instant.
-                </Text>
-              </div>
-            )}
-          </div>
-
-          {/* Profil + déconnexion */}
-          <div
-            style={{
-              padding: '16px 20px',
-              borderTop: '1px solid #D8D4CC',
-              background: '#F7F7F4',
-            }}
-          >
-            {user && (
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  marginBottom: 12,
-                }}
-              >
-                <Avatar
-                  size={32}
-                  icon={<UserOutlined />}
-                  style={{ background: '#1B2A41', flexShrink: 0 }}
-                />
-                <div style={{ minWidth: 0 }}>
-                  <Text
-                    ellipsis
-                    strong
-                    style={{ fontSize: 13, color: '#1B2A41', display: 'block', lineHeight: 1.3 }}
-                  >
-                    {user.prenom} {user.nom}
-                  </Text>
-                  <Text style={{ fontSize: 12, color: '#6B7280', textTransform: 'capitalize' }}>
-                    {user.role}
-                  </Text>
-                </div>
-              </div>
-            )}
-            <Button
-              id="logout-btn"
-              icon={<LogoutOutlined />}
-              onClick={handleLogout}
-              size="small"
-              style={{
-                width: '100%',
-                borderRadius: 8,
-                borderColor: '#D8D4CC',
-                color: '#6B7280',
-                fontFamily: "'IBM Plex Sans', system-ui, sans-serif",
-                fontSize: 13,
-              }}
-            >
-              Se déconnecter
-            </Button>
+              <Bell size={14} className={unreadCount > 0 ? 'text-[#1B2A41]' : 'text-[#9CA3AF]'} />
+              {unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 flex h-[14px] min-w-[14px] items-center justify-center rounded-full bg-[#C1495A] px-0.5 text-[8px] leading-none font-bold text-white">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </button>
           </div>
         </div>
-      </Sider>
 
-      {/* ---- Contenu principal ---- */}
-      <Layout style={{ marginLeft: 240, background: '#F7F7F4' }}>
-        <Content
-          style={{
-            padding: '32px 40px',
-            minHeight: '100vh',
-            fontFamily: "'IBM Plex Sans', system-ui, sans-serif",
-          }}
-        >
-          <Outlet />
-        </Content>
-      </Layout>
-    </Layout>
+        <nav className="flex-1 space-y-0.5 overflow-y-auto p-2.5">
+          {mainNavItems
+            .filter((item) => !item.adminOnly || role === 'admin')
+            .map((item) => {
+              const active = isActive(item.path)
+              const Icon = item.icon
+              return (
+                <button
+                  key={item.path}
+                  onClick={() => navigate(item.path)}
+                  className={`relative flex w-full items-center gap-2.5 rounded-lg px-3 py-[7px] text-left transition-colors ${
+                    active
+                      ? 'font-semibold text-[#1B2A41]'
+                      : 'text-[#6B7280] hover:bg-[#D8D4CC]/40 hover:text-[#1B2A41]'
+                  }`}
+                  style={active ? { backgroundColor: `${ROSE_MARQUE}10` } : {}}
+                >
+                  {active && (
+                    <span
+                      className="absolute top-[3px] bottom-[3px] left-0 w-[3px] rounded-r-full"
+                      style={{ backgroundColor: ROSE_MARQUE }}
+                    />
+                  )}
+                  <Icon
+                    size={14}
+                    style={active ? { color: ROSE_MARQUE_UI } : {}}
+                    className={!active ? 'text-[#9CA3AF]' : ''}
+                  />
+                  <span className="text-[12px]">{item.label}</span>
+                </button>
+              )
+            })}
+        </nav>
+
+        <div className="border-t border-[#D8D4CC] p-2.5">
+          {role === 'admin' &&
+            adminBottomNavItems.map((item) => {
+              const active = isActive(item.path)
+              const Icon = item.icon
+              return (
+                <button
+                  key={item.path}
+                  onClick={() => navigate(item.path)}
+                  className={`relative mb-0.5 flex w-full items-center gap-2.5 rounded-lg px-3 py-[7px] transition-colors ${
+                    active
+                      ? 'font-semibold text-[#1B2A41]'
+                      : 'text-[#6B7280] hover:bg-[#D8D4CC]/40 hover:text-[#1B2A41]'
+                  }`}
+                  style={active ? { backgroundColor: `${ROSE_MARQUE}10` } : {}}
+                >
+                  {active && (
+                    <span
+                      className="absolute top-[3px] bottom-[3px] left-0 w-[3px] rounded-r-full"
+                      style={{ backgroundColor: ROSE_MARQUE }}
+                    />
+                  )}
+                  <Icon size={13} style={active ? { color: ROSE_MARQUE_UI } : {}} />
+                  <span className="text-[12px]">{item.label}</span>
+                </button>
+              )
+            })}
+          {user && (
+            <div className="mt-0.5 mb-0.5 px-3 py-2">
+              <p className="text-[11px] font-medium text-[#1B2A41]">
+                {user.prenom} {user.nom}
+              </p>
+              <p className="text-[10px] text-[#9CA3AF] capitalize">{user.role}</p>
+            </div>
+          )}
+          <button
+            onClick={() => void signOut()}
+            className="flex w-full items-center gap-2.5 rounded-lg px-3 py-[7px] text-[#9CA3AF] transition-colors hover:bg-[#C1495A]/8 hover:text-[#C1495A]"
+          >
+            <LogOut size={13} />
+            <span className="text-[12px] font-medium">Se déconnecter</span>
+          </button>
+        </div>
+      </aside>
+
+      <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <Outlet />
+      </main>
+    </div>
   )
+}
+
+// Re-export icons for modules.ts
+export {
+  LayoutDashboard,
+  Users,
+  FolderOpen,
+  Clock,
+  Briefcase,
+  FileText,
+  Settings,
+  UserCheck2,
+  UserCog,
 }

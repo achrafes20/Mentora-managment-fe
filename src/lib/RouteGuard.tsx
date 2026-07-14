@@ -38,7 +38,7 @@ export function RequireAuth({ children, requiredRole }: RequireAuthProps) {
   }
 
   if (requiredRole && role !== requiredRole) {
-    return <Navigate to="/" replace />
+    return <Navigate to="/tableau-de-bord" replace />
   }
 
   return <>{children}</>
@@ -67,7 +67,7 @@ export function RedirectIfAuth({ children }: { children: React.ReactNode }) {
   }
 
   if (isAuthenticated) {
-    return <Navigate to="/" replace />
+    return <Navigate to="/tableau-de-bord" replace />
   }
 
   return <>{children}</>

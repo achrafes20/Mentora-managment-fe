@@ -1,9 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Alert, DatePicker, Form as AntForm, Input, Modal, Select } from 'antd'
 import dayjs, { type Dayjs } from 'dayjs'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Controller, type FieldError, useForm } from 'react-hook-form'
 import { z } from 'zod'
+import { Avatar } from '@/components/ui/Avatar'
+import { useEmployePhotoUrl } from './useEmployePhoto'
 import type { Departement } from './api'
 import type { Employe } from './employesApi'
 import { libelleManager, type Manager } from './useManagers'
@@ -41,7 +43,7 @@ interface Props {
   departements: Departement[]
   managers: Manager[]
   onCancel: () => void
-  onSubmit: (values: EmployeFormValues) => void
+  onSubmit: (values: EmployeFormValues, photo?: File | null) => void
   submitting: boolean
   errorMessage?: string | null
 }
@@ -57,6 +59,13 @@ export function EmployeFormModal({
   submitting,
   errorMessage,
 }: Props) {
+  const [photo, setPhoto] = useState<File | null>(null)
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
+  const photoExistante = useEmployePhotoUrl(
+    mode === 'edition' ? employe?.id : undefined,
+    mode === 'edition' ? employe?.photoFichierId : undefined,
+  )
+
   const {
     control,
     handleSubmit,
@@ -95,27 +104,61 @@ export function EmployeFormModal({
           ? dayjs(employe.dateFinContratPrevue)
           : null,
       })
+      setPhoto(null)
+      setPhotoPreview(null)
     }
   }, [open, employe, reset])
 
   const typeContratActuel = watch('typeContrat')
+  const prenomActuel = watch('prenom')
+  const nomActuel = watch('nom')
+  const apercuPhoto = photoPreview ?? photoExistante
+
+  function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const fichier = e.target.files?.[0]
+    if (!fichier) return
+    if (!['image/jpeg', 'image/png'].includes(fichier.type)) return
+    setPhoto(fichier)
+    setPhotoPreview(URL.createObjectURL(fichier))
+  }
 
   return (
     <Modal
       title={mode === 'creation' ? 'Nouvel employé' : "Modifier l'employé"}
       open={open}
       onCancel={onCancel}
-      onOk={handleSubmit(onSubmit)}
+      onOk={handleSubmit((values) => onSubmit(values, photo))}
       confirmLoading={submitting}
       okText={mode === 'creation' ? 'Créer' : 'Enregistrer'}
       cancelText="Annuler"
       destroyOnClose
       width={600}
+      okButtonProps={{ style: { color: '#fff' } }}
     >
       {errorMessage && (
         <Alert type="error" message={errorMessage} showIcon style={{ marginBottom: 16 }} />
       )}
       <AntForm layout="vertical">
+        <AntForm.Item label="Photo (optionnelle)">
+          <div className="flex items-center gap-4">
+            <Avatar
+              prenom={prenomActuel || employe?.prenom || ''}
+              nom={nomActuel || employe?.nom || ''}
+              size="md"
+              photoUrl={apercuPhoto}
+            />
+            <label className="cursor-pointer rounded-lg border border-dashed border-[#D8D4CC] px-4 py-2 text-[12px] text-[#6B7280] hover:border-[#1B2A41]">
+              Choisir une photo
+              <input
+                type="file"
+                accept="image/jpeg,image/png"
+                className="hidden"
+                onChange={handlePhotoChange}
+              />
+            </label>
+          </div>
+          <p className="mt-1 text-[11px] text-[#9CA3AF]">JPEG ou PNG, max 10 Mo</p>
+        </AntForm.Item>
         <AntForm.Item
           label="Nom"
           validateStatus={errors.nom ? 'error' : ''}

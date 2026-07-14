@@ -1,0 +1,58 @@
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --font-size: 15px;
+  --background: #f7f7f4;
+  --foreground: #1b2a41;
+  --card: #ffffff;
+  --card-foreground: #1b2a41;
+  --popover: #ffffff;
+  --popover-foreground: #1b2a41;
+  --primary: #1b2a41;
+  --primary-foreground: #f7f7f4;
+  --secondary: #ebe8e0;
+  --secondary-foreground: #1b2a41;
+  --muted: #ebe8e0;
+  --muted-foreground: #6b7280;
+  --accent: #4a7c6b;
+  --accent-foreground: #ffffff;
+  --destructive: #c1495a;
+  --destructive-foreground: #ffffff;
+  --border: #d8d4cc;
+  --input: transparent;
+  --input-background: #f7f7f4;
+  --switch-background: #d8d4cc;
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --ring: #4a7c6b;
+  --radius: 0.5rem;
+  --sidebar: #f7f7f4;
+  --sidebar-foreground: #1b2a41;
+  --sidebar-primary: #1b2a41;
+  --sidebar-primary-foreground: #f7f7f4;
+  --sidebar-accent: #ebe8e0;
+  --sidebar-accent-foreground: #1b2a41;
+  --sidebar-border: #d8d4cc;
+  --sidebar-ring: #4a7c6b;
+  --font-display: 'Source Serif 4', Georgia, serif;
+  --font-ui: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-code: 'IBM Plex Mono', monospace;
+  --rose-marque: #c92b6a;
+  --rose-marque-ui: #a8245a;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-ui);
+  }
+
+  html {
+    font-size: var(--font-size);
+  }
+}
