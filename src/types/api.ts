@@ -38,6 +38,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/employes/{id}/documents/{documentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["remplacerDocument"];
+        post?: never;
+        delete: operations["supprimerDocument"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/departements/{id}": {
         parameters: {
             query?: never;
@@ -72,7 +88,103 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/employes": {
+    "/api/pointages/{id}/corriger": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["corrigerManuellement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pointages/qr-code/generer/{employeId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["genererQrCode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kiosque/scan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["scanner"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/import/previsualiser": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["previsualiser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/import/executer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["executer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/import/analyser": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["analyser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/horaires-reference": {
         parameters: {
             query?: never;
             header?: never;
@@ -82,6 +194,22 @@ export interface paths {
         get: operations["lister"];
         put?: never;
         post: operations["creer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/employes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["lister_1"];
+        put?: never;
+        post: operations["creer_1"];
         delete?: never;
         options?: never;
         head?: never;
@@ -98,6 +226,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["transferer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/employes/{id}/photo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["recupererPhoto"];
+        put?: never;
+        post: operations["televerserPhoto"];
         delete?: never;
         options?: never;
         head?: never;
@@ -136,6 +280,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/employes/{id}/carte/envoyer-email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["envoyerCarteParEmail"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/employes/{employeId}/teletravail": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["lister_2"];
+        put?: never;
+        post: operations["creer_2"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/departements": {
         parameters: {
             query?: never;
@@ -143,9 +319,9 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["lister_1"];
+        get: operations["lister_3"];
         put?: never;
-        post: operations["creer_1"];
+        post: operations["creer_3"];
         delete?: never;
         options?: never;
         head?: never;
@@ -236,6 +412,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/anomalies/{id}/resoudre": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["marquerResolue"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/users/{id}/deactivate": {
         parameters: {
             query?: never;
@@ -268,6 +460,86 @@ export interface paths {
         head?: never;
         /** Réactivation d'un compte */
         patch: operations["activate"];
+        trace?: never;
+    };
+    "/api/pointages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["lister_4"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pointages/qr-code/{employeId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["qrCodeActif"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pointages/employe/{employeId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listerParEmploye"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/import/historique": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["historique"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/import/historique/{lotId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["detailLot"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/employes/{id}/transferts": {
@@ -314,6 +586,38 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/anomalies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["lister_5"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/employes/{employeId}/teletravail/{planningId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["supprimer"];
         options?: never;
         head?: never;
         patch?: never;
@@ -400,6 +704,24 @@ export interface components {
             /** Format: date-time */
             modifieLe?: string;
         };
+        ApiResponseEmployeDocumentReponse: {
+            success?: boolean;
+            data?: components["schemas"]["EmployeDocumentReponse"];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        EmployeDocumentReponse: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            fichierId?: string;
+            nomOriginal?: string;
+            typeMime?: string;
+            typeDocument?: string;
+            /** Format: date-time */
+            creeLe?: string;
+        };
         DepartementRequete: {
             nom: string;
             /** Format: uuid */
@@ -433,6 +755,136 @@ export interface components {
             nom: string;
             prenom: string;
         };
+        CorrectionPointageRequete: {
+            /** Format: date-time */
+            nouvelHorodatage: string;
+            motif: string;
+        };
+        ApiResponsePointageReponse: {
+            success?: boolean;
+            data?: components["schemas"]["PointageReponse"];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        PointageReponse: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            employeId?: string;
+            /** @enum {string} */
+            typeScan?: "entree" | "sortie";
+            /** Format: date-time */
+            horodatage?: string;
+            corrigeManuellement?: boolean;
+            motifCorrection?: string;
+        };
+        ApiResponseQrCodeReponse: {
+            success?: boolean;
+            data?: components["schemas"]["QrCodeReponse"];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        QrCodeReponse: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            employeId?: string;
+            valeur?: string;
+            actif?: boolean;
+            bloque?: boolean;
+            /** Format: date-time */
+            genereLe?: string;
+        };
+        ScanRequete: {
+            valeurQr: string;
+            /** @enum {string} */
+            typeScan: "entree" | "sortie";
+        };
+        ApiResponseImportApercuReponse: {
+            success?: boolean;
+            data?: components["schemas"]["ImportApercuReponse"];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        ImportApercuReponse: {
+            entetes?: string[];
+            apercuLignes?: string[][];
+            /** Format: int32 */
+            totalLignes?: number;
+            champsCible?: components["schemas"]["ImportChampSpecReponse"][];
+            mappingSuggere?: {
+                [key: string]: number;
+            };
+        };
+        ImportChampSpecReponse: {
+            cle?: string;
+            libelle?: string;
+            requis?: boolean;
+            type?: string;
+        };
+        ApiResponseImportRapportReponse: {
+            success?: boolean;
+            data?: components["schemas"]["ImportRapportReponse"];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        ImportLigneReponse: {
+            /** Format: int32 */
+            numeroLigne?: number;
+            statut?: string;
+            action?: string;
+            donnees?: components["schemas"]["JsonNode"];
+            erreurs?: string[];
+            /** Format: uuid */
+            entiteId?: string;
+        };
+        ImportRapportReponse: {
+            /** Format: uuid */
+            lotId?: string;
+            cible?: string;
+            mode?: string;
+            /** Format: int32 */
+            totalLignes?: number;
+            /** Format: int32 */
+            lignesValides?: number;
+            /** Format: int32 */
+            lignesErreur?: number;
+            lignes?: components["schemas"]["ImportLigneReponse"][];
+        };
+        JsonNode: unknown;
+        HoraireReferenceRequete: {
+            heureDebutMatin: string;
+            heureFinMatin: string;
+            heureDebutApresMidi: string;
+            heureFinApresMidi: string;
+            /** Format: int32 */
+            toleranceMinutes?: number;
+            /** Format: date */
+            dateEffet: string;
+        };
+        ApiResponseHoraireReferenceReponse: {
+            success?: boolean;
+            data?: components["schemas"]["HoraireReferenceReponse"];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        HoraireReferenceReponse: {
+            /** Format: uuid */
+            id?: string;
+            heureDebutMatin?: string;
+            heureFinMatin?: string;
+            heureDebutApresMidi?: string;
+            heureFinApresMidi?: string;
+            /** Format: int32 */
+            toleranceMinutes?: number;
+            /** Format: date */
+            dateEffet?: string;
+        };
         EmployeRequete: {
             nom: string;
             prenom: string;
@@ -458,24 +910,6 @@ export interface components {
             /** Format: date */
             dateEffet: string;
         };
-        ApiResponseEmployeDocumentReponse: {
-            success?: boolean;
-            data?: components["schemas"]["EmployeDocumentReponse"];
-            error?: string;
-            /** Format: date-time */
-            timestamp?: string;
-        };
-        EmployeDocumentReponse: {
-            /** Format: uuid */
-            id?: string;
-            /** Format: uuid */
-            fichierId?: string;
-            nomOriginal?: string;
-            typeMime?: string;
-            typeDocument?: string;
-            /** Format: date-time */
-            creeLe?: string;
-        };
         DesactivationRequete: {
             /** @enum {string} */
             motif: "demission" | "licenciement" | "fin_cdd" | "rupture" | "autre";
@@ -488,6 +922,38 @@ export interface components {
             error?: string;
             /** Format: date-time */
             timestamp?: string;
+        };
+        CarteEmailRequete: {
+            objet: string;
+            corps: string;
+            destinataire?: string;
+        };
+        PlanningTeletravailRequete: {
+            /** Format: date */
+            dateDebut: string;
+            /** Format: date */
+            dateFin?: string;
+            jours: ("lundi" | "mardi" | "mercredi" | "jeudi" | "vendredi" | "samedi" | "dimanche")[];
+        };
+        ApiResponsePlanningTeletravailReponse: {
+            success?: boolean;
+            data?: components["schemas"]["PlanningTeletravailReponse"];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        PlanningTeletravailReponse: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            employeId?: string;
+            /** Format: date */
+            dateDebut?: string;
+            /** Format: date */
+            dateFin?: string;
+            jours?: ("lundi" | "mardi" | "mercredi" | "jeudi" | "vendredi" | "samedi" | "dimanche")[];
+            /** Format: date-time */
+            creeLe?: string;
         };
         ResetPasswordRequest: {
             token: string;
@@ -513,6 +979,26 @@ export interface components {
             /** Format: email */
             email: string;
         };
+        AnomaliePointageReponse: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            employeId?: string;
+            /** Format: date */
+            datePointage?: string;
+            /** @enum {string} */
+            typeAnomalie?: "retard" | "depart_anticipe" | "absence_checkout" | "presence_incomplete";
+            resolue?: boolean;
+            /** Format: date-time */
+            creeLe?: string;
+        };
+        ApiResponseAnomaliePointageReponse: {
+            success?: boolean;
+            data?: components["schemas"]["AnomaliePointageReponse"];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
         ApiResponseListUserResponse: {
             success?: boolean;
             data?: components["schemas"]["UserResponse"][];
@@ -526,6 +1012,68 @@ export interface components {
             /** Format: int32 */
             size?: number;
             sort?: string[];
+        };
+        ApiResponsePagedResponsePointageReponse: {
+            success?: boolean;
+            data?: components["schemas"]["PagedResponsePointageReponse"];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        PagedResponsePointageReponse: {
+            content?: components["schemas"]["PointageReponse"][];
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            size?: number;
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+            last?: boolean;
+        };
+        ApiResponsePagedResponseImportLotReponse: {
+            success?: boolean;
+            data?: components["schemas"]["PagedResponseImportLotReponse"];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        ImportLotReponse: {
+            /** Format: uuid */
+            id?: string;
+            cible?: string;
+            mode?: string;
+            nomFichier?: string;
+            /** Format: int32 */
+            nbLignesTotal?: number;
+            /** Format: int32 */
+            nbLignesValides?: number;
+            /** Format: int32 */
+            nbLignesErreur?: number;
+            /** Format: uuid */
+            executePar?: string;
+            /** Format: date-time */
+            creeLe?: string;
+        };
+        PagedResponseImportLotReponse: {
+            content?: components["schemas"]["ImportLotReponse"][];
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            size?: number;
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+            last?: boolean;
+        };
+        ApiResponseListHoraireReferenceReponse: {
+            success?: boolean;
+            data?: components["schemas"]["HoraireReferenceReponse"][];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
         };
         ApiResponsePagedResponseEmployeReponse: {
             success?: boolean;
@@ -576,12 +1124,38 @@ export interface components {
             /** Format: date-time */
             timestamp?: string;
         };
+        ApiResponseListPlanningTeletravailReponse: {
+            success?: boolean;
+            data?: components["schemas"]["PlanningTeletravailReponse"][];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
         ApiResponseListDepartementReponse: {
             success?: boolean;
             data?: components["schemas"]["DepartementReponse"][];
             error?: string;
             /** Format: date-time */
             timestamp?: string;
+        };
+        ApiResponsePagedResponseAnomaliePointageReponse: {
+            success?: boolean;
+            data?: components["schemas"]["PagedResponseAnomaliePointageReponse"];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        PagedResponseAnomaliePointageReponse: {
+            content?: components["schemas"]["AnomaliePointageReponse"][];
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            size?: number;
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+            last?: boolean;
         };
     };
     responses: never;
@@ -688,6 +1262,59 @@ export interface operations {
             };
         };
     };
+    remplacerDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                documentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** Format: binary */
+                    fichier: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseEmployeDocumentReponse"];
+                };
+            };
+        };
+    };
+    supprimerDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                documentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
     modifier_1: {
         parameters: {
             query?: never;
@@ -780,7 +1407,216 @@ export interface operations {
             };
         };
     };
+    corrigerManuellement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CorrectionPointageRequete"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePointageReponse"];
+                };
+            };
+        };
+    };
+    genererQrCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                employeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseQrCodeReponse"];
+                };
+            };
+        };
+    };
+    scanner: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScanRequete"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePointageReponse"];
+                };
+            };
+        };
+    };
+    previsualiser: {
+        parameters: {
+            query: {
+                cible: "DEPARTEMENTS" | "EMPLOYES" | "SOLDES_CONGES_INITIAUX";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** Format: binary */
+                    fichier: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseImportApercuReponse"];
+                };
+            };
+        };
+    };
+    executer: {
+        parameters: {
+            query: {
+                cible: "DEPARTEMENTS" | "EMPLOYES" | "SOLDES_CONGES_INITIAUX";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** Format: binary */
+                    fichier: string;
+                    mapping: {
+                        [key: string]: number;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseImportRapportReponse"];
+                };
+            };
+        };
+    };
+    analyser: {
+        parameters: {
+            query: {
+                cible: "DEPARTEMENTS" | "EMPLOYES" | "SOLDES_CONGES_INITIAUX";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** Format: binary */
+                    fichier: string;
+                    mapping: {
+                        [key: string]: number;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseImportRapportReponse"];
+                };
+            };
+        };
+    };
     lister: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListHoraireReferenceReponse"];
+                };
+            };
+        };
+    };
+    creer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HoraireReferenceRequete"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseHoraireReferenceReponse"];
+                };
+            };
+        };
+    };
+    lister_1: {
         parameters: {
             query: {
                 departementId?: string;
@@ -807,7 +1643,7 @@ export interface operations {
             };
         };
     };
-    creer: {
+    creer_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -843,6 +1679,57 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["TransfertRequete"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseEmployeReponse"];
+                };
+            };
+        };
+    };
+    recupererPhoto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
+    televerserPhoto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** Format: binary */
+                    photo: string;
+                };
             };
         };
         responses: {
@@ -935,7 +1822,81 @@ export interface operations {
             };
         };
     };
-    lister_1: {
+    envoyerCarteParEmail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CarteEmailRequete"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    lister_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                employeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListPlanningTeletravailReponse"];
+                };
+            };
+        };
+    };
+    creer_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                employeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlanningTeletravailRequete"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePlanningTeletravailReponse"];
+                };
+            };
+        };
+    };
+    lister_3: {
         parameters: {
             query?: never;
             header?: never;
@@ -955,7 +1916,7 @@ export interface operations {
             };
         };
     };
-    creer_1: {
+    creer_3: {
         parameters: {
             query?: never;
             header?: never;
@@ -1095,6 +2056,28 @@ export interface operations {
             };
         };
     };
+    marquerResolue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseAnomaliePointageReponse"];
+                };
+            };
+        };
+    };
     deactivate: {
         parameters: {
             query?: never;
@@ -1135,6 +2118,118 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseUserResponse"];
+                };
+            };
+        };
+    };
+    lister_4: {
+        parameters: {
+            query: {
+                pageable: components["schemas"]["Pageable"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePagedResponsePointageReponse"];
+                };
+            };
+        };
+    };
+    qrCodeActif: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                employeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseQrCodeReponse"];
+                };
+            };
+        };
+    };
+    listerParEmploye: {
+        parameters: {
+            query: {
+                pageable: components["schemas"]["Pageable"];
+            };
+            header?: never;
+            path: {
+                employeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePagedResponsePointageReponse"];
+                };
+            };
+        };
+    };
+    historique: {
+        parameters: {
+            query: {
+                pageable: components["schemas"]["Pageable"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePagedResponseImportLotReponse"];
+                };
+            };
+        };
+    };
+    detailLot: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lotId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseImportRapportReponse"];
                 };
             };
         };
@@ -1200,6 +2295,52 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseUserResponse"];
+                };
+            };
+        };
+    };
+    lister_5: {
+        parameters: {
+            query: {
+                resolue?: boolean;
+                pageable: components["schemas"]["Pageable"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePagedResponseAnomaliePointageReponse"];
+                };
+            };
+        };
+    };
+    supprimer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                employeId: string;
+                planningId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
                 };
             };
         };
