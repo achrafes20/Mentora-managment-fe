@@ -1,4 +1,4 @@
-import { message } from 'antd'
+import { toast } from '@/components/ui/toast'
 import { Camera, CheckCircle2, Keyboard, LogIn, LogOut, XCircle } from 'lucide-react'
 import { useCallback, useState } from 'react'
 import dayjs from 'dayjs'
@@ -23,7 +23,7 @@ export function KiosquePage() {
 
   const executerScan = useCallback(async (valeur: string, typeScan: 'entree' | 'sortie') => {
     if (!valeur.trim()) {
-      void message.warning('Veuillez scanner ou saisir un QR code')
+      void toast.warning('Veuillez scanner ou saisir un QR code')
       return
     }
     setLoading(true)

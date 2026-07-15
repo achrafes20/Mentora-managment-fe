@@ -4,6 +4,7 @@ import { useAuth } from '@/lib/AuthContext'
 import { MOCK_REQUESTS } from '@/lib/mockData'
 import { PageHeader } from '@/components/ui/StatCard'
 import { StatusTag } from '@/components/ui/StatusTag'
+import { MockBanner } from '@/components/ui/MockBanner'
 
 type Tab = 'liste' | 'conge' | 'registre'
 
@@ -21,6 +22,7 @@ export function DemandesPage() {
 
   return (
     <div className="flex-1 overflow-auto p-8">
+      <MockBanner feature="adminRequests" />
       <PageHeader
         title="Demandes administratives"
         subtitle="Congés, bons de sortie et documents"
@@ -94,7 +96,7 @@ export function DemandesPage() {
       {tab === 'conge' && (
         <div className="max-w-lg rounded-xl border border-[#D8D4CC] bg-white p-6">
           <div className="mb-5 rounded-xl border border-[#4A7C6B]/20 bg-[#4A7C6B]/6 p-4 text-center">
-            <p className="text-[10px] font-medium uppercase tracking-wider text-[#9CA3AF]">
+            <p className="text-[10px] font-medium tracking-wider text-[#9CA3AF] uppercase">
               Solde disponible
             </p>
             <p

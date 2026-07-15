@@ -1,7 +1,8 @@
-import { Modal, message } from 'antd'
 import { Calendar, Plus, Trash2 } from 'lucide-react'
 import dayjs from 'dayjs'
 import { useCallback, useEffect, useState } from 'react'
+import { toast } from '@/components/ui/toast'
+import { confirm } from '@/components/ui/confirm'
 import {
   creerPlanningTeletravail,
   listerPlanningsTeletravail,
@@ -53,12 +54,13 @@ export function EmployeTeletravailCard({ employeId, estAdmin }: Props) {
   }, [employeId])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     charger()
   }, [charger])
 
   async function handleCreer() {
     if (!dateDebut || joursChoisis.length === 0) {
-      void message.warning('Date de début et au moins un jour requis')
+      toast.warning('Date de début et au moins un jour requis')
       return
     }
     try {
@@ -67,14 +69,14 @@ export function EmployeTeletravailCard({ employeId, estAdmin }: Props) {
         dateFin: dateFin || undefined,
         jours: joursChoisis,
       })
-      void message.success('Planning créé')
+      toast.success('Planning créé')
       setAjoutVisible(false)
       setDateDebut('')
       setDateFin('')
       setJoursChoisis([])
       charger()
     } catch {
-      void message.error('Erreur lors de la création')
+      toast.error('Erreur lors de la création')
     }
   }
 
@@ -196,18 +198,18 @@ export function EmployeTeletravailCard({ employeId, estAdmin }: Props) {
                 {estAdmin && (
                   <button
                     onClick={() => {
-                      Modal.confirm({
+                      confirm({
                         title: 'Supprimer ce planning ?',
                         okText: 'Supprimer',
                         cancelText: 'Annuler',
-                        okButtonProps: { danger: true },
+                        danger: true,
                         onOk: async () => {
                           try {
                             await supprimerPlanningTeletravail(employeId, p.id)
-                            void message.success('Planning supprimé')
+                            toast.success('Planning supprimé')
                             charger()
                           } catch {
-                            void message.error('Erreur lors de la suppression')
+                            toast.error('Erreur lors de la suppression')
                           }
                         },
                       })

@@ -1,4 +1,5 @@
 import dayjs from 'dayjs'
+import { format } from 'date-fns'
 import {
   AlertTriangle,
   ArrowLeft,
@@ -16,7 +17,7 @@ import {
 } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { message } from 'antd'
+import { toast } from '@/components/ui/toast'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/lib/AuthContext'
 import type { ApiError } from '@/lib/apiClient'
@@ -105,17 +106,19 @@ export function EmployeDetailPage() {
       const res = await listerPointagesEmploye(id, 0, 50)
       setPointages(res.content)
     } catch {
-      message.error('Erreur au chargement des pointages')
+      toast.error('Erreur au chargement des pointages')
     } finally {
       setPointagesLoading(false)
     }
   }, [id])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void chargerQr()
   }, [chargerQr])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (tab === 'presence') void chargerPointages()
   }, [tab, chargerPointages])
 
@@ -156,9 +159,9 @@ export function EmployeDetailPage() {
     setQrLoading(true)
     try {
       setQr(await genererQrCode(id))
-      void message.success('Carte badge régénérée')
+      void toast.success('Carte badge régénérée')
     } catch {
-      void message.error('Erreur lors de la génération')
+      void toast.error('Erreur lors de la génération')
     } finally {
       setQrLoading(false)
     }
@@ -180,10 +183,10 @@ export function EmployeDetailPage() {
         badgeRef.current,
         `carte-${employe.prenom}-${employe.nom}`.replace(/\s+/g, '-').toLowerCase(),
       )
-      void message.success('Carte téléchargée')
+      void toast.success('Carte téléchargée')
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
-      void message.error('Erreur lors du téléchargement: ' + msg)
+      void toast.error('Erreur lors du téléchargement: ' + msg)
     }
   }
 
@@ -200,7 +203,7 @@ export function EmployeDetailPage() {
             transfererMutation
               .mutateAsync(v)
               .then(() => {
-                void message.success('Employé transféré')
+                void toast.success('Employé transféré')
                 setModaleTransfert(false)
                 setErreur(null)
               })
@@ -218,7 +221,7 @@ export function EmployeDetailPage() {
             desactiverMutation
               .mutateAsync(v)
               .then(() => {
-                void message.success('Employé désactivé')
+                void toast.success('Employé désactivé')
                 setModaleDeparture(false)
                 setErreur(null)
               })
@@ -244,10 +247,10 @@ export function EmployeDetailPage() {
               email: values.email || undefined,
               telephone: values.telephone || undefined,
               poste: values.poste || undefined,
-              dateEmbauche: values.dateEmbauche.format('YYYY-MM-DD'),
+              dateEmbauche: format(values.dateEmbauche, 'yyyy-MM-dd'),
               typeContrat: values.typeContrat,
               dateFinContratPrevue: values.dateFinContratPrevue
-                ? values.dateFinContratPrevue.format('YYYY-MM-DD')
+                ? format(values.dateFinContratPrevue, 'yyyy-MM-dd')
                 : undefined,
             })
             .then(async () => {
@@ -256,7 +259,7 @@ export function EmployeDetailPage() {
                 await queryClient.invalidateQueries({ queryKey: CLE_EMPLOYES })
                 await queryClient.invalidateQueries({ queryKey: ['employes', id] })
               }
-              void message.success('Employé modifié')
+              void toast.success('Employé modifié')
               setModaleEdition(false)
               setErreur(null)
             })
@@ -274,10 +277,10 @@ export function EmployeDetailPage() {
             envoyerCarteMutation
               .mutateAsync(payload)
               .then(() => {
-                void message.success('E-mail envoyé')
+                void toast.success('E-mail envoyé')
                 setModaleEmailCarte(false)
               })
-              .catch((err: ApiError) => void message.error(err.message))
+              .catch((err: ApiError) => void toast.error(err.message))
           }}
         />
       )}
@@ -587,7 +590,7 @@ export function EmployeDetailPage() {
                       <button
                         onClick={() => {
                           setCertEnvoye(true)
-                          void message.success('Certificat marqué comme envoyé (mock)')
+                          void toast.success('Certificat marqué comme envoyé (mock)')
                         }}
                         className="flex items-center gap-1.5 rounded-lg bg-[#1B2A41] px-3 py-1.5 text-[11px] font-medium text-white hover:bg-[#243650]"
                       >
@@ -669,9 +672,9 @@ export function EmployeDetailPage() {
                       attacherMutation.mutate(
                         { fichier: f, typeDocument: 'autre' },
                         {
-                          onSuccess: () => void message.success('Document ajouté'),
+                          onSuccess: () => void toast.success('Document ajouté'),
                           onError: (err) =>
-                            void message.error(
+                            void toast.error(
                               (err as unknown as ApiError).message ?? 'Erreur lors de l’upload',
                             ),
                         },
@@ -703,7 +706,7 @@ export function EmployeDetailPage() {
                     <button
                       onClick={() =>
                         ouvrirDocument(id!, doc.id as string).catch(
-                          (err: ApiError) => void message.error(err.message),
+                          (err: ApiError) => void toast.error(err.message),
                         )
                       }
                       className="flex items-center gap-1.5 rounded-lg border border-[#D8D4CC] px-3 py-1.5 text-[11px] text-[#6B7280] transition-colors hover:border-[#1B2A41] hover:text-[#1B2A41]"
@@ -717,9 +720,9 @@ export function EmployeDetailPage() {
                             if (!doc.id) return
                             if (!window.confirm('Supprimer ce document ?')) return
                             supprimerDocMutation.mutate(doc.id as string, {
-                              onSuccess: () => void message.success('Document supprimé'),
+                              onSuccess: () => void toast.success('Document supprimé'),
                               onError: (err) =>
-                                void message.error(
+                                void toast.error(
                                   (err as unknown as ApiError).message ??
                                     'Erreur lors de la suppression',
                                 ),

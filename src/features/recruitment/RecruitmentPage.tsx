@@ -6,6 +6,7 @@ import { MOCK_CANDIDATES } from '@/lib/mockData'
 import { PageHeader } from '@/components/ui/StatCard'
 import { StatusTag } from '@/components/ui/StatusTag'
 import { CornerMark } from '@/components/ui/CornerMark'
+import { MockBanner } from '@/components/ui/MockBanner'
 
 const PIPELINE_STEPS = [
   'Reçu',
@@ -30,6 +31,7 @@ export function RecruitmentPage() {
     const entretiens = MOCK_CANDIDATES.filter((c) => c.etape === 'Entretien')
     return (
       <div className="flex-1 overflow-auto p-8">
+        <MockBanner feature="recruitment" />
         <PageHeader
           title="Entretiens à réaliser"
           subtitle={`${entretiens.length} candidature(s)`}
@@ -57,6 +59,7 @@ export function RecruitmentPage() {
 
   return (
     <div className="flex-1 overflow-auto p-8">
+      <MockBanner feature="recruitment" />
       <PageHeader
         title="Recrutement"
         subtitle="Pipeline des candidatures"

@@ -1,7 +1,7 @@
 import dayjs from 'dayjs'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
-import { message } from 'antd'
+import { toast } from '@/components/ui/toast'
 import { StatusTag } from '@/components/ui/StatusTag'
 import { listerPointages, type PointageReponse } from './api'
 import { listerEmployes } from '../employee/employesApi'
@@ -21,13 +21,14 @@ export function PointagesPage() {
       setData(res.content)
       setTotal(res.totalElements)
     } catch {
-      void message.error('Erreur au chargement des pointages')
+      void toast.error('Erreur au chargement des pointages')
     } finally {
       setLoading(false)
     }
   }, [page])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void charger()
     const chargerEmployes = async () => {
       try {
@@ -74,7 +75,7 @@ export function PointagesPage() {
                   key={p.id}
                   className="border-b border-[#D8D4CC]/50 transition-colors last:border-0 hover:bg-[#F7F7F4]"
                 >
-                  <td className="pl-5 pr-4 py-3.5 text-[13px] text-[#1B2A41]">
+                  <td className="py-3.5 pr-4 pl-5 text-[13px] text-[#1B2A41]">
                     {employes[p.employeId] ?? `${p.employeId.substring(0, 8)}…`}
                   </td>
                   <td className="px-4 py-3.5">
@@ -89,7 +90,7 @@ export function PointagesPage() {
                   >
                     {dayjs(p.horodatage).format('DD/MM/YYYY HH:mm:ss')}
                   </td>
-                  <td className="pr-5 py-3.5">
+                  <td className="py-3.5 pr-5">
                     {p.corrigeManuellement ? (
                       <span className="text-[11px] text-[#C87F3A]" title={p.motifCorrection ?? ''}>
                         Corrigé

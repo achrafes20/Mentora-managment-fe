@@ -4,6 +4,7 @@ import { useAuth } from '@/lib/AuthContext'
 import { DELEGATION_ACTIVE, DEPT_BREAKDOWN, MOCK_REQUESTS } from '@/lib/mockData'
 import { CornerMark } from '@/components/ui/CornerMark'
 import { PageHeader, StatCard } from '@/components/ui/StatCard'
+import { MockBanner } from '@/components/ui/MockBanner'
 import { StatusTag } from '@/components/ui/StatusTag'
 
 function EmployeesActiveCard({ onClick }: { onClick: () => void }) {
@@ -13,12 +14,12 @@ function EmployeesActiveCard({ onClick }: { onClick: () => void }) {
       className="group relative w-full rounded-xl border border-[#D8D4CC] bg-white p-5 text-left transition-all hover:-translate-y-[2px] hover:shadow-md"
     >
       <CornerMark />
-      <p className="mb-3 text-[10px] font-medium uppercase tracking-wider text-[#9CA3AF]">
+      <p className="mb-3 text-[10px] font-medium tracking-wider text-[#9CA3AF] uppercase">
         Employés actifs
       </p>
       <p
         style={{ fontFamily: 'var(--font-display)' }}
-        className="text-[38px] font-semibold leading-none text-[#1B2A41]"
+        className="text-[38px] leading-none font-semibold text-[#1B2A41]"
       >
         47
       </p>
@@ -99,6 +100,7 @@ export function DashboardPage() {
   return (
     <div className="flex-1 overflow-auto">
       <div className="mx-auto max-w-[1200px] p-8">
+        <MockBanner feature="dashboard" />
         {role === 'admin' && (
           <div className="mb-5 flex items-center gap-3 rounded-lg border border-[#D8D4CC] bg-[#D8D4CC]/30 px-4 py-3">
             <UserCheck2 size={14} className="flex-shrink-0 text-[#1B2A41]" />

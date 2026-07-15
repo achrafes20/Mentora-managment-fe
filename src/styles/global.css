@@ -1,10 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
 :root {
   /* Rose Marque — identité de marque uniquement (logo, écran de connexion,
      indicateur d'état actif de la navigation). Jamais un tag de statut,
      jamais une donnée de tableau, jamais un bouton d'action principal —
-     ces usages restent Encre Marine / Sauge / Ambre / Corail (cf. hbTheme). */
+     ces usages restent Encre Marine / Sauge / Ambre / Corail (cf. tokens.ts). */
   --rose-marque: #c92b6a;
   --rose-marque-ui: #a8245a;
 
@@ -23,24 +23,6 @@
   font-family: var(--font-mono);
 }
 
-/* Boutons Ant Design — texte blanc sur fond Encre Marine */
-.ant-btn-primary:not(:disabled):not(.ant-btn-dangerous) {
-  color: #ffffff !important;
-  background-color: #1b2a41 !important;
-  border-color: #1b2a41 !important;
-}
-
-.ant-btn-primary:not(:disabled):not(.ant-btn-dangerous):hover {
-  color: #ffffff !important;
-  background-color: #243650 !important;
-  border-color: #243650 !important;
-}
-
-.ant-btn-primary:not(:disabled) span,
-.ant-btn-primary:not(:disabled) .anticon {
-  color: #ffffff !important;
-}
-
 /* Boutons Tailwind fond Encre Marine — texte blanc */
 button[class*='bg-[#1B2A41]']:not([class*='bg-[#1B2A41]/']),
 a[class*='bg-[#1B2A41]']:not([class*='bg-[#1B2A41]/']) {
@@ -51,11 +33,11 @@ button[class*='bg-[#1B2A41]']:not([class*='bg-[#1B2A41]/']) svg {
   color: #ffffff !important;
 }
 
-/* Modales et formulaires Ant Design */
-.ant-modal .ant-btn-primary:not(:disabled) {
-  color: #ffffff !important;
-}
-
-.ant-modal .ant-btn-primary:not(:disabled) span {
-  color: #ffffff !important;
+/* react-day-picker (DatePicker) — reskin sur la palette HB Développement */
+.rdp-popover {
+  --rdp-accent-color: #1b2a41;
+  --rdp-accent-background-color: #f7f7f4;
+  --rdp-font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  --rdp-day-height: 2rem;
+  --rdp-day-width: 2rem;
 }

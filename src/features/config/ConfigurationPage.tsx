@@ -1,11 +1,13 @@
 import { useNavigate } from 'react-router-dom'
 import { PageHeader } from '@/components/ui/StatCard'
+import { MockBanner } from '@/components/ui/MockBanner'
 
 export function ConfigurationPage() {
   const navigate = useNavigate()
 
   return (
     <div className="flex-1 overflow-auto p-8">
+      <MockBanner feature="config" />
       <PageHeader
         title="Configuration & Paramétrage"
         subtitle="Paramètres système — Admin uniquement"
@@ -116,6 +118,7 @@ export function FeriesPage() {
 
   return (
     <div className="flex-1 overflow-auto p-8">
+      <MockBanner feature="config" />
       <button
         onClick={() => navigate('/configuration')}
         className="mb-4 text-[12px] text-[#6B7280] hover:text-[#1B2A41]"

@@ -1,5 +1,6 @@
-import { Modal } from 'antd'
 import { useState } from 'react'
+import { Dialog } from '@/components/ui/Dialog'
+import { Button } from '@/components/ui/Button'
 import type { Employe } from './employesApi'
 import { corpsEmailCarteDefaut, objetEmailCarteDefaut } from './carteUtils'
 
@@ -17,22 +18,24 @@ export function CarteEmailModal({ open, employe, submitting, onClose, onConfirm 
   const [destinataire, setDestinataire] = useState(employe.email ?? '')
 
   return (
-    <Modal
-      title="Envoyer la carte par e-mail"
+    <Dialog
       open={open}
-      onCancel={onClose}
-      onOk={() =>
-        onConfirm({
-          objet,
-          corps,
-          destinataire: destinataire || undefined,
-        })
-      }
-      okText="Confirmer l'envoi"
-      cancelText="Annuler"
-      confirmLoading={submitting}
-      okButtonProps={{ style: { color: '#fff' } }}
+      onOpenChange={(o) => !o && onClose()}
+      title="Envoyer la carte par e-mail"
       width={560}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>
+            Annuler
+          </Button>
+          <Button
+            loading={submitting}
+            onClick={() => onConfirm({ objet, corps, destinataire: destinataire || undefined })}
+          >
+            Confirmer l'envoi
+          </Button>
+        </>
+      }
     >
       <div className="space-y-4">
         <div>
@@ -68,6 +71,6 @@ export function CarteEmailModal({ open, employe, submitting, onClose, onConfirm 
           />
         </div>
       </div>
-    </Modal>
+    </Dialog>
   )
 }

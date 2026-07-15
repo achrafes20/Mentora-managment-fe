@@ -1,10 +1,12 @@
 import { Download } from 'lucide-react'
 import { MOCK_AUDIT_LOG } from '@/lib/mockData'
 import { PageHeader } from '@/components/ui/StatCard'
+import { MockBanner } from '@/components/ui/MockBanner'
 
 export function AuditPage() {
   return (
     <div className="flex-1 overflow-auto p-8">
+      <MockBanner feature="audit" />
       <PageHeader
         title="Journal d'audit"
         subtitle="Lecture seule — aucune modification possible"

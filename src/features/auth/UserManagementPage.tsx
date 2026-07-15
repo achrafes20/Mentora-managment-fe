@@ -1,9 +1,19 @@
-import { useState } from 'react'
-import { Alert, Button, Form, Input, Modal, Select, Typography, message } from 'antd'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useEffect, useState } from 'react'
+import { Controller, useForm } from 'react-hook-form'
+import { z } from 'zod'
 import { Plus } from 'lucide-react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { PageHeader } from '@/components/ui/StatCard'
 import { StatusTag } from '@/components/ui/StatusTag'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Dialog } from '@/components/ui/Dialog'
+import { FormField } from '@/components/ui/FormField'
+import { Input } from '@/components/ui/Input'
+import { Select } from '@/components/ui/Select'
+import { Button } from '@/components/ui/Button'
+import { Alert } from '@/components/ui/Alert'
+import { toast } from '@/components/ui/toast'
+import { confirm } from '@/components/ui/confirm'
 import {
   type RoleUtilisateur,
   type UserResponse,
@@ -14,35 +24,47 @@ import {
   updateUser,
 } from '@/lib/authApi'
 
-const { Text } = Typography
-const { Option } = Select
-
 const ROLE_LABELS: Record<RoleUtilisateur, string> = {
   admin: 'Admin',
   manager: 'Manager',
 }
 
+const ROLE_OPTIONS = [
+  { value: 'admin', label: 'Admin' },
+  { value: 'manager', label: 'Manager' },
+]
+
 // ---- Formulaire création ----
 
-interface CreateForm {
-  email: string
-  motDePasse: string
-  role: RoleUtilisateur
-  nom: string
-  prenom: string
-}
+const createSchema = z.object({
+  nom: z.string().min(1, 'Obligatoire'),
+  prenom: z.string().min(1, 'Obligatoire'),
+  email: z.string().min(1, 'Obligatoire').email('Format invalide'),
+  role: z.enum(['admin', 'manager'], { required_error: 'Obligatoire' }),
+  motDePasse: z.string().min(1, 'Obligatoire'),
+})
+
+type CreateForm = z.infer<typeof createSchema>
 
 function CreateUserModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const queryClient = useQueryClient()
-  const [form] = Form.useForm<CreateForm>()
   const [apiError, setApiError] = useState<string | null>(null)
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<CreateForm>({
+    resolver: zodResolver(createSchema),
+    defaultValues: { nom: '', prenom: '', email: '', role: 'manager', motDePasse: '' },
+  })
 
   const mutation = useMutation({
     mutationFn: createUser,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['users'] })
-      void message.success('Compte créé avec succès.')
-      form.resetFields()
+      toast.success('Compte créé avec succès.')
+      reset()
       setApiError(null)
       onClose()
     },
@@ -52,122 +74,122 @@ function CreateUserModal({ open, onClose }: { open: boolean; onClose: () => void
   })
 
   function handleClose() {
-    form.resetFields()
+    reset()
     setApiError(null)
     onClose()
   }
 
   return (
-    <Modal
-      title={
-        <Text
-          strong
-          style={{ fontSize: 16, color: '#1B2A41', fontFamily: "'Source Serif 4', serif" }}
-        >
-          Nouveau compte
-        </Text>
-      }
+    <Dialog
       open={open}
-      onCancel={handleClose}
-      footer={null}
+      onOpenChange={(o) => !o && handleClose()}
+      title="Nouveau compte"
       width={480}
-      styles={{ body: { paddingTop: 16 } }}
     >
-      {apiError && (
-        <Alert
-          type="error"
-          message={apiError}
-          style={{ marginBottom: 16, borderRadius: 8 }}
-          showIcon
-        />
-      )}
-      <Form
-        form={form}
-        layout="vertical"
-        requiredMark={false}
-        onFinish={(v) => mutation.mutate(v)}
-        size="middle"
-      >
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
-          <Form.Item name="nom" label="Nom" rules={[{ required: true, message: 'Obligatoire' }]}>
-            <Input id="create-nom" placeholder="Dupont" style={{ borderRadius: 8 }} />
-          </Form.Item>
-          <Form.Item
-            name="prenom"
-            label="Prénom"
-            rules={[{ required: true, message: 'Obligatoire' }]}
-          >
-            <Input id="create-prenom" placeholder="Jean" style={{ borderRadius: 8 }} />
-          </Form.Item>
+      {apiError && <Alert message={apiError} />}
+      <form onSubmit={handleSubmit((v) => mutation.mutate(v))}>
+        <div className="grid grid-cols-2 gap-x-4">
+          <FormField label="Nom" required error={errors.nom?.message} htmlFor="create-nom">
+            <Controller
+              name="nom"
+              control={control}
+              render={({ field }) => <Input id="create-nom" placeholder="Dupont" {...field} />}
+            />
+          </FormField>
+          <FormField label="Prénom" required error={errors.prenom?.message} htmlFor="create-prenom">
+            <Controller
+              name="prenom"
+              control={control}
+              render={({ field }) => <Input id="create-prenom" placeholder="Jean" {...field} />}
+            />
+          </FormField>
         </div>
-        <Form.Item
-          name="email"
+        <FormField
           label="Adresse e-mail"
-          rules={[
-            { required: true, message: 'Obligatoire' },
-            { type: 'email', message: 'Format invalide' },
-          ]}
+          required
+          error={errors.email?.message}
+          htmlFor="create-email"
         >
-          <Input id="create-email" placeholder="jean.dupont@hbdev.ma" style={{ borderRadius: 8 }} />
-        </Form.Item>
-        <Form.Item name="role" label="Rôle" rules={[{ required: true, message: 'Obligatoire' }]}>
-          <Select id="create-role" placeholder="Sélectionner un rôle" style={{ borderRadius: 8 }}>
-            <Option value="admin">Admin</Option>
-            <Option value="manager">Manager</Option>
-          </Select>
-        </Form.Item>
-        <Form.Item
-          name="motDePasse"
-          label="Mot de passe temporaire"
-          extra={
-            <Text style={{ fontSize: 12, color: '#6B7280' }}>
-              10 caractères min. · majuscule · minuscule · chiffre
-            </Text>
-          }
-          rules={[{ required: true, message: 'Obligatoire' }]}
-        >
-          <Input.Password
-            id="create-password"
-            placeholder="••••••••••"
-            style={{ borderRadius: 8 }}
+          <Controller
+            name="email"
+            control={control}
+            render={({ field }) => (
+              <Input id="create-email" placeholder="jean.dupont@hbdev.ma" {...field} />
+            )}
           />
-        </Form.Item>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 8 }}>
-          <Button onClick={handleClose} style={{ borderRadius: 8 }}>
+        </FormField>
+        <FormField label="Rôle" required error={errors.role?.message} htmlFor="create-role">
+          <Controller
+            name="role"
+            control={control}
+            render={({ field }) => (
+              <Select
+                id="create-role"
+                placeholder="Sélectionner un rôle"
+                options={ROLE_OPTIONS}
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+              />
+            )}
+          />
+        </FormField>
+        <FormField
+          label="Mot de passe temporaire"
+          required
+          error={errors.motDePasse?.message}
+          hint="10 caractères min. · majuscule · minuscule · chiffre"
+          htmlFor="create-password"
+        >
+          <Controller
+            name="motDePasse"
+            control={control}
+            render={({ field }) => (
+              <Input id="create-password" type="password" placeholder="••••••••••" {...field} />
+            )}
+          />
+        </FormField>
+        <div className="mt-2 flex justify-end gap-3">
+          <Button type="button" variant="secondary" onClick={handleClose}>
             Annuler
           </Button>
-          <Button
-            type="primary"
-            htmlType="submit"
-            loading={mutation.isPending}
-            style={{ borderRadius: 8, background: '#1B2A41', borderColor: '#1B2A41' }}
-          >
+          <Button type="submit" loading={mutation.isPending}>
             Créer le compte
           </Button>
         </div>
-      </Form>
-    </Modal>
+      </form>
+    </Dialog>
   )
 }
 
 // ---- Formulaire modification ----
 
-interface EditForm {
-  role: RoleUtilisateur
-  nom: string
-  prenom: string
-}
+const editSchema = z.object({
+  nom: z.string().min(1, 'Obligatoire'),
+  prenom: z.string().min(1, 'Obligatoire'),
+  role: z.enum(['admin', 'manager'], { required_error: 'Obligatoire' }),
+})
+
+type EditForm = z.infer<typeof editSchema>
 
 function EditUserModal({ user, onClose }: { user: UserResponse | null; onClose: () => void }) {
   const queryClient = useQueryClient()
-  const [form] = Form.useForm<EditForm>()
   const [apiError, setApiError] = useState<string | null>(null)
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<EditForm>({
+    resolver: zodResolver(editSchema),
+    defaultValues: { nom: '', prenom: '', role: 'manager' },
+  })
 
   const mutation = useMutation({
     mutationFn: (data: EditForm) => updateUser(user!.id, data),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['users'] })
-      void message.success('Compte mis à jour.')
+      toast.success('Compte mis à jour.')
       setApiError(null)
       onClose()
     },
@@ -176,65 +198,55 @@ function EditUserModal({ user, onClose }: { user: UserResponse | null; onClose: 
     },
   })
 
+  useEffect(() => {
+    if (user) reset({ nom: user.nom, prenom: user.prenom, role: user.role })
+  }, [user, reset])
+
   return (
-    <Modal
-      title={
-        <Text
-          strong
-          style={{ fontSize: 16, color: '#1B2A41', fontFamily: "'Source Serif 4', serif" }}
-        >
-          Modifier le compte
-        </Text>
-      }
+    <Dialog
       open={!!user}
-      onCancel={onClose}
-      footer={null}
+      onOpenChange={(o) => !o && onClose()}
+      title="Modifier le compte"
       width={400}
-      styles={{ body: { paddingTop: 16 } }}
-      afterOpenChange={(open) => {
-        if (open && user) {
-          form.setFieldsValue({ role: user.role, nom: user.nom, prenom: user.prenom })
-        }
-      }}
     >
-      {apiError && (
-        <Alert
-          type="error"
-          message={apiError}
-          style={{ marginBottom: 16, borderRadius: 8 }}
-          showIcon
-        />
-      )}
-      <Form form={form} layout="vertical" requiredMark={false} onFinish={(v) => mutation.mutate(v)}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
-          <Form.Item name="nom" label="Nom" rules={[{ required: true }]}>
-            <Input style={{ borderRadius: 8 }} />
-          </Form.Item>
-          <Form.Item name="prenom" label="Prénom" rules={[{ required: true }]}>
-            <Input style={{ borderRadius: 8 }} />
-          </Form.Item>
+      {apiError && <Alert message={apiError} />}
+      <form onSubmit={handleSubmit((v) => mutation.mutate(v))}>
+        <div className="grid grid-cols-2 gap-x-4">
+          <FormField label="Nom" required error={errors.nom?.message}>
+            <Controller name="nom" control={control} render={({ field }) => <Input {...field} />} />
+          </FormField>
+          <FormField label="Prénom" required error={errors.prenom?.message}>
+            <Controller
+              name="prenom"
+              control={control}
+              render={({ field }) => <Input {...field} />}
+            />
+          </FormField>
         </div>
-        <Form.Item name="role" label="Rôle" rules={[{ required: true }]}>
-          <Select style={{ borderRadius: 8 }}>
-            <Option value="admin">Admin</Option>
-            <Option value="manager">Manager</Option>
-          </Select>
-        </Form.Item>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 8 }}>
-          <Button onClick={onClose} style={{ borderRadius: 8 }}>
+        <FormField label="Rôle" required error={errors.role?.message}>
+          <Controller
+            name="role"
+            control={control}
+            render={({ field }) => (
+              <Select
+                options={ROLE_OPTIONS}
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+              />
+            )}
+          />
+        </FormField>
+        <div className="mt-2 flex justify-end gap-3">
+          <Button type="button" variant="secondary" onClick={onClose}>
             Annuler
           </Button>
-          <Button
-            type="primary"
-            htmlType="submit"
-            loading={mutation.isPending}
-            style={{ borderRadius: 8, background: '#1B2A41', borderColor: '#1B2A41' }}
-          >
+          <Button type="submit" loading={mutation.isPending}>
             Enregistrer
           </Button>
         </div>
-      </Form>
-    </Modal>
+      </form>
+    </Dialog>
   )
 }
 
@@ -262,10 +274,10 @@ export function UserManagementPage() {
     mutationFn: deactivateUser,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['users'] })
-      void message.success('Compte désactivé.')
+      toast.success('Compte désactivé.')
     },
     onError: (err: { message?: string }) => {
-      void message.error(err.message ?? 'Erreur lors de la désactivation.')
+      toast.error(err.message ?? 'Erreur lors de la désactivation.')
     },
   })
 
@@ -273,10 +285,10 @@ export function UserManagementPage() {
     mutationFn: activateUser,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['users'] })
-      void message.success('Compte réactivé.')
+      toast.success('Compte réactivé.')
     },
     onError: (err: { message?: string }) => {
-      void message.error(err.message ?? 'Erreur lors de la réactivation.')
+      toast.error(err.message ?? 'Erreur lors de la réactivation.')
     },
   })
 
@@ -327,7 +339,7 @@ export function UserManagementPage() {
                   key={u.id}
                   className="border-b border-[#D8D4CC]/50 transition-colors last:border-0 hover:bg-[#F7F7F4]"
                 >
-                  <td className="pl-5 pr-4 py-3.5 text-[13px] font-medium text-[#1B2A41]">
+                  <td className="py-3.5 pr-4 pl-5 text-[13px] font-medium text-[#1B2A41]">
                     {u.prenom} {u.nom}
                   </td>
                   <td
@@ -356,7 +368,7 @@ export function UserManagementPage() {
                   >
                     {new Date(u.modifieLe).toLocaleDateString('fr-FR')}
                   </td>
-                  <td className="pr-5 py-3.5">
+                  <td className="py-3.5 pr-5">
                     <div className="flex gap-2">
                       <button
                         onClick={() => setEditUser(u)}
@@ -367,13 +379,13 @@ export function UserManagementPage() {
                       {u.statut === 'actif' ? (
                         <button
                           onClick={() => {
-                            Modal.confirm({
+                            confirm({
                               title: 'Désactiver ce compte ?',
                               content: `${u.prenom} ${u.nom} ne pourra plus se connecter.`,
                               okText: 'Désactiver',
                               cancelText: 'Annuler',
-                              okButtonProps: { danger: true },
-                              onOk: () => deactivateMutation.mutate(u.id),
+                              danger: true,
+                              onOk: () => deactivateMutation.mutateAsync(u.id).then(() => {}),
                             })
                           }}
                           className="rounded-lg border border-[#C1495A]/30 px-2.5 py-1 text-[11px] text-[#C1495A] hover:bg-[#C1495A]/8"

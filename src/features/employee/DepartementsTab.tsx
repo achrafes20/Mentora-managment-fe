@@ -1,7 +1,8 @@
-import { Modal, message } from 'antd'
 import { Plus } from 'lucide-react'
 import { useState } from 'react'
 import { StatusTag } from '@/components/ui/StatusTag'
+import { toast } from '@/components/ui/toast'
+import { confirm } from '@/components/ui/confirm'
 import { useAuth } from '../../lib/AuthContext'
 import type { ApiError } from '../../lib/apiClient'
 import type { Departement, DepartementRequete } from './api'
@@ -57,7 +58,7 @@ export function DepartementsTab() {
 
     promesse
       .then(() => {
-        void message.success(departementEnEdition ? 'Département modifié' : 'Département créé')
+        toast.success(departementEnEdition ? 'Département modifié' : 'Département créé')
         fermerModal()
       })
       .catch((err: ApiError) => setErreurFormulaire(err.message))
@@ -112,7 +113,7 @@ export function DepartementsTab() {
                     key={depart.id}
                     className="border-b border-[#D8D4CC]/50 transition-colors last:border-0 hover:bg-[#F7F7F4]"
                   >
-                    <td className="pl-5 pr-4 py-3.5 text-[13px] font-medium text-[#1B2A41]">
+                    <td className="py-3.5 pr-4 pl-5 text-[13px] font-medium text-[#1B2A41]">
                       {depart.nom}
                     </td>
                     <td className="px-4 py-3.5 text-[13px] text-[#6B7280]">
@@ -122,7 +123,7 @@ export function DepartementsTab() {
                       <StatusTag statut={depart.statut === 'actif' ? 'Actif' : 'Inactif'} />
                     </td>
                     {estAdmin && (
-                      <td className="pr-5 py-3.5">
+                      <td className="py-3.5 pr-5">
                         <div className="flex gap-2">
                           <button
                             onClick={() => ouvrirEdition(depart)}
@@ -135,7 +136,7 @@ export function DepartementsTab() {
                               onClick={() =>
                                 depart.id &&
                                 activerMutation.mutate(depart.id, {
-                                  onError: (err) => void message.error(err.message),
+                                  onError: (err) => toast.error(err.message),
                                 })
                               }
                               className="rounded-lg border border-[#4A7C6B]/30 px-2.5 py-1 text-[11px] text-[#4A7C6B] hover:bg-[#4A7C6B]/8"
@@ -145,17 +146,18 @@ export function DepartementsTab() {
                           ) : (
                             <button
                               onClick={() => {
-                                Modal.confirm({
+                                confirm({
                                   title: 'Désactiver ce département ?',
                                   content: 'Bloqué si des employés actifs y sont encore rattachés.',
                                   okText: 'Désactiver',
                                   cancelText: 'Annuler',
-                                  okButtonProps: { danger: true },
-                                  onOk: () =>
-                                    depart.id &&
+                                  danger: true,
+                                  onOk: () => {
+                                    if (!depart.id) return
                                     desactiverMutation.mutate(depart.id, {
-                                      onError: (err) => void message.error(err.message),
-                                    }),
+                                      onError: (err) => toast.error(err.message),
+                                    })
+                                  },
                                 })
                               }}
                               className="rounded-lg border border-[#C1495A]/30 px-2.5 py-1 text-[11px] text-[#C1495A] hover:bg-[#C1495A]/8"

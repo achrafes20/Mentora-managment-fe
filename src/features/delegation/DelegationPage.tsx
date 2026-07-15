@@ -3,6 +3,7 @@ import { Plus } from 'lucide-react'
 import { DELEGATION_ACTIVE } from '@/lib/mockData'
 import { PageHeader } from '@/components/ui/StatCard'
 import { CornerMark } from '@/components/ui/CornerMark'
+import { MockBanner } from '@/components/ui/MockBanner'
 
 export function DelegationPage() {
   const [active, setActive] = useState(true)
@@ -10,6 +11,7 @@ export function DelegationPage() {
 
   return (
     <div className="flex-1 overflow-auto p-8">
+      <MockBanner feature="delegation" />
       <PageHeader
         title="Délégation d'approbation"
         subtitle="Désigner un délégué temporaire"
@@ -28,7 +30,7 @@ export function DelegationPage() {
       {active ? (
         <div className="relative mb-6 max-w-md rounded-xl border border-[#D8D4CC] bg-white p-5">
           <CornerMark />
-          <p className="text-[10px] font-medium uppercase tracking-wider text-[#9CA3AF]">
+          <p className="text-[10px] font-medium tracking-wider text-[#9CA3AF] uppercase">
             Délégation active
           </p>
           <p className="mt-2 text-[16px] font-semibold text-[#1B2A41]">

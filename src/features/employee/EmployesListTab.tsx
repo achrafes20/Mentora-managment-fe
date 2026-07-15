@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { format } from 'date-fns'
 import {
   CheckSquare,
   ChevronRight,
@@ -22,7 +23,7 @@ import { Avatar } from '@/components/ui/Avatar'
 import { PageHeader } from '@/components/ui/StatCard'
 import { StatusTag } from '@/components/ui/StatusTag'
 import { formatStatut } from '@/components/ui/tokens'
-import { message } from 'antd'
+import { toast } from '@/components/ui/toast'
 import { televerserPhotoEmploye } from './employesApi'
 import { useEmployePhotoUrl } from './useEmployePhoto'
 
@@ -66,10 +67,10 @@ export function EmployesListTab() {
         poste: valeurs.poste || undefined,
         departementId: valeurs.departementId,
         managerId: valeurs.managerId || undefined,
-        dateEmbauche: valeurs.dateEmbauche.format('YYYY-MM-DD'),
+        dateEmbauche: format(valeurs.dateEmbauche, 'yyyy-MM-dd'),
         typeContrat: valeurs.typeContrat,
         dateFinContratPrevue: valeurs.dateFinContratPrevue
-          ? valeurs.dateFinContratPrevue.format('YYYY-MM-DD')
+          ? format(valeurs.dateFinContratPrevue, 'yyyy-MM-dd')
           : undefined,
       })
       .then(async (employe) => {
@@ -77,7 +78,7 @@ export function EmployesListTab() {
           await televerserPhotoEmploye(employe.id, photo)
           await queryClient.invalidateQueries({ queryKey: CLE_EMPLOYES })
         }
-        void message.success('Employé créé — carte badge générée.')
+        void toast.success('Employé créé — carte badge générée.')
         setModaleCreation(false)
         setErreur(null)
       })
@@ -128,7 +129,7 @@ export function EmployesListTab() {
                   <Download size={13} /> Exporter
                 </button>
                 {showExport && (
-                  <div className="absolute right-0 top-full z-10 mt-1 w-36 overflow-hidden rounded-lg border border-[#D8D4CC] bg-white shadow-lg">
+                  <div className="absolute top-full right-0 z-10 mt-1 w-36 overflow-hidden rounded-lg border border-[#D8D4CC] bg-white shadow-lg">
                     {['Excel (.xlsx)', 'PDF'].map((fmt) => (
                       <button
                         key={fmt}
@@ -217,7 +218,7 @@ export function EmployesListTab() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-[#D8D4CC] bg-[#F7F7F4]">
-                {selectionMode && <th className="w-8 pl-4 py-3" />}
+                {selectionMode && <th className="w-8 py-3 pl-4" />}
                 {['Matricule', 'Employé', 'Poste', 'Département', 'Contrat', 'Statut', ''].map(
                   (h) => (
                     <th
@@ -237,13 +238,13 @@ export function EmployesListTab() {
                   onClick={() =>
                     selectionMode ? toggleSelect(emp.id!) : navigate(`/employes/${emp.id}`)
                   }
-                  className={`cursor-pointer border-b border-[#D8D4CC]/50 transition-colors last:border-0 hover:bg-[#F7F7F4] group ${
+                  className={`group cursor-pointer border-b border-[#D8D4CC]/50 transition-colors last:border-0 hover:bg-[#F7F7F4] ${
                     selected.has(emp.id!) ? 'bg-[#1B2A41]/4' : ''
                   }`}
                 >
                   {selectionMode && (
                     <td
-                      className="pl-4 py-3.5"
+                      className="py-3.5 pl-4"
                       onClick={(e) => {
                         e.stopPropagation()
                         toggleSelect(emp.id!)
@@ -258,7 +259,7 @@ export function EmployesListTab() {
                   )}
                   <td
                     style={{ fontFamily: 'var(--font-code)' }}
-                    className="pl-5 pr-4 py-3.5 text-[11px] text-[#9CA3AF]"
+                    className="py-3.5 pr-4 pl-5 text-[11px] text-[#9CA3AF]"
                   >
                     {emp.id?.substring(0, 8)}…
                   </td>
@@ -285,7 +286,7 @@ export function EmployesListTab() {
                   <td className="px-4 py-3.5">
                     <StatusTag statut={formatStatut(emp.statut ?? '')} />
                   </td>
-                  <td className="pr-5 py-3.5 text-right">
+                  <td className="py-3.5 pr-5 text-right">
                     <ChevronRight
                       size={14}
                       className="ml-auto text-[#D8D4CC] transition-colors group-hover:text-[#9CA3AF]"

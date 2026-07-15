@@ -1,7 +1,7 @@
 import dayjs from 'dayjs'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
-import { message } from 'antd'
+import { toast } from '@/components/ui/toast'
 import { useAuth } from '@/lib/AuthContext'
 import { StatusTag } from '@/components/ui/StatusTag'
 import { listerAnomalies, resoudreAnomalie, type AnomaliePointageReponse } from './api'
@@ -32,13 +32,14 @@ export function AnomaliesPage() {
       setData(res.content)
       setTotal(res.totalElements)
     } catch {
-      void message.error('Erreur au chargement des anomalies')
+      void toast.error('Erreur au chargement des anomalies')
     } finally {
       setLoading(false)
     }
   }, [page, filtreResolue])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void charger()
     const chargerEmployes = async () => {
       try {
@@ -59,10 +60,10 @@ export function AnomaliesPage() {
   async function handleResoudre(anomalieId: string) {
     try {
       await resoudreAnomalie(anomalieId)
-      void message.success('Anomalie marquée comme résolue')
+      void toast.success('Anomalie marquée comme résolue')
       void charger()
     } catch {
-      void message.error('Erreur lors de la résolution')
+      void toast.error('Erreur lors de la résolution')
     }
   }
 
@@ -119,7 +120,7 @@ export function AnomaliesPage() {
                   key={a.id}
                   className="border-b border-[#D8D4CC]/50 transition-colors last:border-0 hover:bg-[#F7F7F4]"
                 >
-                  <td className="pl-5 pr-4 py-3.5 text-[13px] text-[#1B2A41]">
+                  <td className="py-3.5 pr-4 pl-5 text-[13px] text-[#1B2A41]">
                     {employes[a.employeId] ?? `${a.employeId.substring(0, 8)}…`}
                   </td>
                   <td
@@ -144,7 +145,7 @@ export function AnomaliesPage() {
                     {dayjs(a.creeLe).format('DD/MM/YYYY HH:mm')}
                   </td>
                   {estAdmin && (
-                    <td className="pr-5 py-3.5">
+                    <td className="py-3.5 pr-5">
                       {!a.resolue && (
                         <button
                           onClick={() => void handleResoudre(a.id)}

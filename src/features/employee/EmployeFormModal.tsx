@@ -1,9 +1,14 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Alert, DatePicker, Form as AntForm, Input, Modal, Select } from 'antd'
-import dayjs, { type Dayjs } from 'dayjs'
 import { useEffect, useState } from 'react'
-import { Controller, type FieldError, useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
+import { Dialog } from '@/components/ui/Dialog'
+import { Button } from '@/components/ui/Button'
+import { FormField } from '@/components/ui/FormField'
+import { Input } from '@/components/ui/Input'
+import { Select } from '@/components/ui/Select'
+import { DatePicker } from '@/components/ui/DatePicker'
+import { Alert } from '@/components/ui/Alert'
 import { Avatar } from '@/components/ui/Avatar'
 import { useEmployePhotoUrl } from './useEmployePhoto'
 import type { Departement } from './api'
@@ -11,6 +16,7 @@ import type { Employe } from './employesApi'
 import { libelleManager, type Manager } from './useManagers'
 
 const TYPES_CONTRAT = ['CDI', 'CDD', 'STAGIAIRE', 'STAGIAIRE_REMUNERE'] as const
+const AUCUN_MANAGER = '__aucun__'
 
 const schema = z
   .object({
@@ -21,13 +27,9 @@ const schema = z
     poste: z.string(),
     departementId: z.string().min(1, 'Le département est requis'),
     managerId: z.union([z.string().uuid('UUID manager invalide'), z.literal('')]),
-    dateEmbauche: z.instanceof(dayjs as unknown as new (...args: never[]) => Dayjs, {
-      message: "La date d'embauche est requise",
-    }),
+    dateEmbauche: z.date({ required_error: "La date d'embauche est requise" }),
     typeContrat: z.enum(TYPES_CONTRAT),
-    dateFinContratPrevue: z
-      .instanceof(dayjs as unknown as new (...args: never[]) => Dayjs)
-      .nullable(),
+    dateFinContratPrevue: z.date().nullable(),
   })
   .refine((valeurs) => valeurs.typeContrat === 'CDD' || !valeurs.dateFinContratPrevue, {
     message: "La date de fin de contrat prévue n'est applicable qu'aux CDD",
@@ -82,7 +84,7 @@ export function EmployeFormModal({
       poste: '',
       departementId: '',
       managerId: '',
-      dateEmbauche: dayjs(),
+      dateEmbauche: new Date(),
       typeContrat: 'CDI',
       dateFinContratPrevue: null,
     },
@@ -98,10 +100,10 @@ export function EmployeFormModal({
         poste: employe?.poste ?? '',
         departementId: employe?.departementId ?? '',
         managerId: employe?.managerId ?? '',
-        dateEmbauche: employe?.dateEmbauche ? dayjs(employe.dateEmbauche) : dayjs(),
+        dateEmbauche: employe?.dateEmbauche ? new Date(employe.dateEmbauche) : new Date(),
         typeContrat: (employe?.typeContrat as (typeof TYPES_CONTRAT)[number]) ?? 'CDI',
         dateFinContratPrevue: employe?.dateFinContratPrevue
-          ? dayjs(employe.dateFinContratPrevue)
+          ? new Date(employe.dateFinContratPrevue)
           : null,
       })
       setPhoto(null)
@@ -123,160 +125,142 @@ export function EmployeFormModal({
   }
 
   return (
-    <Modal
-      title={mode === 'creation' ? 'Nouvel employé' : "Modifier l'employé"}
+    <Dialog
       open={open}
-      onCancel={onCancel}
-      onOk={handleSubmit((values) => onSubmit(values, photo))}
-      confirmLoading={submitting}
-      okText={mode === 'creation' ? 'Créer' : 'Enregistrer'}
-      cancelText="Annuler"
-      destroyOnClose
+      onOpenChange={(o) => !o && onCancel()}
+      title={mode === 'creation' ? 'Nouvel employé' : "Modifier l'employé"}
       width={600}
-      okButtonProps={{ style: { color: '#fff' } }}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onCancel}>
+            Annuler
+          </Button>
+          <Button loading={submitting} onClick={handleSubmit((values) => onSubmit(values, photo))}>
+            {mode === 'creation' ? 'Créer' : 'Enregistrer'}
+          </Button>
+        </>
+      }
     >
-      {errorMessage && (
-        <Alert type="error" message={errorMessage} showIcon style={{ marginBottom: 16 }} />
-      )}
-      <AntForm layout="vertical">
-        <AntForm.Item label="Photo (optionnelle)">
-          <div className="flex items-center gap-4">
-            <Avatar
-              prenom={prenomActuel || employe?.prenom || ''}
-              nom={nomActuel || employe?.nom || ''}
-              size="md"
-              photoUrl={apercuPhoto}
+      {errorMessage && <Alert message={errorMessage} />}
+      <FormField label="Photo (optionnelle)">
+        <div className="flex items-center gap-4">
+          <Avatar
+            prenom={prenomActuel || employe?.prenom || ''}
+            nom={nomActuel || employe?.nom || ''}
+            size="md"
+            photoUrl={apercuPhoto}
+          />
+          <label className="cursor-pointer rounded-lg border border-dashed border-[#D8D4CC] px-4 py-2 text-[12px] text-[#6B7280] hover:border-[#1B2A41]">
+            Choisir une photo
+            <input
+              type="file"
+              accept="image/jpeg,image/png"
+              className="hidden"
+              onChange={handlePhotoChange}
             />
-            <label className="cursor-pointer rounded-lg border border-dashed border-[#D8D4CC] px-4 py-2 text-[12px] text-[#6B7280] hover:border-[#1B2A41]">
-              Choisir une photo
-              <input
-                type="file"
-                accept="image/jpeg,image/png"
-                className="hidden"
-                onChange={handlePhotoChange}
-              />
-            </label>
-          </div>
-          <p className="mt-1 text-[11px] text-[#9CA3AF]">JPEG ou PNG, max 10 Mo</p>
-        </AntForm.Item>
-        <AntForm.Item
-          label="Nom"
-          validateStatus={errors.nom ? 'error' : ''}
-          help={errors.nom?.message}
-          required
-        >
-          <Controller name="nom" control={control} render={({ field }) => <Input {...field} />} />
-        </AntForm.Item>
-        <AntForm.Item
-          label="Prénom"
-          validateStatus={errors.prenom ? 'error' : ''}
-          help={errors.prenom?.message}
-          required
-        >
-          <Controller
-            name="prenom"
-            control={control}
-            render={({ field }) => <Input {...field} />}
-          />
-        </AntForm.Item>
-        <AntForm.Item
-          label="E-mail"
-          validateStatus={errors.email ? 'error' : ''}
-          help={errors.email?.message}
-        >
-          <Controller name="email" control={control} render={({ field }) => <Input {...field} />} />
-        </AntForm.Item>
-        <AntForm.Item label="Téléphone">
-          <Controller
-            name="telephone"
-            control={control}
-            render={({ field }) => <Input {...field} />}
-          />
-        </AntForm.Item>
-        <AntForm.Item label="Poste">
-          <Controller name="poste" control={control} render={({ field }) => <Input {...field} />} />
-        </AntForm.Item>
-        {mode === 'creation' && (
-          <>
-            <AntForm.Item
-              label="Département"
-              validateStatus={errors.departementId ? 'error' : ''}
-              help={errors.departementId?.message}
-              required
-            >
-              <Controller
-                name="departementId"
-                control={control}
-                render={({ field }) => (
-                  <Select
-                    {...field}
-                    options={departements.map((d) => ({ label: d.nom, value: d.id }))}
-                  />
-                )}
-              />
-            </AntForm.Item>
-            <AntForm.Item
-              label="Manager rattaché"
-              validateStatus={errors.managerId ? 'error' : ''}
-              help={errors.managerId?.message}
-            >
-              <Controller
-                name="managerId"
-                control={control}
-                render={({ field }) => (
-                  <Select
-                    {...field}
-                    allowClear
-                    placeholder="Aucun (optionnel)"
-                    options={managers.map((m) => ({ label: libelleManager(m), value: m.id }))}
-                  />
-                )}
-              />
-            </AntForm.Item>
-          </>
-        )}
-        <AntForm.Item
-          label="Date d'embauche"
-          validateStatus={errors.dateEmbauche ? 'error' : ''}
-          help={(errors.dateEmbauche as FieldError | undefined)?.message}
-          required
-        >
-          <Controller
-            name="dateEmbauche"
-            control={control}
-            render={({ field }) => (
-              <DatePicker {...field} style={{ width: '100%' }} format="DD/MM/YYYY" />
-            )}
-          />
-        </AntForm.Item>
-        <AntForm.Item label="Type de contrat" required>
-          <Controller
-            name="typeContrat"
-            control={control}
-            render={({ field }) => (
-              <Select {...field} options={TYPES_CONTRAT.map((t) => ({ label: t, value: t }))} />
-            )}
-          />
-        </AntForm.Item>
-        <AntForm.Item
-          label="Date de fin de contrat prévue (CDD uniquement)"
-          validateStatus={errors.dateFinContratPrevue ? 'error' : ''}
-          help={(errors.dateFinContratPrevue as FieldError | undefined)?.message}
-        >
-          <Controller
-            name="dateFinContratPrevue"
-            control={control}
-            render={({ field }) => (
-              <DatePicker
-                {...field}
-                disabled={typeContratActuel !== 'CDD'}
-                style={{ width: '100%' }}
-                format="DD/MM/YYYY"
-              />
-            )}
-          />
-        </AntForm.Item>
-      </AntForm>
-    </Modal>
+          </label>
+        </div>
+        <p className="mt-1 text-[11px] text-[#9CA3AF]">JPEG ou PNG, max 10 Mo</p>
+      </FormField>
+      <FormField label="Nom" required error={errors.nom?.message}>
+        <Controller name="nom" control={control} render={({ field }) => <Input {...field} />} />
+      </FormField>
+      <FormField label="Prénom" required error={errors.prenom?.message}>
+        <Controller name="prenom" control={control} render={({ field }) => <Input {...field} />} />
+      </FormField>
+      <FormField label="E-mail" error={errors.email?.message}>
+        <Controller name="email" control={control} render={({ field }) => <Input {...field} />} />
+      </FormField>
+      <FormField label="Téléphone">
+        <Controller
+          name="telephone"
+          control={control}
+          render={({ field }) => <Input {...field} />}
+        />
+      </FormField>
+      <FormField label="Poste">
+        <Controller name="poste" control={control} render={({ field }) => <Input {...field} />} />
+      </FormField>
+      {mode === 'creation' && (
+        <>
+          <FormField label="Département" required error={errors.departementId?.message}>
+            <Controller
+              name="departementId"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  value={field.value}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  options={departements.map((d) => ({ label: d.nom ?? '', value: d.id ?? '' }))}
+                />
+              )}
+            />
+          </FormField>
+          <FormField label="Manager rattaché" error={errors.managerId?.message}>
+            <Controller
+              name="managerId"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  value={field.value || AUCUN_MANAGER}
+                  onChange={(v) => field.onChange(v === AUCUN_MANAGER ? '' : v)}
+                  onBlur={field.onBlur}
+                  placeholder="Aucun (optionnel)"
+                  options={[
+                    { value: AUCUN_MANAGER, label: 'Aucun (optionnel)' },
+                    ...managers.map((m) => ({ label: libelleManager(m), value: m.id })),
+                  ]}
+                />
+              )}
+            />
+          </FormField>
+        </>
+      )}
+      <FormField label="Date d'embauche" required error={errors.dateEmbauche?.message}>
+        <Controller
+          name="dateEmbauche"
+          control={control}
+          render={({ field }) => (
+            <DatePicker
+              value={field.value}
+              onChange={(d) => field.onChange(d)}
+              onBlur={field.onBlur}
+            />
+          )}
+        />
+      </FormField>
+      <FormField label="Type de contrat" required>
+        <Controller
+          name="typeContrat"
+          control={control}
+          render={({ field }) => (
+            <Select
+              value={field.value}
+              onChange={field.onChange}
+              onBlur={field.onBlur}
+              options={TYPES_CONTRAT.map((t) => ({ label: t, value: t }))}
+            />
+          )}
+        />
+      </FormField>
+      <FormField
+        label="Date de fin de contrat prévue (CDD uniquement)"
+        error={errors.dateFinContratPrevue?.message}
+      >
+        <Controller
+          name="dateFinContratPrevue"
+          control={control}
+          render={({ field }) => (
+            <DatePicker
+              value={field.value}
+              onChange={(d) => field.onChange(d)}
+              onBlur={field.onBlur}
+              disabled={typeContratActuel !== 'CDD'}
+            />
+          )}
+        />
+      </FormField>
+    </Dialog>
   )
 }

@@ -54,7 +54,7 @@ export const router = createBrowserRouter([
       </RequireAuth>
     ),
     children: [
-      { index: true, element: <Navigate to="/tableau-de-bord" replace /> },
+      { index: true, element: <Navigate to="/employes" replace /> },
       { path: 'tableau-de-bord', element: <DashboardPage /> },
       { path: 'employes', element: <EmployesPage /> },
       { path: 'employes/:id', element: <EmployeDetailPage /> },

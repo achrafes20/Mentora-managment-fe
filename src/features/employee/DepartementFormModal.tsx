@@ -1,10 +1,17 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Alert, Form as AntForm, Input, Modal, Select } from 'antd'
 import { useEffect } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
+import { Dialog } from '@/components/ui/Dialog'
+import { Button } from '@/components/ui/Button'
+import { FormField } from '@/components/ui/FormField'
+import { Input } from '@/components/ui/Input'
+import { Select } from '@/components/ui/Select'
+import { Alert } from '@/components/ui/Alert'
 import type { Departement } from './api'
 import { libelleManager, type Manager } from './useManagers'
+
+const AUCUN_MANAGER = '__aucun__'
 
 const schema = z.object({
   nom: z.string().min(1, 'Le nom est requis').max(150, '150 caractères maximum'),
@@ -49,51 +56,47 @@ export function DepartementFormModal({
   }, [open, depart, reset])
 
   return (
-    <Modal
-      title={depart ? 'Modifier le département' : 'Nouveau département'}
+    <Dialog
       open={open}
-      onCancel={onCancel}
-      onOk={handleSubmit(onSubmit)}
-      confirmLoading={submitting}
-      okText={depart ? 'Enregistrer' : 'Créer'}
-      cancelText="Annuler"
-      destroyOnClose
+      onOpenChange={(o) => !o && onCancel()}
+      title={depart ? 'Modifier le département' : 'Nouveau département'}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onCancel}>
+            Annuler
+          </Button>
+          <Button loading={submitting} onClick={handleSubmit(onSubmit)}>
+            {depart ? 'Enregistrer' : 'Créer'}
+          </Button>
+        </>
+      }
     >
-      {errorMessage && (
-        <Alert type="error" message={errorMessage} showIcon style={{ marginBottom: 16 }} />
-      )}
-      <AntForm layout="vertical">
-        <AntForm.Item
-          label="Nom du département"
-          validateStatus={errors.nom ? 'error' : ''}
-          help={errors.nom?.message}
-          required
-        >
-          <Controller
-            name="nom"
-            control={control}
-            render={({ field }) => <Input {...field} placeholder="Ex. Ressources Humaines" />}
-          />
-        </AntForm.Item>
-        <AntForm.Item
-          label="Manager rattaché"
-          validateStatus={errors.managerId ? 'error' : ''}
-          help={errors.managerId?.message}
-        >
-          <Controller
-            name="managerId"
-            control={control}
-            render={({ field }) => (
-              <Select
-                {...field}
-                allowClear
-                placeholder="Aucun (optionnel)"
-                options={managers.map((m) => ({ label: libelleManager(m), value: m.id }))}
-              />
-            )}
-          />
-        </AntForm.Item>
-      </AntForm>
-    </Modal>
+      {errorMessage && <Alert message={errorMessage} />}
+      <FormField label="Nom du département" required error={errors.nom?.message}>
+        <Controller
+          name="nom"
+          control={control}
+          render={({ field }) => <Input {...field} placeholder="Ex. Ressources Humaines" />}
+        />
+      </FormField>
+      <FormField label="Manager rattaché" error={errors.managerId?.message}>
+        <Controller
+          name="managerId"
+          control={control}
+          render={({ field }) => (
+            <Select
+              value={field.value || AUCUN_MANAGER}
+              onChange={(v) => field.onChange(v === AUCUN_MANAGER ? '' : v)}
+              onBlur={field.onBlur}
+              placeholder="Aucun (optionnel)"
+              options={[
+                { value: AUCUN_MANAGER, label: 'Aucun (optionnel)' },
+                ...managers.map((m) => ({ label: libelleManager(m), value: m.id })),
+              ]}
+            />
+          )}
+        />
+      </FormField>
+    </Dialog>
   )
 }

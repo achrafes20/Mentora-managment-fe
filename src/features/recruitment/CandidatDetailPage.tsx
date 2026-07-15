@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { MOCK_CANDIDATES } from '@/lib/mockData'
 import { PageHeader } from '@/components/ui/StatCard'
 import { StatusTag } from '@/components/ui/StatusTag'
+import { MockBanner } from '@/components/ui/MockBanner'
 
 export function CandidatDetailPage() {
   const navigate = useNavigate()
@@ -22,6 +23,7 @@ export function CandidatDetailPage() {
 
   return (
     <div className="flex-1 overflow-auto p-8">
+      <MockBanner feature="recruitment" />
       <button
         onClick={() => navigate('/recrutement')}
         className="mb-4 text-[12px] text-[#6B7280] hover:text-[#1B2A41]"
@@ -36,12 +38,12 @@ export function CandidatDetailPage() {
 
       <div className="grid grid-cols-3 gap-5">
         <div className="rounded-xl border border-[#D8D4CC] bg-white p-5">
-          <p className="text-[10px] font-medium uppercase tracking-wider text-[#9CA3AF]">
+          <p className="text-[10px] font-medium tracking-wider text-[#9CA3AF] uppercase">
             Score IA
           </p>
           <p
             style={{ fontFamily: 'var(--font-display)', color: scoreColor }}
-            className="mt-2 text-[48px] font-semibold leading-none"
+            className="mt-2 text-[48px] leading-none font-semibold"
           >
             {candidate.score ?? '—'}
             {candidate.score !== null && '%'}
@@ -110,6 +112,7 @@ export function OffresPage() {
 
   return (
     <div className="flex-1 overflow-auto p-8">
+      <MockBanner feature="recruitment" />
       <button
         onClick={() => navigate('/recrutement')}
         className="mb-4 text-[12px] text-[#6B7280] hover:text-[#1B2A41]"

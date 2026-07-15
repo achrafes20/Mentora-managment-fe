@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Check, CheckCircle } from 'lucide-react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { resetPassword } from '@/lib/authApi'
@@ -8,16 +8,12 @@ export function ResetPasswordPage() {
   const navigate = useNavigate()
   const token = searchParams.get('token')
   const [success, setSuccess] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(
+    token ? null : 'Lien invalide ou expiré. Demandez une nouvelle réinitialisation.',
+  )
   const [loading, setLoading] = useState(false)
   const [mdp, setMdp] = useState('')
   const [mdp2, setMdp2] = useState('')
-
-  useEffect(() => {
-    if (!token) {
-      setError('Lien invalide ou expiré. Demandez une nouvelle réinitialisation.')
-    }
-  }, [token])
 
   const criteria = [
     { label: '10 caractères minimum', ok: mdp.length >= 10 },

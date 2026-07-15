@@ -10,6 +10,7 @@ export function useEmployePhotoUrl(
 
   useEffect(() => {
     if (!employeId || !photoFichierId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setUrl(null)
       return
     }

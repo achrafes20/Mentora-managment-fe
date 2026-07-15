@@ -1,6 +1,6 @@
 import dayjs from 'dayjs'
 import { useCallback, useEffect, useState } from 'react'
-import { message } from 'antd'
+import { toast } from '@/components/ui/toast'
 import { useAuth } from '@/lib/AuthContext'
 import { creerHoraireReference, listerHorairesReference, type HoraireReferenceReponse } from './api'
 
@@ -23,13 +23,14 @@ export function HorairesReferencePage() {
     try {
       setData(await listerHorairesReference())
     } catch {
-      void message.error('Erreur au chargement')
+      void toast.error('Erreur au chargement')
     } finally {
       setLoading(false)
     }
   }, [])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void charger()
   }, [charger])
 
@@ -45,10 +46,10 @@ export function HorairesReferencePage() {
         toleranceMinutes,
         dateEffet,
       })
-      void message.success('Horaire de référence enregistré')
+      void toast.success('Horaire de référence enregistré')
       void charger()
     } catch {
-      void message.error('Erreur lors de la création')
+      void toast.error('Erreur lors de la création')
     } finally {
       setSubmitting(false)
     }
@@ -152,7 +153,7 @@ export function HorairesReferencePage() {
                   >
                     <td
                       style={{ fontFamily: 'var(--font-code)' }}
-                      className="pl-5 pr-4 py-3.5 text-[13px] text-[#1B2A41]"
+                      className="py-3.5 pr-4 pl-5 text-[13px] text-[#1B2A41]"
                     >
                       {dayjs(h.dateEffet).format('DD/MM/YYYY')}
                     </td>

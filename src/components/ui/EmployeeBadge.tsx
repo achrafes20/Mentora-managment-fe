@@ -105,7 +105,7 @@ export const EmployeeBadge = forwardRef<
     <div className={className} style={{ width: scaledW, height: scaledH, overflow: 'hidden' }}>
       <div
         ref={ref}
-        className="group relative select-none overflow-hidden shadow-2xl transition-transform duration-300 ease-out hover:-translate-y-[3px]"
+        className="group relative overflow-hidden shadow-2xl transition-transform duration-300 ease-out select-none hover:-translate-y-[3px]"
         style={{
           width: BADGE_WIDTH,
           height: BADGE_HEIGHT,
@@ -161,7 +161,7 @@ export const EmployeeBadge = forwardRef<
 
         <OverlayBox zone={ZONES.matricule}>
           <p
-            className="truncate text-center font-bold text-white px-[4%]"
+            className="truncate px-[4%] text-center font-bold text-white"
             style={{
               fontSize: valueFontSize,
               fontWeight: 700,
@@ -176,7 +176,7 @@ export const EmployeeBadge = forwardRef<
 
         <OverlayBox zone={ZONES.departement}>
           <p
-            className="truncate text-center font-bold text-white px-[4%]"
+            className="truncate px-[4%] text-center font-bold text-white"
             style={{
               fontSize: valueFontSize,
               fontWeight: 700,

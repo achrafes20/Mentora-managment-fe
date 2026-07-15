@@ -1,4 +1,5 @@
 import { PageHeader } from '@/components/ui/StatCard'
+import { MockBanner } from '@/components/ui/MockBanner'
 
 const DOCS_A_TRAITER = [
   {
@@ -35,6 +36,7 @@ const JOURNAL = [
 export function DocumentsPage() {
   return (
     <div className="flex-1 overflow-auto p-8">
+      <MockBanner feature="documents" />
       <PageHeader title="Documents RH" subtitle="Certificats et envois de documents" />
 
       <h2 className="mb-3 text-[13px] font-semibold text-[#1B2A41]">

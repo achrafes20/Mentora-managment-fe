@@ -23,12 +23,12 @@ export function StatCard({
       }`}
     >
       <CornerMark />
-      <p className="mb-3 text-[10px] font-medium uppercase tracking-wider text-[#9CA3AF]">
+      <p className="mb-3 text-[10px] font-medium tracking-wider text-[#9CA3AF] uppercase">
         {label}
       </p>
       <p
         style={{ fontFamily: 'var(--font-display)' }}
-        className="text-[38px] font-semibold leading-none text-[#1B2A41]"
+        className="text-[38px] leading-none font-semibold text-[#1B2A41]"
       >
         {value}
       </p>

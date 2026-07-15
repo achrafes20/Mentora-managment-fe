@@ -1,4 +1,5 @@
 import { cn } from '@/lib/cn'
+import { Spinner } from './Spinner'
 
 const base =
   'inline-flex items-center justify-center gap-1.5 rounded-lg px-4 py-2 text-[12px] font-medium transition-colors disabled:opacity-50'
@@ -10,16 +11,31 @@ const variants = {
   success: 'bg-[#4A7C6B] text-white hover:bg-[#3d6a5a]',
 }
 
+const spinnerBorderByVariant: Record<keyof typeof variants, string> = {
+  primary: 'border-white/40 border-t-white',
+  secondary: 'border-[#D8D4CC] border-t-[#1B2A41]',
+  danger: 'border-[#C1495A]/40 border-t-[#C1495A]',
+  success: 'border-white/40 border-t-white',
+}
+
 export function Button({
   variant = 'primary',
+  loading,
+  disabled,
   className,
   children,
   ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: keyof typeof variants
+  loading?: boolean
 }) {
   return (
-    <button className={cn(base, variants[variant], className)} {...props}>
+    <button
+      className={cn(base, variants[variant], className)}
+      disabled={disabled || loading}
+      {...props}
+    >
+      {loading && <Spinner size="small" className={spinnerBorderByVariant[variant]} />}
       {children}
     </button>
   )

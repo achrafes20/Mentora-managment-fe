@@ -1,5 +1,5 @@
 import { Navigate, useLocation } from 'react-router-dom'
-import { Spin } from 'antd'
+import { Spinner } from '@/components/ui/Spinner'
 import { useAuth } from '@/lib/AuthContext'
 import type { RoleUtilisateur } from '@/lib/authApi'
 
@@ -28,7 +28,7 @@ export function RequireAuth({ children, requiredRole }: RequireAuthProps) {
           background: '#F7F7F4',
         }}
       >
-        <Spin size="large" />
+        <Spinner size="large" />
       </div>
     )
   }
@@ -38,7 +38,7 @@ export function RequireAuth({ children, requiredRole }: RequireAuthProps) {
   }
 
   if (requiredRole && role !== requiredRole) {
-    return <Navigate to="/tableau-de-bord" replace />
+    return <Navigate to="/employes" replace />
   }
 
   return <>{children}</>
@@ -61,13 +61,13 @@ export function RedirectIfAuth({ children }: { children: React.ReactNode }) {
           background: '#F7F7F4',
         }}
       >
-        <Spin size="large" />
+        <Spinner size="large" />
       </div>
     )
   }
 
   if (isAuthenticated) {
-    return <Navigate to="/tableau-de-bord" replace />
+    return <Navigate to="/employes" replace />
   }
 
   return <>{children}</>

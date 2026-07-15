@@ -1,11 +1,13 @@
 import { useNotifications } from '@/lib/NotifContext'
 import { PageHeader } from '@/components/ui/StatCard'
+import { MockBanner } from '@/components/ui/MockBanner'
 
 export function NotificationsPage() {
   const { notifications, markAllRead } = useNotifications()
 
   return (
     <div className="flex-1 overflow-auto p-8">
+      <MockBanner feature="notifications" />
       <PageHeader
         title="Notifications"
         subtitle="Centre de notifications in-app"

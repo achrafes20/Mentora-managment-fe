@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Upload } from 'lucide-react'
 import { PageHeader } from '@/components/ui/StatCard'
+import { MockBanner } from '@/components/ui/MockBanner'
 
 export function ImportPage() {
   const navigate = useNavigate()
@@ -16,6 +17,7 @@ export function ImportPage() {
       >
         ← Retour aux employés
       </button>
+      <MockBanner feature="import" />
       <PageHeader title="Import Excel/CSV" subtitle="Migration de données en masse" />
 
       {!uploaded ? (
