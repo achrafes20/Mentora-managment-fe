@@ -11,7 +11,11 @@ import {
   listerEmployes,
   modifierEmploye,
   obtenirEmploye,
+  televerserPhotoEmploye,
   transfererEmploye,
+  supprimerDocumentEmploye,
+  remplacerDocumentEmploye,
+  envoyerCarteParEmail,
   type TransfertRequete,
   type DesactivationRequete,
 } from './employesApi'
@@ -97,5 +101,40 @@ export function useAttacherDocument(id: string) {
     mutationFn: ({ fichier, typeDocument }: { fichier: File; typeDocument: string }) =>
       attacherDocumentEmploye(id, fichier, typeDocument),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: [...cleDetail(id), 'documents'] }),
+  })
+}
+
+export function useTeleverserPhoto(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (photo: File) => televerserPhotoEmploye(id, photo),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: CLE_EMPLOYES })
+      queryClient.invalidateQueries({ queryKey: cleDetail(id) })
+    },
+  })
+}
+
+export function useSupprimerDocument(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (documentId: string) => supprimerDocumentEmploye(id, documentId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: [...cleDetail(id), 'documents'] }),
+  })
+}
+
+export function useRemplacerDocument(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ documentId, fichier }: { documentId: string; fichier: File }) =>
+      remplacerDocumentEmploye(id, documentId, fichier),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: [...cleDetail(id), 'documents'] }),
+  })
+}
+
+export function useEnvoyerCarteEmail(id: string) {
+  return useMutation({
+    mutationFn: (payload: { objet: string; corps: string; destinataire?: string }) =>
+      envoyerCarteParEmail(id, payload),
   })
 }

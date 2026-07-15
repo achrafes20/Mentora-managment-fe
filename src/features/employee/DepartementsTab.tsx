@@ -1,5 +1,8 @@
-import { Alert, Button, Popconfirm, Space, Table, Tag, Typography, message } from 'antd'
+import { Plus } from 'lucide-react'
 import { useState } from 'react'
+import { StatusTag } from '@/components/ui/StatusTag'
+import { toast } from '@/components/ui/toast'
+import { confirm } from '@/components/ui/confirm'
 import { useAuth } from '../../lib/AuthContext'
 import type { ApiError } from '../../lib/apiClient'
 import type { Departement, DepartementRequete } from './api'
@@ -55,105 +58,124 @@ export function DepartementsTab() {
 
     promesse
       .then(() => {
-        void message.success(departementEnEdition ? 'Département modifié' : 'Département créé')
+        toast.success(departementEnEdition ? 'Département modifié' : 'Département créé')
         fermerModal()
       })
       .catch((err: ApiError) => setErreurFormulaire(err.message))
   }
 
-  const colonnes = [
-    { title: 'Nom', dataIndex: 'nom', key: 'nom' },
-    {
-      title: 'Manager',
-      dataIndex: 'managerId',
-      key: 'managerId',
-      render: (managerId?: string) => {
-        const manager = managers?.find((m) => m.id === managerId)
-        return manager ? libelleManager(manager) : '—'
-      },
-    },
-    {
-      title: 'Statut',
-      dataIndex: 'statut',
-      key: 'statut',
-      render: (statut: string) => (
-        <Tag color={statut === 'actif' ? 'green' : 'default'}>{statut}</Tag>
-      ),
-    },
-    ...(estAdmin
-      ? [
-          {
-            title: 'Actions',
-            key: 'actions',
-            render: (_: unknown, depart: Departement) => (
-              <Space>
-                <Button size="small" onClick={() => ouvrirEdition(depart)}>
-                  Modifier
-                </Button>
-                {depart.statut === 'inactif' ? (
-                  <Button
-                    size="small"
-                    onClick={() =>
-                      depart.id &&
-                      activerMutation.mutate(depart.id, {
-                        onError: (err) => void message.error(err.message),
-                      })
-                    }
-                  >
-                    Activer
-                  </Button>
-                ) : (
-                  <Popconfirm
-                    title="Désactiver ce département ?"
-                    description="Bloqué si des employés actifs y sont encore rattachés."
-                    okText="Désactiver"
-                    cancelText="Annuler"
-                    onConfirm={() =>
-                      depart.id &&
-                      desactiverMutation.mutate(depart.id, {
-                        onError: (err) => void message.error(err.message),
-                      })
-                    }
-                  >
-                    <Button size="small" danger>
-                      Désactiver
-                    </Button>
-                  </Popconfirm>
-                )}
-              </Space>
-            ),
-          },
-        ]
-      : []),
-  ]
-
   return (
     <div>
-      <Space style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
-        <Typography.Text type="secondary">
-          {departements?.length ?? 0} département(s)
-        </Typography.Text>
+      <div className="mb-4 flex items-center justify-between">
+        <p className="text-[13px] text-[#6B7280]">
+          {departements?.length ?? 0} département{(departements?.length ?? 0) !== 1 ? 's' : ''}
+        </p>
         {estAdmin && (
-          <Button type="primary" onClick={ouvrirCreation}>
-            + Nouveau département
-          </Button>
+          <button
+            onClick={ouvrirCreation}
+            className="flex items-center gap-1.5 rounded-lg bg-[#1B2A41] px-4 py-2 text-[12px] font-medium text-white transition-colors hover:bg-[#243650]"
+          >
+            <Plus size={13} /> Nouveau département
+          </button>
         )}
-      </Space>
+      </div>
+
       {error && (
-        <Alert
-          type="error"
-          message="Impossible de charger les départements"
-          showIcon
-          style={{ marginBottom: 16 }}
-        />
+        <div className="mb-4 rounded-lg border border-[#C1495A]/20 bg-[#C1495A]/8 p-3 text-[13px] text-[#C1495A]">
+          Impossible de charger les départements
+        </div>
       )}
-      <Table
-        rowKey="id"
-        loading={isLoading}
-        dataSource={departements}
-        columns={colonnes}
-        pagination={{ pageSize: 10 }}
-      />
+
+      <div className="overflow-hidden rounded-xl border border-[#D8D4CC] bg-white">
+        {isLoading ? (
+          <p className="p-8 text-center text-[13px] text-[#9CA3AF]">Chargement…</p>
+        ) : (departements?.length ?? 0) === 0 ? (
+          <p className="p-8 text-center text-[13px] text-[#9CA3AF]">Aucun département.</p>
+        ) : (
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-[#D8D4CC] bg-[#F7F7F4]">
+                {['Nom', 'Manager', 'Statut', ...(estAdmin ? ['Actions'] : [])].map((h) => (
+                  <th
+                    key={h}
+                    className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider text-[#9CA3AF] uppercase first:pl-5 last:pr-5"
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {departements!.map((depart) => {
+                const manager = managers?.find((m) => m.id === depart.managerId)
+                return (
+                  <tr
+                    key={depart.id}
+                    className="border-b border-[#D8D4CC]/50 transition-colors last:border-0 hover:bg-[#F7F7F4]"
+                  >
+                    <td className="py-3.5 pr-4 pl-5 text-[13px] font-medium text-[#1B2A41]">
+                      {depart.nom}
+                    </td>
+                    <td className="px-4 py-3.5 text-[13px] text-[#6B7280]">
+                      {manager ? libelleManager(manager) : '—'}
+                    </td>
+                    <td className="px-4 py-3.5">
+                      <StatusTag statut={depart.statut === 'actif' ? 'Actif' : 'Inactif'} />
+                    </td>
+                    {estAdmin && (
+                      <td className="py-3.5 pr-5">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => ouvrirEdition(depart)}
+                            className="rounded-lg border border-[#D8D4CC] px-2.5 py-1 text-[11px] text-[#1B2A41] hover:border-[#1B2A41]"
+                          >
+                            Modifier
+                          </button>
+                          {depart.statut === 'inactif' ? (
+                            <button
+                              onClick={() =>
+                                depart.id &&
+                                activerMutation.mutate(depart.id, {
+                                  onError: (err) => toast.error(err.message),
+                                })
+                              }
+                              className="rounded-lg border border-[#4A7C6B]/30 px-2.5 py-1 text-[11px] text-[#4A7C6B] hover:bg-[#4A7C6B]/8"
+                            >
+                              Activer
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                confirm({
+                                  title: 'Désactiver ce département ?',
+                                  content: 'Bloqué si des employés actifs y sont encore rattachés.',
+                                  okText: 'Désactiver',
+                                  cancelText: 'Annuler',
+                                  danger: true,
+                                  onOk: () => {
+                                    if (!depart.id) return
+                                    desactiverMutation.mutate(depart.id, {
+                                      onError: (err) => toast.error(err.message),
+                                    })
+                                  },
+                                })
+                              }}
+                              className="rounded-lg border border-[#C1495A]/30 px-2.5 py-1 text-[11px] text-[#C1495A] hover:bg-[#C1495A]/8"
+                            >
+                              Désactiver
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
+
       <DepartementFormModal
         open={modalOuvert}
         depart={departementEnEdition}

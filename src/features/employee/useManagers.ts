@@ -17,5 +17,5 @@ export function useManagers() {
 }
 
 export function libelleManager(manager: Manager): string {
-  return `${manager.prenom} ${manager.nom} (${manager.email})`
+  return `${manager.prenom} ${manager.nom}`
 }

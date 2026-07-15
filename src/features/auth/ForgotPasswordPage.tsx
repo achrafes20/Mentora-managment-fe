@@ -1,30 +1,20 @@
 import { useState } from 'react'
-import { Alert, Button, Form, Input, Typography } from 'antd'
-import { ArrowLeftOutlined, MailOutlined } from '@ant-design/icons'
+import { CheckCircle } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { forgotPassword } from '@/lib/authApi'
-
-const { Title, Text, Paragraph } = Typography
-
-interface ForgotForm {
-  email: string
-}
-
-/**
- * EF-AUTH-06 — Demande de réinitialisation de mot de passe.
- * Spec : docs/ui-design/design-system-specs.md §1.1
- */
+import { HBLogo } from '@/components/ui/HBLogo'
 export function ForgotPasswordPage() {
   const [sent, setSent] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [form] = Form.useForm<ForgotForm>()
+  const [email, setEmail] = useState('')
 
-  async function handleSubmit(values: ForgotForm) {
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
     setError(null)
     setLoading(true)
     try {
-      await forgotPassword(values.email)
+      await forgotPassword(email)
       setSent(true)
     } catch {
       setError('Une erreur est survenue. Réessayez dans un instant.')
@@ -34,142 +24,76 @@ export function ForgotPasswordPage() {
   }
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        background: '#F7F7F4',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '24px',
-      }}
-    >
-      <div
-        style={{
-          width: '100%',
-          maxWidth: 400,
-          background: '#ffffff',
-          borderRadius: 12,
-          padding: '48px 40px 40px',
-          boxShadow: '0 1px 4px rgba(27,42,65,0.08), 0 4px 20px rgba(27,42,65,0.06)',
-          border: '1px solid #D8D4CC',
-        }}
-      >
-        {/* En-tête */}
-        <div style={{ marginBottom: 32 }}>
-          <Title
-            level={4}
-            style={{
-              margin: '0 0 8px',
-              color: '#1B2A41',
-              fontFamily: "'Source Serif 4', Georgia, serif",
-              fontWeight: 600,
-            }}
+    <div className="flex min-h-screen items-center justify-center bg-[#F7F7F4]">
+      <div className="w-full max-w-[340px]">
+        <div className="mb-9 text-center">
+          <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-xl bg-[#1B2A41] shadow-md">
+            <HBLogo size={30} />
+          </div>
+          <h1
+            style={{ fontFamily: 'var(--font-display)' }}
+            className="text-[22px] font-semibold text-[#1B2A41]"
           >
-            Réinitialiser le mot de passe
-          </Title>
-          <Text style={{ color: '#6B7280', fontSize: 14 }}>
-            Saisissez votre adresse e-mail. Si un compte correspond, vous recevrez un lien de
-            réinitialisation.
-          </Text>
+            Réinitialisation
+          </h1>
+          <p className="mt-1 text-[13px] text-[#9CA3AF]">Saisissez votre identifiant ou e-mail</p>
         </div>
 
-        {/* Confirmation après envoi */}
-        {sent ? (
-          <div>
-            <Alert
-              type="success"
-              style={{ borderRadius: 8, marginBottom: 24 }}
-              message="Si un compte correspond à ces informations, un e-mail a été envoyé."
-              showIcon
-            />
-            <Paragraph style={{ color: '#6B7280', fontSize: 13, marginBottom: 24 }}>
-              Vérifiez votre boîte de réception et cliquez sur le lien reçu. Il est valable 1 heure.
-            </Paragraph>
-            <Link to="/login">
-              <Button
-                icon={<ArrowLeftOutlined />}
-                style={{ borderRadius: 8, borderColor: '#D8D4CC', color: '#1B2A41' }}
-              >
-                Retour à la connexion
-              </Button>
-            </Link>
-          </div>
-        ) : (
-          <>
-            {error && (
-              <Alert
-                type="error"
-                style={{ marginBottom: 20, borderRadius: 8 }}
-                message={error}
-                showIcon
-              />
-            )}
-            <Form
-              form={form}
-              layout="vertical"
-              onFinish={handleSubmit}
-              requiredMark={false}
-              size="large"
-            >
-              <Form.Item
-                name="email"
-                label={
-                  <Text strong style={{ color: '#1B2A41', fontSize: 14 }}>
-                    Identifiant ou e-mail
-                  </Text>
-                }
-                rules={[
-                  { required: true, message: "L'adresse e-mail est obligatoire" },
-                  { type: 'email', message: "Format d'e-mail invalide" },
-                ]}
-              >
-                <Input
-                  id="forgot-email"
-                  prefix={<MailOutlined style={{ color: '#D8D4CC' }} />}
-                  placeholder="admin@hbdev.ma"
-                  autoComplete="email"
-                  style={{ borderRadius: 8, borderColor: '#D8D4CC' }}
-                />
-              </Form.Item>
-
-              <Form.Item style={{ marginTop: 8, marginBottom: 16 }}>
-                <Button
-                  id="forgot-submit"
-                  type="primary"
-                  htmlType="submit"
-                  loading={loading}
-                  block
-                  style={{
-                    height: 44,
-                    borderRadius: 8,
-                    background: '#1B2A41',
-                    borderColor: '#1B2A41',
-                    fontFamily: "'IBM Plex Sans', system-ui, sans-serif",
-                    fontSize: 15,
-                    fontWeight: 500,
-                  }}
-                >
-                  Envoyer le lien de réinitialisation
-                </Button>
-              </Form.Item>
-            </Form>
-
-            <div style={{ textAlign: 'center' }}>
+        <div className="rounded-xl border border-[#D8D4CC] bg-white p-7">
+          {sent ? (
+            <div className="space-y-3 text-center">
+              <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-[#4A7C6B]/10">
+                <CheckCircle size={20} className="text-[#4A7C6B]" />
+              </div>
+              <p className="text-[13px] font-medium text-[#1B2A41]">E-mail envoyé</p>
+              <p className="text-[12px] leading-relaxed text-[#6B7280]">
+                Si un compte correspond à ces informations, un e-mail a été envoyé.
+              </p>
               <Link
                 to="/login"
-                style={{
-                  color: '#4A7C6B',
-                  fontSize: 14,
-                  fontFamily: "'IBM Plex Sans', system-ui, sans-serif",
-                }}
+                className="mt-2 inline-block text-[12px] text-[#4A7C6B] underline underline-offset-2"
               >
-                <ArrowLeftOutlined style={{ marginRight: 4 }} />
-                Retour à la connexion
+                ← Retour à la connexion
               </Link>
             </div>
-          </>
-        )}
+          ) : (
+            <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
+              {error && (
+                <p className="rounded-lg border border-[#C1495A]/20 bg-[#C1495A]/8 p-3 text-[12px] text-[#C1495A]">
+                  {error}
+                </p>
+              )}
+              <div>
+                <label className="text-[12px] font-medium text-[#1B2A41]">
+                  Identifiant ou e-mail
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  required
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="admin@hbdev.ma"
+                  className="mt-1.5 w-full rounded-lg border border-[#D8D4CC] bg-[#F7F7F4] px-3 py-2.5 text-[13px] transition-colors focus:border-[#1B2A41] focus:outline-none"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={loading || !email}
+                className="w-full rounded-lg bg-[#1B2A41] py-2.5 text-[13px] font-medium text-white transition-colors hover:bg-[#243650] disabled:opacity-50"
+              >
+                {loading ? 'Envoi…' : 'Envoyer le lien de réinitialisation'}
+              </button>
+              <div className="text-center">
+                <Link
+                  to="/login"
+                  className="text-[12px] text-[#6B7280] underline underline-offset-2 hover:text-[#1B2A41]"
+                >
+                  ← Retour
+                </Link>
+              </div>
+            </form>
+          )}
+        </div>
       </div>
     </div>
   )

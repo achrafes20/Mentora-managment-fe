@@ -4,7 +4,7 @@
   /* Rose Marque — identité de marque uniquement (logo, écran de connexion,
      indicateur d'état actif de la navigation). Jamais un tag de statut,
      jamais une donnée de tableau, jamais un bouton d'action principal —
-     ces usages restent Encre Marine / Sauge / Ambre / Corail (cf. hbTheme). */
+     ces usages restent Encre Marine / Sauge / Ambre / Corail (cf. tokens.ts). */
   --rose-marque: #c92b6a;
   --rose-marque-ui: #a8245a;
 
@@ -21,4 +21,23 @@
 
 .font-mono {
   font-family: var(--font-mono);
+}
+
+/* Boutons Tailwind fond Encre Marine — texte blanc */
+button[class*='bg-[#1B2A41]']:not([class*='bg-[#1B2A41]/']),
+a[class*='bg-[#1B2A41]']:not([class*='bg-[#1B2A41]/']) {
+  color: #ffffff !important;
+}
+
+button[class*='bg-[#1B2A41]']:not([class*='bg-[#1B2A41]/']) svg {
+  color: #ffffff !important;
+}
+
+/* react-day-picker (DatePicker) — reskin sur la palette HB Développement */
+.rdp-popover {
+  --rdp-accent-color: #1b2a41;
+  --rdp-accent-background-color: #f7f7f4;
+  --rdp-font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  --rdp-day-height: 2rem;
+  --rdp-day-width: 2rem;
 }

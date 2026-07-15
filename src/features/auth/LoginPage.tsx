@@ -1,21 +1,10 @@
 import { useState } from 'react'
-import { Alert, Button, Form, Input, Typography } from 'antd'
-import { LockOutlined, UserOutlined } from '@ant-design/icons'
+import { AlertTriangle, Lock } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/lib/AuthContext'
+import { HBLogo } from '@/components/ui/HBLogo'
+import { ROSE_MARQUE } from '@/components/ui/tokens'
 
-const { Title, Text } = Typography
-
-interface LoginForm {
-  email: string
-  motDePasse: string
-}
-
-/**
- * EF-AUTH-01 — Page de connexion.
- * Design : fond Blanc Papier, formulaire centré, sobre et institutionnel.
- * Spec : docs/ui-design/auth-screen.md §1
- */
 export function LoginPage() {
   const { signIn } = useAuth()
   const navigate = useNavigate()
@@ -23,187 +12,128 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [locked, setLocked] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [form] = Form.useForm<LoginForm>()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
 
-  const from = (location.state as { from?: { pathname: string } })?.from?.pathname ?? '/'
+  const from =
+    (location.state as { from?: { pathname: string } })?.from?.pathname ?? '/tableau-de-bord'
 
-  async function handleSubmit(values: LoginForm) {
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
     setError(null)
     setLocked(false)
     setLoading(true)
     try {
-      await signIn(values.email, values.motDePasse)
+      await signIn(email, password)
       navigate(from, { replace: true })
     } catch (err: unknown) {
       const msg = (err as { message?: string })?.message ?? 'Identifiant ou mot de passe incorrect.'
       if (msg.toLowerCase().includes('verrouillé')) {
         setLocked(true)
+      } else {
+        setError(msg)
       }
-      setError(msg)
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        background: '#F7F7F4',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '24px',
-      }}
-    >
-      <div
-        style={{
-          width: '100%',
-          maxWidth: 400,
-          background: '#ffffff',
-          borderRadius: 12,
-          padding: '48px 40px 40px',
-          boxShadow: '0 1px 4px rgba(27,42,65,0.08), 0 4px 20px rgba(27,42,65,0.06)',
-          border: '1px solid #D8D4CC',
-        }}
-      >
-        {/* Logo / Marque */}
-        <div style={{ textAlign: 'center', marginBottom: 40 }}>
-          <div
-            style={{
-              display: 'inline-block',
-              marginBottom: 8,
-              borderBottom: '3px solid #C92B6A',
-              paddingBottom: 12,
-            }}
-          >
-            <Title
-              level={3}
-              style={{
-                margin: 0,
-                color: '#1B2A41',
-                fontFamily: "'Source Serif 4', Georgia, serif",
-                fontWeight: 600,
-                letterSpacing: '-0.01em',
-              }}
+    <div className="flex min-h-screen items-center justify-center bg-[#F7F7F4]">
+      <div className="w-full max-w-[340px]">
+        <div className="mb-9 text-center">
+          <div className="relative inline-flex flex-col items-center">
+            <div
+              className="mb-1 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#1B2A41] shadow-lg"
+              style={{ boxShadow: `0 0 0 1px ${ROSE_MARQUE}22, 0 8px 24px ${ROSE_MARQUE}18` }}
             >
-              HB Développement
-            </Title>
+              <HBLogo size={38} />
+            </div>
+            <div
+              className="mb-4 h-[2px] w-8 rounded-full"
+              style={{ backgroundColor: ROSE_MARQUE, opacity: 0.6 }}
+            />
           </div>
-          <Text
-            style={{
-              display: 'block',
-              color: '#6B7280',
-              fontSize: 13,
-              fontFamily: "'IBM Plex Sans', system-ui, sans-serif",
-              marginTop: 4,
-            }}
+          <h1
+            style={{ fontFamily: 'var(--font-display)' }}
+            className="text-[22px] font-semibold text-[#1B2A41]"
           >
-            Plateforme de gestion RH — Mentora
-          </Text>
+            HB Développement
+          </h1>
+          <p className="mt-1 text-[13px] text-[#9CA3AF]">Espace RH — Accès réservé</p>
         </div>
 
-        {/* Message verrouillage (EF-AUTH-03) */}
-        {locked && (
-          <Alert
-            type="error"
-            style={{ marginBottom: 20, borderRadius: 8 }}
-            message="Compte temporairement verrouillé suite à plusieurs tentatives échouées. Réessayez dans quelques minutes, ou contactez un administrateur."
-            showIcon
-          />
-        )}
-
-        {/* Erreur standard */}
-        {error && !locked && (
-          <Alert
-            type="error"
-            style={{ marginBottom: 20, borderRadius: 8 }}
-            message={error}
-            showIcon
-          />
-        )}
-
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSubmit}
-          requiredMark={false}
-          size="large"
-        >
-          <Form.Item
-            name="email"
-            label={
-              <Text strong style={{ color: '#1B2A41', fontSize: 14 }}>
-                Identifiant (e-mail)
-              </Text>
-            }
-            rules={[
-              { required: true, message: "L'adresse e-mail est obligatoire" },
-              { type: 'email', message: "Format d'e-mail invalide" },
-            ]}
+        {locked ? (
+          <div className="rounded-xl border border-[#D8D4CC] bg-white p-7">
+            <div className="flex flex-col items-center gap-3 text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#C1495A]/8">
+                <Lock size={20} className="text-[#C1495A]" />
+              </div>
+              <p className="text-[14px] font-semibold text-[#C1495A]">
+                Compte temporairement verrouillé
+              </p>
+              <p className="text-[12px] leading-relaxed text-[#C1495A]/80">
+                Suite à plusieurs tentatives échouées. Réessayez dans quelques minutes, ou contactez
+                un administrateur.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <form
+            onSubmit={(e) => void handleSubmit(e)}
+            className="space-y-5 rounded-xl border border-[#D8D4CC] bg-white p-7"
           >
-            <Input
-              id="login-email"
-              prefix={<UserOutlined style={{ color: '#D8D4CC' }} />}
-              placeholder="admin@hbdev.ma"
-              autoComplete="email"
-              style={{ borderRadius: 8, borderColor: '#D8D4CC' }}
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="motDePasse"
-            label={
-              <Text strong style={{ color: '#1B2A41', fontSize: 14 }}>
-                Mot de passe
-              </Text>
-            }
-            rules={[{ required: true, message: 'Le mot de passe est obligatoire' }]}
-          >
-            <Input.Password
-              id="login-password"
-              prefix={<LockOutlined style={{ color: '#D8D4CC' }} />}
-              placeholder="••••••••••"
-              autoComplete="current-password"
-              style={{ borderRadius: 8, borderColor: '#D8D4CC' }}
-            />
-          </Form.Item>
-
-          <Form.Item style={{ marginTop: 8, marginBottom: 16 }}>
-            <Button
-              id="login-submit"
-              type="primary"
-              htmlType="submit"
-              loading={loading}
-              block
-              style={{
-                height: 44,
-                borderRadius: 8,
-                background: '#1B2A41',
-                borderColor: '#1B2A41',
-                fontFamily: "'IBM Plex Sans', system-ui, sans-serif",
-                fontSize: 15,
-                fontWeight: 500,
-              }}
+            <div>
+              <label className="text-[12px] font-medium text-[#1B2A41]">Identifiant (e-mail)</label>
+              <input
+                type="email"
+                value={email}
+                autoComplete="email"
+                onChange={(e) => {
+                  setEmail(e.target.value)
+                  setError(null)
+                }}
+                placeholder="admin@hbdev.ma"
+                className="mt-1.5 w-full rounded-lg border border-[#D8D4CC] bg-[#F7F7F4] px-3 py-2.5 text-[13px] text-[#1B2A41] transition-colors focus:border-[#1B2A41] focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="text-[12px] font-medium text-[#1B2A41]">Mot de passe</label>
+              <input
+                type="password"
+                value={password}
+                autoComplete="current-password"
+                onChange={(e) => {
+                  setPassword(e.target.value)
+                  setError(null)
+                }}
+                placeholder="••••••••"
+                className="mt-1.5 w-full rounded-lg border border-[#D8D4CC] bg-[#F7F7F4] px-3 py-2.5 text-[13px] text-[#1B2A41] transition-colors focus:border-[#1B2A41] focus:outline-none"
+              />
+            </div>
+            {error && (
+              <div className="flex items-start gap-2 rounded-lg border border-[#C1495A]/20 bg-[#C1495A]/8 p-3">
+                <AlertTriangle size={13} className="mt-0.5 flex-shrink-0 text-[#C1495A]" />
+                <p className="text-[12px] text-[#C1495A]">{error}</p>
+              </div>
+            )}
+            <button
+              type="submit"
+              disabled={loading || !email || !password}
+              className="w-full rounded-lg bg-[#1B2A41] py-2.5 text-[13px] font-medium text-white transition-colors hover:bg-[#243650] disabled:opacity-50"
             >
-              Se connecter
-            </Button>
-          </Form.Item>
-        </Form>
-
-        {/* Lien mot de passe oublié (EF-AUTH-06) */}
-        <div style={{ textAlign: 'center' }}>
-          <Link
-            to="/mot-de-passe-oublie"
-            style={{
-              color: '#4A7C6B',
-              fontSize: 14,
-              fontFamily: "'IBM Plex Sans', system-ui, sans-serif",
-            }}
-          >
-            Mot de passe oublié ?
-          </Link>
-        </div>
+              {loading ? 'Connexion…' : 'Se connecter'}
+            </button>
+            <div className="text-center">
+              <Link
+                to="/mot-de-passe-oublie"
+                className="text-[12px] text-[#6B7280] underline underline-offset-2 transition-colors hover:text-[#1B2A41]"
+              >
+                Mot de passe oublié ?
+              </Link>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   )

@@ -1,81 +1,35 @@
-import { useEffect, useState } from 'react'
-import { Alert, Button, Form, Input, Typography } from 'antd'
-import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons'
+import { useState } from 'react'
+import { Check, CheckCircle } from 'lucide-react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { resetPassword } from '@/lib/authApi'
-
-const { Title, Text } = Typography
-
-interface ResetForm {
-  nouveauMotDePasse: string
-  confirmation: string
-}
-
-/** Critères de politique de mot de passe (NFR-SEC-08) */
-function PasswordCriteria({ password }: { password: string }) {
-  const criteria = [
-    { label: '10 caractères minimum', ok: password.length >= 10 },
-    { label: 'Une majuscule', ok: /[A-Z]/.test(password) },
-    { label: 'Une minuscule', ok: /[a-z]/.test(password) },
-    { label: 'Un chiffre', ok: /[0-9]/.test(password) },
-  ]
-
-  return (
-    <div style={{ marginTop: 8, marginBottom: 16 }}>
-      {criteria.map(({ label, ok }) => (
-        <div
-          key={label}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            marginBottom: 4,
-            fontSize: 13,
-            color: ok ? '#4A7C6B' : '#6B7280',
-          }}
-        >
-          {ok ? (
-            <CheckCircleOutlined style={{ color: '#4A7C6B' }} />
-          ) : (
-            <CloseCircleOutlined style={{ color: '#D8D4CC' }} />
-          )}
-          {label}
-        </div>
-      ))}
-    </div>
-  )
-}
-
-/**
- * EF-AUTH-07/08 — Réinitialisation effective du mot de passe.
- * Accessible via le lien e-mail : /reinitialiser-mot-de-passe?token=XXX
- * Spec : docs/ui-design/design-system-specs.md §1.2
- */
+import { HBLogo } from '@/components/ui/HBLogo'
 export function ResetPasswordPage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const token = searchParams.get('token')
   const [success, setSuccess] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(
+    token ? null : 'Lien invalide ou expiré. Demandez une nouvelle réinitialisation.',
+  )
   const [loading, setLoading] = useState(false)
-  const [password, setPassword] = useState('')
-  const [form] = Form.useForm<ResetForm>()
+  const [mdp, setMdp] = useState('')
+  const [mdp2, setMdp2] = useState('')
 
-  useEffect(() => {
-    if (!token) {
-      setTimeout(
-        () => setError('Lien invalide ou expiré. Demandez une nouvelle réinitialisation.'),
-        0,
-      )
-    }
-  }, [token])
+  const criteria = [
+    { label: '10 caractères minimum', ok: mdp.length >= 10 },
+    { label: 'Au moins une majuscule', ok: /[A-Z]/.test(mdp) },
+    { label: 'Au moins une minuscule', ok: /[a-z]/.test(mdp) },
+    { label: 'Au moins un chiffre', ok: /\d/.test(mdp) },
+  ]
+  const allOk = criteria.every((c) => c.ok) && mdp === mdp2
 
-  async function handleSubmit(values: ResetForm) {
-    if (!token) return
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!token || !allOk) return
     setError(null)
     setLoading(true)
     try {
-      await resetPassword(token, values.nouveauMotDePasse)
+      await resetPassword(token, mdp)
       setSuccess(true)
     } catch (err: unknown) {
       setError(
@@ -88,161 +42,116 @@ export function ResetPasswordPage() {
   }
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        background: '#F7F7F4',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '24px',
-      }}
-    >
-      <div
-        style={{
-          width: '100%',
-          maxWidth: 420,
-          background: '#ffffff',
-          borderRadius: 12,
-          padding: '48px 40px 40px',
-          boxShadow: '0 1px 4px rgba(27,42,65,0.08), 0 4px 20px rgba(27,42,65,0.06)',
-          border: '1px solid #D8D4CC',
-        }}
-      >
-        <Title
-          level={4}
-          style={{
-            margin: '0 0 8px',
-            color: '#1B2A41',
-            fontFamily: "'Source Serif 4', Georgia, serif",
-            fontWeight: 600,
-          }}
-        >
-          Nouveau mot de passe
-        </Title>
-        <Text style={{ color: '#6B7280', fontSize: 14, display: 'block', marginBottom: 32 }}>
-          Choisissez un mot de passe sécurisé pour votre compte.
-        </Text>
-
-        {success ? (
-          <div>
-            <Alert
-              type="success"
-              style={{ borderRadius: 8, marginBottom: 24 }}
-              message="Mot de passe réinitialisé avec succès. Vous pouvez maintenant vous connecter."
-              showIcon
-            />
-            <Button
-              type="primary"
-              block
-              onClick={() => navigate('/login')}
-              style={{
-                height: 44,
-                borderRadius: 8,
-                background: '#1B2A41',
-                borderColor: '#1B2A41',
-              }}
-            >
-              Se connecter
-            </Button>
+    <div className="flex min-h-screen items-center justify-center bg-[#F7F7F4]">
+      <div className="w-full max-w-[360px]">
+        <div className="mb-9 text-center">
+          <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-xl bg-[#1B2A41] shadow-md">
+            <HBLogo size={30} />
           </div>
-        ) : (
-          <>
-            {error && (
-              <Alert
-                type="error"
-                style={{ marginBottom: 20, borderRadius: 8 }}
-                message={error}
-                showIcon
-              />
-            )}
-            {!token ? null : (
-              <Form
-                form={form}
-                layout="vertical"
-                onFinish={handleSubmit}
-                requiredMark={false}
-                size="large"
+          <h1
+            style={{ fontFamily: 'var(--font-display)' }}
+            className="text-[22px] font-semibold text-[#1B2A41]"
+          >
+            Nouveau mot de passe
+          </h1>
+        </div>
+
+        <div className="rounded-xl border border-[#D8D4CC] bg-white p-7">
+          {success ? (
+            <div className="space-y-3 text-center">
+              <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-[#4A7C6B]/10">
+                <CheckCircle size={20} className="text-[#4A7C6B]" />
+              </div>
+              <p className="text-[13px] font-medium text-[#1B2A41]">Mot de passe réinitialisé</p>
+              <button
+                onClick={() => navigate('/login')}
+                className="text-[12px] text-[#4A7C6B] underline underline-offset-2"
               >
-                <Form.Item
-                  name="nouveauMotDePasse"
-                  label={
-                    <Text strong style={{ color: '#1B2A41', fontSize: 14 }}>
-                      Nouveau mot de passe
-                    </Text>
-                  }
-                  rules={[{ required: true, message: 'Le mot de passe est obligatoire' }]}
-                >
-                  <Input.Password
-                    id="reset-password"
-                    placeholder="••••••••••"
-                    autoComplete="new-password"
-                    style={{ borderRadius: 8, borderColor: '#D8D4CC' }}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                </Form.Item>
-
-                {/* Critères visuels en temps réel */}
-                <PasswordCriteria password={password} />
-
-                <Form.Item
-                  name="confirmation"
-                  label={
-                    <Text strong style={{ color: '#1B2A41', fontSize: 14 }}>
-                      Confirmer le mot de passe
-                    </Text>
-                  }
-                  dependencies={['nouveauMotDePasse']}
-                  rules={[
-                    { required: true, message: 'La confirmation est obligatoire' },
-                    ({ getFieldValue }) => ({
-                      validator(_, value) {
-                        if (!value || getFieldValue('nouveauMotDePasse') === value) {
-                          return Promise.resolve()
-                        }
-                        return Promise.reject(new Error('Les mots de passe ne correspondent pas.'))
-                      },
-                    }),
-                  ]}
-                >
-                  <Input.Password
-                    id="reset-confirm"
-                    placeholder="••••••••••"
-                    autoComplete="new-password"
-                    style={{ borderRadius: 8, borderColor: '#D8D4CC' }}
-                  />
-                </Form.Item>
-
-                <Form.Item style={{ marginTop: 8, marginBottom: 16 }}>
-                  <Button
-                    id="reset-submit"
-                    type="primary"
-                    htmlType="submit"
-                    loading={loading}
-                    block
-                    style={{
-                      height: 44,
-                      borderRadius: 8,
-                      background: '#1B2A41',
-                      borderColor: '#1B2A41',
-                      fontFamily: "'IBM Plex Sans', system-ui, sans-serif",
-                      fontSize: 15,
-                      fontWeight: 500,
-                    }}
-                  >
-                    Réinitialiser
-                  </Button>
-                </Form.Item>
-              </Form>
-            )}
-
-            <div style={{ textAlign: 'center' }}>
-              <Link to="/mot-de-passe-oublie" style={{ color: '#4A7C6B', fontSize: 13 }}>
-                Demander un nouveau lien
-              </Link>
+                Se connecter →
+              </button>
             </div>
-          </>
-        )}
+          ) : (
+            <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
+              {error && (
+                <p className="rounded-lg border border-[#C1495A]/20 bg-[#C1495A]/8 p-3 text-[12px] text-[#C1495A]">
+                  {error}
+                </p>
+              )}
+              {token && (
+                <>
+                  <div>
+                    <label className="text-[12px] font-medium text-[#1B2A41]">
+                      Nouveau mot de passe
+                    </label>
+                    <input
+                      type="password"
+                      value={mdp}
+                      onChange={(e) => setMdp(e.target.value)}
+                      placeholder="••••••••"
+                      className="mt-1.5 w-full rounded-lg border border-[#D8D4CC] bg-[#F7F7F4] px-3 py-2.5 text-[13px] transition-colors focus:border-[#1B2A41] focus:outline-none"
+                    />
+                  </div>
+                  <div className="space-y-1.5 py-1">
+                    {criteria.map((c) => (
+                      <div key={c.label} className="flex items-center gap-2">
+                        <div
+                          className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full transition-colors ${
+                            c.ok ? 'bg-[#4A7C6B]' : 'bg-[#D8D4CC]'
+                          }`}
+                        >
+                          <Check size={10} className="text-white" strokeWidth={3} />
+                        </div>
+                        <span
+                          className={`text-[11px] transition-colors ${
+                            c.ok ? 'text-[#4A7C6B]' : 'text-[#9CA3AF]'
+                          }`}
+                        >
+                          {c.label}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <div>
+                    <label className="text-[12px] font-medium text-[#1B2A41]">
+                      Confirmer le mot de passe
+                    </label>
+                    <input
+                      type="password"
+                      value={mdp2}
+                      onChange={(e) => setMdp2(e.target.value)}
+                      placeholder="••••••••"
+                      className={`mt-1.5 w-full rounded-lg border bg-[#F7F7F4] px-3 py-2.5 text-[13px] transition-colors focus:outline-none ${
+                        mdp2 && mdp !== mdp2
+                          ? 'border-[#C1495A] focus:border-[#C1495A]'
+                          : 'border-[#D8D4CC] focus:border-[#1B2A41]'
+                      }`}
+                    />
+                    {mdp2 && mdp !== mdp2 && (
+                      <p className="mt-1 text-[11px] text-[#C1495A]">
+                        Les mots de passe ne correspondent pas.
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={loading || !allOk}
+                    className="w-full rounded-lg bg-[#1B2A41] py-2.5 text-[13px] font-medium text-white transition-colors hover:bg-[#243650] disabled:opacity-40"
+                  >
+                    {loading ? 'Réinitialisation…' : 'Réinitialiser'}
+                  </button>
+                </>
+              )}
+              <div className="text-center">
+                <Link
+                  to="/mot-de-passe-oublie"
+                  className="text-[12px] text-[#4A7C6B] hover:underline"
+                >
+                  Demander un nouveau lien
+                </Link>
+              </div>
+            </form>
+          )}
+        </div>
       </div>
     </div>
   )

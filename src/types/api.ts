@@ -393,6 +393,8 @@ export interface components {
             dateDepart?: string;
             motifDepart?: string;
             statut?: string;
+            /** Format: uuid */
+            photoFichierId?: string;
             /** Format: date-time */
             creeLe?: string;
             /** Format: date-time */
