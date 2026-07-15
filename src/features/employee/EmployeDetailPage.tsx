@@ -93,7 +93,14 @@ export function EmployeDetailPage() {
   const chargerQr = useCallback(async () => {
     if (!id) return
     try {
-      setQr(await qrCodeActif(id))
+      const actif = await qrCodeActif(id)
+      // EF-ATT-01 : un QR doit exister dès la création de la fiche employé. Si aucun n'est
+      // encore actif (fiche créée avant que cet écran ne le génère, ou jamais généré), on le
+      // crée automatiquement ici plutôt que d'exiger un clic manuel sur "Régénérer la carte"
+      // (qui reste disponible pour une vraie rotation, ex. badge perdu). `genererQrCode` est
+      // Admin uniquement côté backend — un Manager qui consulte une fiche sans QR verra juste
+      // rester vide, sans erreur visible (comportement inchangé pour lui).
+      setQr(actif ?? (await genererQrCode(id)))
     } catch {
       setQr(null)
     }

@@ -1,5 +1,4 @@
 import { toPng } from 'html-to-image'
-import { BADGE_HEIGHT, BADGE_WIDTH } from '@/components/ui/EmployeeBadge'
 
 /**
  * html-to-image utilise SVG <foreignObject> sous le capot.
@@ -26,36 +25,50 @@ async function inlineBlobImages(element: HTMLElement): Promise<void> {
   }
 }
 
+/**
+ * `cloneNode(true)` copie l'attribut `src` mais pas l'état de chargement de l'image — un <img>
+ * fraîchement cloné n'est pas garanti "decoded" au moment où html-to-image capture le DOM.
+ */
+async function attendreChargementImages(element: HTMLElement): Promise<void> {
+  const images = Array.from(element.querySelectorAll('img'))
+  await Promise.all(
+    images.map(async (img) => {
+      try {
+        await img.decode()
+      } catch {
+        // Image cassée ou navigateur sans support de decode() — on continue quand même.
+      }
+    }),
+  )
+}
+
 export async function telechargerCarteEmploye(
   element: HTMLElement,
   nomFichier: string,
 ): Promise<void> {
-  // Créer un clone hors écran pour ne pas perturber l'interface utilisateur
+  // Cloner puis insérer comme frère du nœud réel (même contexte d'ancêtres React/CSS) plutôt que
+  // de rattacher directement à document.body. Vérifié en session (2026-07-15) : un nœud rattaché
+  // directement à document.body — même repositionné hors-écran, même sans aucune classe Tailwind,
+  // même un simple <div> trivial — capture systématiquement vide (seul le `backgroundColor` de
+  // secours de toPng, aucun contenu) dans cet environnement. Rester dans l'arbre réel de l'appli
+  // (ici : juste à côté du badge visible) suffit à corriger le problème.
   const clone = element.cloneNode(true) as HTMLElement
+  clone.style.transform = 'none' // annule l'échelle de la miniature affichée à l'écran
 
-  // Appliquer les dimensions complètes et annuler l'échelle de la miniature
-  clone.style.transform = 'none'
-  clone.style.position = 'fixed'
-  clone.style.left = '-9999px'
-  clone.style.top = '0'
-  clone.style.width = `${BADGE_WIDTH}px`
-  clone.style.height = `${BADGE_HEIGHT}px`
-
-  // Il est impératif d'attacher le clone au DOM pour que html-to-image puisse calculer ses styles
-  document.body.appendChild(clone)
+  const wrapper = document.createElement('div')
+  wrapper.style.width = '0'
+  wrapper.style.height = '0'
+  wrapper.style.overflow = 'hidden'
+  wrapper.appendChild(clone)
+  element.parentElement?.appendChild(wrapper)
 
   try {
-    // 1. Convertir les blobs en base64 sur le clone pour que html-to-image ne crashe pas (erreur [object Event])
     await inlineBlobImages(clone)
-
-    // Petite pause pour s'assurer que le clone est bien rendu par le navigateur
-    await new Promise((resolve) => setTimeout(resolve, 100))
+    await attendreChargementImages(clone)
 
     const dataUrl = await toPng(clone, {
       backgroundColor: '#071C34',
       pixelRatio: 2,
-      width: BADGE_WIDTH,
-      height: BADGE_HEIGHT,
       cacheBust: true,
       skipFonts: false,
     })
@@ -70,10 +83,7 @@ export async function telechargerCarteEmploye(
     console.error('Erreur toPng', err)
     throw err
   } finally {
-    // Nettoyer le clone
-    if (clone.parentNode) {
-      document.body.removeChild(clone)
-    }
+    wrapper.remove()
   }
 }
 

@@ -26,19 +26,36 @@ function templateSrc(typeContrat?: string | null): string {
 }
 
 /**
- * Zones calées sur les templates (dimensions réelles 1536×1024),
- * mesurées par détection des bordures dorées du template.
- * Exprimées en % du conteneur 1050×650 (object-fill étire indépendamment
- * X et Y donc les % restent valides même si l'aspect ratio diffère).
+ * Zones calées sur les templates (dimensions réelles 1536×1024), mesurées par détection
+ * pixel-par-pixel des bordures dorées du template (script ponctuel, pas commité — cf. session du
+ * 2026-07-15). Exprimées en % du conteneur 1050×650 (object-fill étire indépendamment X et Y donc
+ * les % restent valides même si l'aspect ratio diffère). Les valeurs précédentes de nom/poste/
+ * matricule/departement avaient été mesurées à la main et étaient décalées de 2 à 3 points par
+ * rapport aux boîtes réellement imprimées sur le template (texte qui déborde de son encadré doré).
  */
 const ZONES = {
-  nom: { left: '5.66%', top: '36.7%', width: '40.56%', height: '9.08%' },
-  poste: { left: '5.66%', top: '51.28%', width: '40.56%', height: '8.98%' },
-  matricule: { left: '16.2%', top: '70.41%', width: '13.35%', height: '5.66%' },
-  departement: { left: '40%', top: '70.41%', width: '13.61%', height: '5.66%' },
+  nom: { left: '5.66%', top: '34.38%', width: '40.63%', height: '8.89%' },
+  poste: { left: '5.66%', top: '49.41%', width: '40.63%', height: '8.79%' },
+  matricule: { left: '15.30%', top: '70.51%', width: '14.97%', height: '5.96%' },
+  departement: { left: '42.90%', top: '70.51%', width: '15.04%', height: '5.96%' },
   photo: { left: '73.2%', top: '6.97%', width: '21%', height: '41.30%' },
   qr: { left: '73.70%', top: '51.86%', width: '20.25%', height: '29.10%' },
 } as const
+
+/**
+ * Réduit la taille de police si le texte risque de déborder de sa boîte imprimée (ex. un long nom
+ * de département) plutôt que de le laisser tronquer en ellipse sans prévenir. Heuristique de
+ * largeur moyenne de caractère (police grasse) — approximative mais suffisante pour ce cas d'usage
+ * borné (badge imprimable, pas un layout arbitraire).
+ */
+function fitFontSize(text: string, boxWidthPx: number, baseFontSize: number): number {
+  const CHAR_WIDTH_FACTOR = 0.58
+  const MIN_FONT_SIZE = baseFontSize * 0.62
+  const usableWidth = boxWidthPx * 0.92
+  const estimatedWidth = text.length * CHAR_WIDTH_FACTOR * baseFontSize
+  if (estimatedWidth <= usableWidth || text.length === 0) return baseFontSize
+  return Math.max(MIN_FONT_SIZE, usableWidth / (text.length * CHAR_WIDTH_FACTOR))
+}
 
 function titleCase(value: string): string {
   if (!value || value === '—') return '—'
@@ -97,6 +114,10 @@ export const EmployeeBadge = forwardRef<
 
   const matriculeBoxHeightPx = BADGE_HEIGHT * (parseFloat(ZONES.matricule.height) / 100)
   const departementBoxHeightPx = BADGE_HEIGHT * (parseFloat(ZONES.departement.height) / 100)
+  const matriculeBoxWidthPx = BADGE_WIDTH * (parseFloat(ZONES.matricule.width) / 100)
+  const departementBoxWidthPx = BADGE_WIDTH * (parseFloat(ZONES.departement.width) / 100)
+  const matriculeFontSize = fitFontSize(matricule, matriculeBoxWidthPx, valueFontSize)
+  const departementFontSize = fitFontSize(departement, departementBoxWidthPx, valueFontSize)
 
   const scaledW = BADGE_WIDTH * scale
   const scaledH = BADGE_HEIGHT * scale
@@ -163,7 +184,7 @@ export const EmployeeBadge = forwardRef<
           <p
             className="truncate px-[4%] text-center font-bold text-white"
             style={{
-              fontSize: valueFontSize,
+              fontSize: matriculeFontSize,
               fontWeight: 700,
               lineHeight: `${matriculeBoxHeightPx}px`,
               height: '100%',
@@ -178,7 +199,7 @@ export const EmployeeBadge = forwardRef<
           <p
             className="truncate px-[4%] text-center font-bold text-white"
             style={{
-              fontSize: valueFontSize,
+              fontSize: departementFontSize,
               fontWeight: 700,
               lineHeight: `${departementBoxHeightPx}px`,
               height: '100%',

@@ -14,7 +14,17 @@ export const COLORS = {
 
 export type TagVariant = 'success' | 'warning' | 'danger' | 'neutral'
 
-const SUCCESS_SET = new Set(['Actif', 'actif', 'Approuvé', 'Embauché', "À l'heure"])
+const SUCCESS_SET = new Set([
+  'Actif',
+  'actif',
+  'Approuvé',
+  'Embauché',
+  "À l'heure",
+  'Valide',
+  'Créée',
+  'Mise à jour',
+  'Réel',
+])
 const WARNING_SET = new Set([
   'En attente',
   'À envoyer',
@@ -27,8 +37,11 @@ const WARNING_SET = new Set([
   'Entretien',
   'Décision',
   'Archivée',
+  'Avertissement',
+  'Aucun changement',
+  'Simulation',
 ])
-const DANGER_SET = new Set(['Rejeté', 'Inactif', 'inactif', 'Rejeté'])
+const DANGER_SET = new Set(['Rejeté', 'Inactif', 'inactif', 'Erreur'])
 
 export function tagVariant(statut: string): TagVariant {
   if (SUCCESS_SET.has(statut)) return 'success'
@@ -52,6 +65,16 @@ export function formatStatut(statut: string): string {
     CDD: 'CDD',
     STAGIAIRE: 'Stage',
     STAGIAIRE_REMUNERE: 'Stage rémunéré',
+    // EF-EMP-07 — import : statut/action de ligne, mode de lot.
+    VALIDE: 'Valide',
+    AVERTISSEMENT: 'Avertissement',
+    ERREUR: 'Erreur',
+    CREATION: 'Créée',
+    MISE_A_JOUR: 'Mise à jour',
+    AUCUN_CHANGEMENT: 'Aucun changement',
+    IGNOREE: 'Ignorée',
+    SIMULATION: 'Simulation',
+    REEL: 'Réel',
   }
   return map[statut] ?? statut
 }
