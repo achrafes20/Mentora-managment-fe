@@ -40,6 +40,7 @@ const WARNING_SET = new Set([
   'Avertissement',
   'Aucun changement',
   'Simulation',
+  'Suggestion de réactivation',
 ])
 const DANGER_SET = new Set(['Rejeté', 'Inactif', 'inactif', 'Erreur'])
 
@@ -75,6 +76,22 @@ export function formatStatut(statut: string): string {
     IGNOREE: 'Ignorée',
     SIMULATION: 'Simulation',
     REEL: 'Réel',
+    // EF-REC-07/11/12 — pipeline de recrutement (statut_candidature / statut_offre_emploi).
+    recu: 'Reçu',
+    preselectionne: 'Présélectionné',
+    entretien: 'Entretien',
+    decision: 'Décision',
+    embauche: 'Embauché',
+    rejete: 'Rejeté',
+    en_attente: 'En attente',
+    suggestion_reactivation: 'Suggestion de réactivation',
+    archivee: 'Archivée',
+    non_traite: 'Non traité',
+    ouverte: 'Ouverte',
+    fermee: 'Fermée',
+    // EF-REC-09 — résultat d'entretien.
+    favorable: 'Favorable',
+    defavorable: 'Défavorable',
   }
   return map[statut] ?? statut
 }

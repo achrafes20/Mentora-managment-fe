@@ -12,7 +12,9 @@ import { KiosquePage } from '../features/attendance/KiosquePage'
 import { PresencePage } from '../features/attendance/PresencePage'
 import { DashboardPage } from '@/features/dashboard/DashboardPage'
 import { RecruitmentPage } from '@/features/recruitment/RecruitmentPage'
-import { CandidatDetailPage, OffresPage } from '@/features/recruitment/CandidatDetailPage'
+import { CandidatDetailPage } from '@/features/recruitment/CandidatDetailPage'
+import { OffresPage } from '@/features/recruitment/OffresPage'
+import { OffreDetailPage } from '@/features/recruitment/OffreDetailPage'
 import { DemandesPage } from '@/features/admin-requests/DemandesPage'
 import { DocumentsPage } from '@/features/documents/DocumentsPage'
 import { ConfigurationPage, FeriesPage } from '@/features/config/ConfigurationPage'
@@ -62,6 +64,7 @@ export const router = createBrowserRouter([
       { path: 'presence', element: <PresencePage /> },
       { path: 'recrutement', element: <RecruitmentPage /> },
       { path: 'recrutement/offres', element: <OffresPage /> },
+      { path: 'recrutement/offres/:id', element: <OffreDetailPage /> },
       { path: 'recrutement/:id', element: <CandidatDetailPage /> },
       { path: 'demandes', element: <DemandesPage /> },
       { path: 'documents', element: <DocumentsPage /> },
