@@ -6,7 +6,7 @@ export const featureFlags = {
   import: true,
   /** Modules frontend-only (mock data) — passer à true quand l'API est prête */
   dashboard: false,
-  recruitment: false,
+  recruitment: true,
   adminRequests: false,
   documents: false,
   config: false,

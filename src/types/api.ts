@@ -22,7 +22,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/employes/{id}": {
+    "/api/offres/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -31,6 +31,22 @@ export interface paths {
         };
         get: operations["detail"];
         put: operations["modifier"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/employes/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["detail_1"];
+        put: operations["modifier_1"];
         post?: never;
         delete?: never;
         options?: never;
@@ -62,7 +78,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put: operations["modifier_1"];
+        put: operations["modifier_2"];
         post?: never;
         delete: operations["desactiver"];
         options?: never;
@@ -82,6 +98,38 @@ export interface paths {
         put?: never;
         /** Création d'un compte admin ou manager */
         post: operations["create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/recruitment/ingest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ingerer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/recruitment/candidatures/archiver-expirees": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["archiverExpirees"];
         delete?: never;
         options?: never;
         head?: never;
@@ -114,6 +162,54 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["genererQrCode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/offres": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["lister"];
+        put?: never;
+        post: operations["creer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/offres/{id}/rouvrir": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["rouvrir"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/offres/{id}/fermer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["fermer"];
         delete?: never;
         options?: never;
         head?: never;
@@ -191,9 +287,9 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["lister"];
+        get: operations["lister_1"];
         put?: never;
-        post: operations["creer"];
+        post: operations["creer_1"];
         delete?: never;
         options?: never;
         head?: never;
@@ -207,9 +303,9 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["lister_1"];
+        get: operations["lister_2"];
         put?: never;
-        post: operations["creer_1"];
+        post: operations["creer_2"];
         delete?: never;
         options?: never;
         head?: never;
@@ -303,9 +399,9 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["lister_2"];
+        get: operations["lister_3"];
         put?: never;
-        post: operations["creer_2"];
+        post: operations["creer_3"];
         delete?: never;
         options?: never;
         head?: never;
@@ -319,9 +415,9 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["lister_3"];
+        get: operations["lister_4"];
         put?: never;
-        post: operations["creer_3"];
+        post: operations["creer_4"];
         delete?: never;
         options?: never;
         head?: never;
@@ -338,6 +434,86 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["activer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/candidatures/{id}/statut": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["changerStatut"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/candidatures/{id}/relancer-analyse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["relancerAnalyse"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/candidatures/{id}/reactiver": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["validerReactivation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/candidatures/{id}/entretien": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["enregistrerResultatEntretien"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/candidatures/{id}/entretien/reprogrammer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["reprogrammerEntretien"];
         delete?: never;
         options?: never;
         head?: never;
@@ -469,7 +645,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["lister_4"];
+        get: operations["lister_5"];
         put?: never;
         post?: never;
         delete?: never;
@@ -574,6 +750,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/candidatures": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["lister_6"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/candidatures/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["detail_2"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/candidatures/{id}/entretiens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["historiqueEntretiens"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/candidatures/{id}/cv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["telechargerCv"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/me": {
         parameters: {
             query?: never;
@@ -598,7 +838,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["lister_5"];
+        get: operations["lister_7"];
         put?: never;
         post?: never;
         delete?: never;
@@ -655,6 +895,36 @@ export interface components {
             /** Format: date-time */
             modifieLe?: string;
         };
+        OffreEmploiRequete: {
+            intitule: string;
+            description?: string;
+            /** Format: uuid */
+            departementId: string;
+            motsClesRequis?: string[];
+        };
+        ApiResponseOffreEmploiReponse: {
+            success?: boolean;
+            data?: components["schemas"]["OffreEmploiReponse"];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        OffreEmploiReponse: {
+            /** Format: uuid */
+            id?: string;
+            intitule?: string;
+            description?: string;
+            /** Format: uuid */
+            departementId?: string;
+            statut?: string;
+            motsClesRequis?: string[];
+            /** Format: uuid */
+            creePar?: string;
+            /** Format: date-time */
+            creeLe?: string;
+            /** Format: date-time */
+            fermeeLe?: string;
+        };
         EmployeModificationRequete: {
             nom: string;
             prenom: string;
@@ -699,6 +969,8 @@ export interface components {
             statut?: string;
             /** Format: uuid */
             photoFichierId?: string;
+            /** Format: uuid */
+            candidatureOrigineId?: string;
             /** Format: date-time */
             creeLe?: string;
             /** Format: date-time */
@@ -754,6 +1026,57 @@ export interface components {
             role: "admin" | "manager";
             nom: string;
             prenom: string;
+        };
+        AnalyseIaReponse: {
+            /** Format: uuid */
+            id?: string;
+            statut?: string;
+            extraitPrenom?: string;
+            extraitNom?: string;
+            extraitEmail?: string;
+            extraitTelephone?: string;
+            extraitIntitulePoste?: string;
+            scoreCorrespondance?: number;
+            anneesExperienceEstimees?: number;
+            justificationScore?: string;
+            motsCles?: string[];
+            /** Format: date-time */
+            dateAnalyse?: string;
+        };
+        ApiResponseCandidatureReponse: {
+            success?: boolean;
+            data?: components["schemas"]["CandidatureReponse"];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        CandidatureReponse: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            offreId?: string;
+            nom?: string;
+            prenom?: string;
+            email?: string;
+            telephone?: string;
+            intitulePosteDetecte?: string;
+            source?: string;
+            /** Format: uuid */
+            cvFichierId?: string;
+            statut?: string;
+            /** Format: date-time */
+            dateIngestion?: string;
+            /** Format: date-time */
+            dateArchivage?: string;
+            derniereAnalyse?: components["schemas"]["AnalyseIaReponse"];
+        };
+        ApiResponseInteger: {
+            success?: boolean;
+            /** Format: int32 */
+            data?: number;
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
         };
         CorrectionPointageRequete: {
             /** Format: date-time */
@@ -901,6 +1224,10 @@ export interface components {
             typeContrat: "CDI" | "CDD" | "STAGIAIRE" | "STAGIAIRE_REMUNERE";
             /** Format: date */
             dateFinContratPrevue?: string;
+            /** Format: uuid */
+            candidatureOrigineId?: string;
+            /** Format: uuid */
+            cvFichierId?: string;
         };
         TransfertRequete: {
             /** Format: uuid */
@@ -954,6 +1281,49 @@ export interface components {
             jours?: ("lundi" | "mardi" | "mercredi" | "jeudi" | "vendredi" | "samedi" | "dimanche")[];
             /** Format: date-time */
             creeLe?: string;
+        };
+        ChangerStatutRequete: {
+            /** @enum {string} */
+            statut: "recu" | "preselectionne" | "entretien" | "decision" | "embauche" | "rejete" | "en_attente" | "suggestion_reactivation" | "archivee" | "non_traite";
+            /** Format: uuid */
+            managerId?: string;
+            /** Format: date-time */
+            dateEntretien?: string;
+            corpsMessage?: string;
+        };
+        ResultatEntretienRequete: {
+            /** @enum {string} */
+            resultat: "favorable" | "defavorable";
+            commentaire?: string;
+        };
+        ApiResponseEntretienReponse: {
+            success?: boolean;
+            data?: components["schemas"]["EntretienReponse"];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        EntretienReponse: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            candidatureId?: string;
+            /** Format: uuid */
+            managerId?: string;
+            resultat?: string;
+            commentaire?: string;
+            /** Format: date-time */
+            dateEntretien?: string;
+            /** Format: date-time */
+            dateResultat?: string;
+            /** Format: date-time */
+            creeLe?: string;
+        };
+        ReprogrammerEntretienRequete: {
+            /** Format: uuid */
+            managerId?: string;
+            /** Format: date-time */
+            dateEntretien?: string;
         };
         ResetPasswordRequest: {
             token: string;
@@ -1031,6 +1401,13 @@ export interface components {
             /** Format: int32 */
             totalPages?: number;
             last?: boolean;
+        };
+        ApiResponseListOffreEmploiReponse: {
+            success?: boolean;
+            data?: components["schemas"]["OffreEmploiReponse"][];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
         };
         ApiResponsePagedResponseImportLotReponse: {
             success?: boolean;
@@ -1138,6 +1515,32 @@ export interface components {
             /** Format: date-time */
             timestamp?: string;
         };
+        ApiResponsePagedResponseCandidatureReponse: {
+            success?: boolean;
+            data?: components["schemas"]["PagedResponseCandidatureReponse"];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        PagedResponseCandidatureReponse: {
+            content?: components["schemas"]["CandidatureReponse"][];
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            size?: number;
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+            last?: boolean;
+        };
+        ApiResponseListEntretienReponse: {
+            success?: boolean;
+            data?: components["schemas"]["EntretienReponse"][];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
         ApiResponsePagedResponseAnomaliePointageReponse: {
             success?: boolean;
             data?: components["schemas"]["PagedResponseAnomaliePointageReponse"];
@@ -1231,12 +1634,60 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["ApiResponseEmployeReponse"];
+                    "*/*": components["schemas"]["ApiResponseOffreEmploiReponse"];
                 };
             };
         };
     };
     modifier: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OffreEmploiRequete"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseOffreEmploiReponse"];
+                };
+            };
+        };
+    };
+    detail_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseEmployeReponse"];
+                };
+            };
+        };
+    };
+    modifier_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -1315,7 +1766,7 @@ export interface operations {
             };
         };
     };
-    modifier_1: {
+    modifier_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -1407,6 +1858,63 @@ export interface operations {
             };
         };
     };
+    ingerer: {
+        parameters: {
+            query: {
+                emailExpediteur: string;
+                nomExpediteur?: string;
+                sujet?: string;
+                corps?: string;
+                referenceSourceImport?: string;
+            };
+            header?: {
+                "X-Internal-Webhook-Secret"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** Format: binary */
+                    cv?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCandidatureReponse"];
+                };
+            };
+        };
+    };
+    archiverExpirees: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Internal-Webhook-Secret"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseInteger"];
+                };
+            };
+        };
+    };
     corrigerManuellement: {
         parameters: {
             query?: never;
@@ -1451,6 +1959,96 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseQrCodeReponse"];
+                };
+            };
+        };
+    };
+    lister: {
+        parameters: {
+            query?: {
+                statut?: "ouverte" | "fermee";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListOffreEmploiReponse"];
+                };
+            };
+        };
+    };
+    creer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OffreEmploiRequete"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseOffreEmploiReponse"];
+                };
+            };
+        };
+    };
+    rouvrir: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseOffreEmploiReponse"];
+                };
+            };
+        };
+    };
+    fermer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseOffreEmploiReponse"];
                 };
             };
         };
@@ -1572,7 +2170,7 @@ export interface operations {
             };
         };
     };
-    lister: {
+    lister_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -1592,7 +2190,7 @@ export interface operations {
             };
         };
     };
-    creer: {
+    creer_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -1616,7 +2214,7 @@ export interface operations {
             };
         };
     };
-    lister_1: {
+    lister_2: {
         parameters: {
             query: {
                 departementId?: string;
@@ -1643,7 +2241,7 @@ export interface operations {
             };
         };
     };
-    creer_1: {
+    creer_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -1848,7 +2446,7 @@ export interface operations {
             };
         };
     };
-    lister_2: {
+    lister_3: {
         parameters: {
             query?: never;
             header?: never;
@@ -1870,7 +2468,7 @@ export interface operations {
             };
         };
     };
-    creer_2: {
+    creer_3: {
         parameters: {
             query?: never;
             header?: never;
@@ -1896,7 +2494,7 @@ export interface operations {
             };
         };
     };
-    lister_3: {
+    lister_4: {
         parameters: {
             query?: never;
             header?: never;
@@ -1916,7 +2514,7 @@ export interface operations {
             };
         };
     };
-    creer_3: {
+    creer_4: {
         parameters: {
             query?: never;
             header?: never;
@@ -1958,6 +2556,128 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseDepartementReponse"];
+                };
+            };
+        };
+    };
+    changerStatut: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangerStatutRequete"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCandidatureReponse"];
+                };
+            };
+        };
+    };
+    relancerAnalyse: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCandidatureReponse"];
+                };
+            };
+        };
+    };
+    validerReactivation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCandidatureReponse"];
+                };
+            };
+        };
+    };
+    enregistrerResultatEntretien: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResultatEntretienRequete"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseEntretienReponse"];
+                };
+            };
+        };
+    };
+    reprogrammerEntretien: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReprogrammerEntretienRequete"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseEntretienReponse"];
                 };
             };
         };
@@ -2122,7 +2842,7 @@ export interface operations {
             };
         };
     };
-    lister_4: {
+    lister_5: {
         parameters: {
             query: {
                 pageable: components["schemas"]["Pageable"];
@@ -2279,6 +2999,98 @@ export interface operations {
             };
         };
     };
+    lister_6: {
+        parameters: {
+            query: {
+                offreId?: string;
+                statut?: "recu" | "preselectionne" | "entretien" | "decision" | "embauche" | "rejete" | "en_attente" | "suggestion_reactivation" | "archivee" | "non_traite";
+                scoreMin?: number;
+                recherche?: string;
+                pageable: components["schemas"]["Pageable"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePagedResponseCandidatureReponse"];
+                };
+            };
+        };
+    };
+    detail_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCandidatureReponse"];
+                };
+            };
+        };
+    };
+    historiqueEntretiens: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListEntretienReponse"];
+                };
+            };
+        };
+    };
+    telechargerCv: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
     me: {
         parameters: {
             query?: never;
@@ -2299,7 +3111,7 @@ export interface operations {
             };
         };
     };
-    lister_5: {
+    lister_7: {
         parameters: {
             query: {
                 resolue?: boolean;

@@ -1,16 +1,60 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { MOCK_CANDIDATES } from '@/lib/mockData'
+import { format } from 'date-fns'
+import { fr } from 'date-fns/locale'
+import { FileText } from 'lucide-react'
+import { useAuth } from '@/lib/AuthContext'
 import { PageHeader } from '@/components/ui/StatCard'
 import { StatusTag } from '@/components/ui/StatusTag'
-import { MockBanner } from '@/components/ui/MockBanner'
+import { Button } from '@/components/ui/Button'
+import { toast } from '@/components/ui/toast'
+import { formatStatut } from '@/components/ui/tokens'
+import type { ApiError } from '@/lib/apiClient'
+import { useDepartements } from '@/features/employee/useDepartements'
+import { useManagers, libelleManager } from '@/features/employee/useManagers'
+import {
+  useCandidature,
+  useChangerStatutCandidature,
+  useEnregistrerResultatEntretien,
+  useEntretiens,
+  useOffre,
+  useRelancerAnalyse,
+  useReprogrammerEntretien,
+  useValiderReactivation,
+} from './useRecruitment'
+import { voirCvCandidature, type ResultatEntretienRequete } from './recruitmentApi'
+import { EntretienScheduleDialog } from './EntretienScheduleDialog'
+import { RejectDialog } from './RejectDialog'
 
 export function CandidatDetailPage() {
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
-  const candidate = MOCK_CANDIDATES.find((c) => c.id === id)
+  const { role } = useAuth()
+  const estAdmin = role === 'admin'
+  const estManager = role === 'manager'
 
-  if (!candidate) {
+  const { data: candidature, isLoading } = useCandidature(id)
+  const { data: offre } = useOffre(candidature?.offreId ?? undefined)
+  const { data: departements } = useDepartements()
+  const { data: managers } = useManagers()
+  const { data: entretiens } = useEntretiens(id)
+
+  const changerStatutMutation = useChangerStatutCandidature(id ?? '')
+  const relancerMutation = useRelancerAnalyse(id ?? '')
+  const reactivationMutation = useValiderReactivation(id ?? '')
+  const entretienMutation = useEnregistrerResultatEntretien(id ?? '')
+  const reprogrammerMutation = useReprogrammerEntretien(id ?? '')
+
+  const [dialogRejet, setDialogRejet] = useState(false)
+  const [dialogPlanification, setDialogPlanification] = useState<
+    'creation' | 'reprogrammation' | null
+  >(null)
+  const [commentaireEntretien, setCommentaireEntretien] = useState('')
+
+  if (isLoading) {
+    return <p className="p-8 text-[13px] text-[#9CA3AF]">Chargement…</p>
+  }
+  if (!candidature) {
     return (
       <div className="p-8">
         <p className="text-[#C1495A]">Candidature introuvable</p>
@@ -18,12 +62,92 @@ export function CandidatDetailPage() {
     )
   }
 
-  const scoreColor =
-    (candidate.score ?? 0) >= 80 ? '#4A7C6B' : (candidate.score ?? 0) >= 60 ? '#C87F3A' : '#C1495A'
+  const analyse = candidature.derniereAnalyse
+  const analyseEnAttente = !analyse || analyse.statut !== 'succes'
+  const score = analyse?.scoreCorrespondance ?? null
+  const scoreColor = (score ?? 0) >= 80 ? '#4A7C6B' : (score ?? 0) >= 60 ? '#C87F3A' : '#C1495A'
+  const dernierEntretien = entretiens?.[0]
+  const managerAssigne = managers?.find((m) => m.id === dernierEntretien?.managerId)
+  const managerResoluId = departements?.find((d) => d.id === offre?.departementId)?.managerId
+  const entretienResolu = !!dernierEntretien?.resultat
+
+  function changerStatut(
+    statut: string,
+    managerId?: string,
+    dateEntretien?: string,
+    corpsMessage?: string,
+  ) {
+    changerStatutMutation
+      .mutateAsync({ statut: statut as never, managerId, dateEntretien, corpsMessage })
+      .then(() => {
+        toast.success(`Statut mis à jour : ${formatStatut(statut)}.`)
+        setDialogRejet(false)
+        setDialogPlanification(null)
+      })
+      .catch((err: ApiError) => toast.error(err.message))
+  }
+
+  function reprogrammer(managerId?: string, dateEntretien?: string) {
+    reprogrammerMutation
+      .mutateAsync({ managerId, dateEntretien })
+      .then(() => {
+        toast.success('Entretien reprogrammé.')
+        setDialogPlanification(null)
+      })
+      .catch((err: ApiError) => toast.error(err.message))
+  }
+
+  function soumettreEntretien(resultat: ResultatEntretienRequete['resultat']) {
+    entretienMutation
+      .mutateAsync({ resultat, commentaire: commentaireEntretien || undefined })
+      .then(() => toast.success('Résultat enregistré — candidature passée en Décision.'))
+      .catch((err: ApiError) => toast.error(err.message))
+  }
+
+  function relancerAnalyse() {
+    relancerMutation
+      .mutateAsync()
+      .then(() => toast.success('Analyse relancée.'))
+      .catch((err: ApiError) => toast.error(err.message))
+  }
+
+  function validerReactivation() {
+    reactivationMutation
+      .mutateAsync()
+      .then(() => toast.success('Candidature réintégrée au pipeline.'))
+      .catch((err: ApiError) => toast.error(err.message))
+  }
 
   return (
     <div className="flex-1 overflow-auto p-8">
-      <MockBanner feature="recruitment" />
+      <RejectDialog
+        open={dialogRejet}
+        onCancel={() => setDialogRejet(false)}
+        onConfirm={(corps) => changerStatut('rejete', undefined, undefined, corps)}
+        submitting={changerStatutMutation.isPending}
+      />
+      <EntretienScheduleDialog
+        open={dialogPlanification !== null}
+        title={
+          dialogPlanification === 'creation' ? "Planifier l'entretien" : "Reprogrammer l'entretien"
+        }
+        managerParDefaut={
+          dialogPlanification === 'reprogrammation'
+            ? (dernierEntretien?.managerId ?? managerResoluId ?? null)
+            : (managerResoluId ?? null)
+        }
+        dateParDefaut={
+          dialogPlanification === 'reprogrammation' ? dernierEntretien?.dateEntretien : null
+        }
+        onCancel={() => setDialogPlanification(null)}
+        onConfirm={(managerId, dateEntretien) =>
+          dialogPlanification === 'creation'
+            ? changerStatut('entretien', managerId, dateEntretien)
+            : reprogrammer(managerId, dateEntretien)
+        }
+        submitting={changerStatutMutation.isPending || reprogrammerMutation.isPending}
+      />
+
       <button
         onClick={() => navigate('/recrutement')}
         className="mb-4 text-[12px] text-[#6B7280] hover:text-[#1B2A41]"
@@ -31,9 +155,13 @@ export function CandidatDetailPage() {
         ← Retour au pipeline
       </button>
       <PageHeader
-        title={`${candidate.prenom} ${candidate.nom}`}
-        subtitle={candidate.poste}
-        actions={<StatusTag statut={candidate.etape} />}
+        title={
+          candidature.prenom || candidature.nom
+            ? `${candidature.prenom ?? ''} ${candidature.nom ?? ''}`.trim()
+            : (candidature.email ?? '')
+        }
+        subtitle={candidature.intitulePosteDetecte ?? candidature.email ?? ''}
+        actions={<StatusTag statut={formatStatut(candidature.statut ?? '')} />}
       />
 
       <div className="grid grid-cols-3 gap-5">
@@ -45,17 +173,43 @@ export function CandidatDetailPage() {
             style={{ fontFamily: 'var(--font-display)', color: scoreColor }}
             className="mt-2 text-[48px] leading-none font-semibold"
           >
-            {candidate.score ?? '—'}
-            {candidate.score !== null && '%'}
+            {score ?? '—'}
+            {score !== null && '%'}
           </p>
+          {analyseEnAttente && (
+            <p className="mt-2 text-[11px] text-[#C87F3A]">
+              {analyse?.statut === 'echec' ? 'Analyse en échec' : 'Analyse en attente'}
+            </p>
+          )}
         </div>
         <div className="col-span-2 rounded-xl border border-[#D8D4CC] bg-white p-5">
-          <h3 className="mb-3 text-[12px] font-semibold text-[#1B2A41]">Données extraites</h3>
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-[12px] font-semibold text-[#1B2A41]">Données extraites</h3>
+            <div className="flex gap-3">
+              {candidature.cvFichierId && (
+                <button
+                  onClick={() => void voirCvCandidature(candidature.id as string)}
+                  className="flex items-center gap-1 text-[12px] text-[#6B7280] hover:text-[#1B2A41]"
+                >
+                  <FileText size={13} /> Voir le CV
+                </button>
+              )}
+              {estAdmin && (
+                <button
+                  onClick={relancerAnalyse}
+                  disabled={relancerMutation.isPending}
+                  className="text-[12px] text-[#6B7280] hover:text-[#1B2A41]"
+                >
+                  Relancer l'analyse
+                </button>
+              )}
+            </div>
+          </div>
           <p className="text-[12px] text-[#6B7280]">
-            Extrait automatiquement par l'analyse IA du CV.
+            {analyse?.justificationScore ?? "Extrait automatiquement par l'analyse IA du CV."}
           </p>
           <div className="mt-3 flex flex-wrap gap-1.5">
-            {candidate.tags.map((t) => (
+            {(analyse?.motsCles ?? []).map((t) => (
               <span
                 key={t}
                 className="rounded bg-[#4A7C6B]/10 px-2 py-0.5 text-[11px] text-[#4A7C6B]"
@@ -67,103 +221,133 @@ export function CandidatDetailPage() {
         </div>
       </div>
 
-      {candidate.etape === 'Entretien' && (
-        <div className="mt-5 rounded-xl border border-[#D8D4CC] bg-white p-5">
-          <h3 className="mb-3 text-[12px] font-semibold text-[#1B2A41]">
-            Résultat d'entretien (Manager)
+      {candidature.statut === 'suggestion_reactivation' && estAdmin && (
+        <div className="mt-5 rounded-xl border border-[#C87F3A]/30 bg-[#C87F3A]/8 p-5">
+          <h3 className="mb-2 text-[12px] font-semibold text-[#1B2A41]">
+            Suggestion de réactivation (EF-REC-12)
           </h3>
-          <div className="flex gap-3">
-            <button className="rounded-lg border border-[#4A7C6B] bg-[#4A7C6B]/10 px-4 py-2 text-[12px] text-[#4A7C6B]">
-              Favorable
-            </button>
-            <button className="rounded-lg border border-[#D8D4CC] px-4 py-2 text-[12px] text-[#6B7280]">
-              Défavorable
-            </button>
-          </div>
-          <textarea
-            placeholder="Commentaire d'entretien…"
-            className="mt-3 w-full rounded-lg border border-[#D8D4CC] bg-[#F7F7F4] p-3 text-[13px] focus:border-[#1B2A41] focus:outline-none"
-            rows={3}
-          />
+          <p className="mb-3 text-[12px] text-[#6B7280]">
+            Cette candidature était "En attente" et correspond aux mots-clés d'une offre récente.
+          </p>
+          <Button loading={reactivationMutation.isPending} onClick={validerReactivation}>
+            Réintégrer au pipeline
+          </Button>
         </div>
       )}
-    </div>
-  )
-}
 
-export function OffresPage() {
-  const navigate = useNavigate()
-  const [offres] = useState([
-    {
-      id: '1',
-      titre: 'Développeur Full Stack',
-      dept: 'Technologie',
-      statut: 'Ouverte',
-      candidats: 4,
-    },
-    {
-      id: '2',
-      titre: 'Chef de Projet Digital',
-      dept: 'Technologie',
-      statut: 'Ouverte',
-      candidats: 2,
-    },
-  ])
+      {/* EF-REC-09 : le résultat de l'entretien reste visible à l'Admin pour la décision finale
+          même une fois l'étape "Entretien" passée (auto-avancée vers "Décision") — jamais une
+          conversation hors application. Affiché dès qu'un entretien existe, pas seulement pendant
+          l'étape "Entretien" elle-même. */}
+      {dernierEntretien && (
+        <div className="mt-5 rounded-xl border border-[#D8D4CC] bg-white p-5">
+          <h3 className="mb-3 text-[12px] font-semibold text-[#1B2A41]">Entretien</h3>
+          {dernierEntretien.dateEntretien && (
+            <p className="mb-3 text-[13px] text-[#1B2A41]">
+              Prévu le{' '}
+              <strong>
+                {format(new Date(dernierEntretien.dateEntretien), "dd/MM/yyyy 'à' HH:mm", {
+                  locale: fr,
+                })}
+              </strong>
+              {managerAssigne && <> avec {libelleManager(managerAssigne)}</>}
+            </p>
+          )}
+          {entretienResolu ? (
+            <div>
+              <StatusTag statut={formatStatut(dernierEntretien!.resultat!)} />
+              {dernierEntretien?.commentaire && (
+                <p className="mt-2 text-[13px] text-[#6B7280]">{dernierEntretien.commentaire}</p>
+              )}
+            </div>
+          ) : candidature.statut === 'entretien' && estManager ? (
+            <>
+              <div className="flex gap-3">
+                <Button
+                  variant="success"
+                  loading={entretienMutation.isPending}
+                  onClick={() => soumettreEntretien('favorable')}
+                >
+                  Favorable
+                </Button>
+                <Button
+                  variant="secondary"
+                  loading={entretienMutation.isPending}
+                  onClick={() => soumettreEntretien('defavorable')}
+                >
+                  Défavorable
+                </Button>
+              </div>
+              <textarea
+                value={commentaireEntretien}
+                onChange={(e) => setCommentaireEntretien(e.target.value)}
+                placeholder="Commentaire d'entretien…"
+                className="mt-3 w-full rounded-lg border border-[#D8D4CC] bg-[#F7F7F4] p-3 text-[13px] focus:border-[#1B2A41] focus:outline-none"
+                rows={3}
+              />
+            </>
+          ) : (
+            <p className="text-[13px] text-[#9CA3AF]">En attente du résultat d'entretien.</p>
+          )}
+        </div>
+      )}
 
-  return (
-    <div className="flex-1 overflow-auto p-8">
-      <MockBanner feature="recruitment" />
-      <button
-        onClick={() => navigate('/recrutement')}
-        className="mb-4 text-[12px] text-[#6B7280] hover:text-[#1B2A41]"
-      >
-        ← Retour au recrutement
-      </button>
-      <PageHeader
-        title="Offres d'emploi"
-        subtitle={`${offres.length} offre(s)`}
-        actions={
-          <button className="rounded-lg bg-[#1B2A41] px-4 py-2 text-[12px] font-medium text-white">
-            + Nouvelle offre
-          </button>
-        }
-      />
-      <div className="overflow-hidden rounded-xl border border-[#D8D4CC] bg-white">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-[#D8D4CC] bg-[#F7F7F4]">
-              {['Intitulé', 'Département', 'Statut', 'Candidatures', ''].map((h) => (
-                <th
-                  key={h}
-                  className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider text-[#9CA3AF] uppercase"
+      {estAdmin && (
+        <div className="mt-5 rounded-xl border border-[#D8D4CC] bg-white p-5">
+          <h3 className="mb-3 text-[12px] font-semibold text-[#1B2A41]">Actions</h3>
+          <div className="flex flex-wrap gap-3">
+            {candidature.statut === 'recu' && (
+              <>
+                <Button onClick={() => changerStatut('preselectionne')}>Présélectionner</Button>
+                <Button variant="danger" onClick={() => setDialogRejet(true)}>
+                  Rejeter
+                </Button>
+              </>
+            )}
+            {candidature.statut === 'preselectionne' && (
+              <>
+                <Button onClick={() => setDialogPlanification('creation')}>
+                  Passer à l'entretien
+                </Button>
+                <Button variant="danger" onClick={() => setDialogRejet(true)}>
+                  Rejeter
+                </Button>
+              </>
+            )}
+            {/* EF-REC-09 : pendant l'étape Entretien, l'Admin ne peut que reprogrammer ou rejeter —
+                jamais saisir de résultat (Manager uniquement) ni forcer manuellement "Décision"
+                (transition automatique, cf. plan). */}
+            {candidature.statut === 'entretien' && !entretienResolu && (
+              <>
+                <Button
+                  variant="secondary"
+                  onClick={() => setDialogPlanification('reprogrammation')}
                 >
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {offres.map((o) => (
-              <tr
-                key={o.id}
-                className="border-b border-[#D8D4CC]/50 transition-colors last:border-0 hover:bg-[#F7F7F4]"
-              >
-                <td className="px-4 py-3.5 text-[13px] font-medium text-[#1B2A41]">{o.titre}</td>
-                <td className="px-4 py-3.5 text-[13px] text-[#6B7280]">{o.dept}</td>
-                <td className="px-4 py-3.5">
-                  <StatusTag statut={o.statut === 'Ouverte' ? 'Actif' : 'Inactif'} />
-                </td>
-                <td
-                  style={{ fontFamily: 'var(--font-code)' }}
-                  className="px-4 py-3.5 text-[13px] text-[#1B2A41]"
-                >
-                  {o.candidats}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                  Reprogrammer
+                </Button>
+                <Button variant="danger" onClick={() => setDialogRejet(true)}>
+                  Rejeter
+                </Button>
+              </>
+            )}
+            {candidature.statut === 'decision' && (
+              <>
+                <Button variant="success" onClick={() => changerStatut('embauche')}>
+                  Marquer "Embauché"
+                </Button>
+                <Button variant="danger" onClick={() => setDialogRejet(true)}>
+                  Rejeter
+                </Button>
+              </>
+            )}
+            {candidature.statut === 'embauche' && (
+              <Button onClick={() => navigate(`/employes?depuisCandidatureId=${candidature.id}`)}>
+                Créer la fiche employé
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

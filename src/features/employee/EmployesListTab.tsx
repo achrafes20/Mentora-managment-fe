@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import {
   CheckSquare,
@@ -12,8 +13,8 @@ import {
   X,
 } from 'lucide-react'
 import { useAuth } from '../../lib/AuthContext'
-import type { ApiError } from '../../lib/apiClient'
-import { EmployeFormModal, type EmployeFormValues } from './EmployeFormModal'
+import { apiClient, type ApiError } from '../../lib/apiClient'
+import { EmployeFormModal, type EmployeFormValues, type EmployePrefill } from './EmployeFormModal'
 import { useDepartements } from './useDepartements'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCreerEmploye, useEmployes, CLE_EMPLOYES } from './useEmployes'
@@ -26,6 +27,31 @@ import { formatStatut } from '@/components/ui/tokens'
 import { toast } from '@/components/ui/toast'
 import { televerserPhotoEmploye } from './employesApi'
 import { useEmployePhotoUrl } from './useEmployePhoto'
+
+// Lecture minimale de la candidature source (EF-EMP-05/EF-REC-13) — appel direct à l'endpoint
+// public de recrutement plutôt qu'un import depuis `features/recruitment` (les deux features
+// restent découplées, seule l'API REST partagée les relie).
+interface CandidaturePourPrefill {
+  nom?: string | null
+  prenom?: string | null
+  email?: string | null
+  telephone?: string | null
+  intitulePosteDetecte?: string | null
+  cvFichierId?: string | null
+}
+
+function useCandidaturePrefill(candidatureId: string | undefined) {
+  return useQuery({
+    queryKey: ['candidature-prefill', candidatureId],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ data?: CandidaturePourPrefill }>(
+        `/api/candidatures/${candidatureId}`,
+      )
+      return data.data ?? null
+    },
+    enabled: !!candidatureId,
+  })
+}
 
 const TYPES_CONTRAT = ['CDI', 'CDD', 'STAGIAIRE', 'STAGIAIRE_REMUNERE']
 
@@ -41,17 +67,43 @@ export function EmployesListTab() {
   const { data: departements } = useDepartements()
   const { data: managers } = useManagers()
   const [filtres, setFiltres] = useState<FiltresEmployes>({ page: 0, size: 50 })
-  const [modaleCreation, setModaleCreation] = useState(false)
+  const [modaleCreationManuelle, setModaleCreationManuelle] = useState(false)
   const [erreur, setErreur] = useState<string | null>(null)
   const [selectionMode, setSelectionMode] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [showExport, setShowExport] = useState(false)
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const queryClient = useQueryClient()
   const { data: page, isLoading } = useEmployes(filtres)
   const creerMutation = useCreerEmploye()
   const employes = page?.content ?? []
   const total = page?.totalElements ?? 0
+
+  // EF-EMP-05/EF-REC-13 : ouverture depuis une candidature "Embauchée" — préremplit le formulaire,
+  // ne crée jamais la fiche automatiquement (décision verrouillée, cf. plan T3.B1). Dérivé
+  // directement de l'URL plutôt que synchronisé via un effet (évite les rendus en cascade).
+  const depuisCandidatureId = searchParams.get('depuisCandidatureId') ?? undefined
+  const modaleCreation = modaleCreationManuelle || !!depuisCandidatureId
+  const { data: candidaturePrefill } = useCandidaturePrefill(depuisCandidatureId)
+
+  const prefill: EmployePrefill | null = candidaturePrefill
+    ? {
+        nom: candidaturePrefill.nom,
+        prenom: candidaturePrefill.prenom,
+        email: candidaturePrefill.email,
+        telephone: candidaturePrefill.telephone,
+        poste: candidaturePrefill.intitulePosteDetecte,
+      }
+    : null
+
+  function fermerModaleCreation() {
+    setModaleCreationManuelle(false)
+    if (depuisCandidatureId) {
+      searchParams.delete('depuisCandidatureId')
+      setSearchParams(searchParams, { replace: true })
+    }
+  }
 
   function majFiltre(patch: Partial<FiltresEmployes>) {
     setFiltres((precedent) => ({ ...precedent, ...patch, page: 0 }))
@@ -72,6 +124,8 @@ export function EmployesListTab() {
         dateFinContratPrevue: valeurs.dateFinContratPrevue
           ? format(valeurs.dateFinContratPrevue, 'yyyy-MM-dd')
           : undefined,
+        candidatureOrigineId: depuisCandidatureId,
+        cvFichierId: candidaturePrefill?.cvFichierId ?? undefined,
       })
       .then(async (employe) => {
         if (photo && employe.id) {
@@ -79,7 +133,7 @@ export function EmployesListTab() {
           await queryClient.invalidateQueries({ queryKey: CLE_EMPLOYES })
         }
         void toast.success('Employé créé — carte badge générée.')
-        setModaleCreation(false)
+        fermerModaleCreation()
         setErreur(null)
       })
       .catch((err: ApiError) => setErreur(err.message))
@@ -100,9 +154,10 @@ export function EmployesListTab() {
         <EmployeFormModal
           open
           mode="creation"
+          prefill={prefill}
           departements={departements ?? []}
           managers={managers ?? []}
-          onCancel={() => setModaleCreation(false)}
+          onCancel={fermerModaleCreation}
           onSubmit={creerEmploye}
           submitting={creerMutation.isPending}
           errorMessage={erreur}
@@ -156,7 +211,7 @@ export function EmployesListTab() {
                 <CheckSquare size={13} /> {selectionMode ? 'Annuler' : 'Sélectionner'}
               </button>
               <button
-                onClick={() => setModaleCreation(true)}
+                onClick={() => setModaleCreationManuelle(true)}
                 className="flex items-center gap-1.5 rounded-lg bg-[#1B2A41] px-4 py-2 text-[12px] font-medium text-white transition-colors hover:bg-[#243650]"
               >
                 <Plus size={13} /> Ajouter un employé

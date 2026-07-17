@@ -38,10 +38,21 @@ const schema = z
 
 export type EmployeFormValues = z.infer<typeof schema>
 
+/** Sous-ensemble des champs pré-remplissables depuis une candidature "Embauchée" (EF-EMP-05). */
+export interface EmployePrefill {
+  nom?: string | null
+  prenom?: string | null
+  email?: string | null
+  telephone?: string | null
+  poste?: string | null
+}
+
 interface Props {
   open: boolean
   mode: 'creation' | 'edition'
   employe?: Employe | null
+  /** Uniquement en mode 'creation' — préremplit le formulaire depuis une candidature embauchée. */
+  prefill?: EmployePrefill | null
   departements: Departement[]
   managers: Manager[]
   onCancel: () => void
@@ -54,6 +65,7 @@ export function EmployeFormModal({
   open,
   mode,
   employe,
+  prefill,
   departements,
   managers,
   onCancel,
@@ -92,12 +104,13 @@ export function EmployeFormModal({
 
   useEffect(() => {
     if (open) {
+      const source = mode === 'creation' ? prefill : employe
       reset({
-        nom: employe?.nom ?? '',
-        prenom: employe?.prenom ?? '',
-        email: employe?.email ?? '',
-        telephone: employe?.telephone ?? '',
-        poste: employe?.poste ?? '',
+        nom: source?.nom ?? '',
+        prenom: source?.prenom ?? '',
+        email: source?.email ?? '',
+        telephone: source?.telephone ?? '',
+        poste: source?.poste ?? '',
         departementId: employe?.departementId ?? '',
         managerId: employe?.managerId ?? '',
         dateEmbauche: employe?.dateEmbauche ? new Date(employe.dateEmbauche) : new Date(),
@@ -109,7 +122,7 @@ export function EmployeFormModal({
       setPhoto(null)
       setPhotoPreview(null)
     }
-  }, [open, employe, reset])
+  }, [open, employe, prefill, mode, reset])
 
   const typeContratActuel = watch('typeContrat')
   const prenomActuel = watch('prenom')
