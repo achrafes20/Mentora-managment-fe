@@ -42,6 +42,7 @@ const createSchema = z.object({
   email: z.string().min(1, 'Obligatoire').email('Format invalide'),
   role: z.enum(['admin', 'manager'], { required_error: 'Obligatoire' }),
   motDePasse: z.string().min(1, 'Obligatoire'),
+  mattermostUserId: z.string().max(64, '64 caracteres maximum').optional(),
 })
 
 type CreateForm = z.infer<typeof createSchema>
@@ -56,7 +57,14 @@ function CreateUserModal({ open, onClose }: { open: boolean; onClose: () => void
     formState: { errors },
   } = useForm<CreateForm>({
     resolver: zodResolver(createSchema),
-    defaultValues: { nom: '', prenom: '', email: '', role: 'manager', motDePasse: '' },
+    defaultValues: {
+      nom: '',
+      prenom: '',
+      email: '',
+      role: 'manager',
+      motDePasse: '',
+      mattermostUserId: '',
+    },
   })
 
   const mutation = useMutation({
@@ -87,7 +95,11 @@ function CreateUserModal({ open, onClose }: { open: boolean; onClose: () => void
       width={480}
     >
       {apiError && <Alert message={apiError} />}
-      <form onSubmit={handleSubmit((v) => mutation.mutate(v))}>
+      <form
+        onSubmit={handleSubmit((v) =>
+          mutation.mutate({ ...v, mattermostUserId: v.mattermostUserId?.trim() || null }),
+        )}
+      >
         <div className="grid grid-cols-2 gap-x-4">
           <FormField label="Nom" required error={errors.nom?.message} htmlFor="create-nom">
             <Controller
@@ -149,6 +161,20 @@ function CreateUserModal({ open, onClose }: { open: boolean; onClose: () => void
             )}
           />
         </FormField>
+        <FormField
+          label="ID utilisateur Mattermost"
+          error={errors.mattermostUserId?.message}
+          hint="Optionnel. Utilise pour les notifications privees Mattermost."
+          htmlFor="create-mattermost-user-id"
+        >
+          <Controller
+            name="mattermostUserId"
+            control={control}
+            render={({ field }) => (
+              <Input id="create-mattermost-user-id" placeholder="ex: 9x8..." {...field} />
+            )}
+          />
+        </FormField>
         <div className="mt-2 flex justify-end gap-3">
           <Button type="button" variant="secondary" onClick={handleClose}>
             Annuler
@@ -168,6 +194,7 @@ const editSchema = z.object({
   nom: z.string().min(1, 'Obligatoire'),
   prenom: z.string().min(1, 'Obligatoire'),
   role: z.enum(['admin', 'manager'], { required_error: 'Obligatoire' }),
+  mattermostUserId: z.string().max(64, '64 caracteres maximum').optional(),
 })
 
 type EditForm = z.infer<typeof editSchema>
@@ -182,11 +209,15 @@ function EditUserModal({ user, onClose }: { user: UserResponse | null; onClose: 
     formState: { errors },
   } = useForm<EditForm>({
     resolver: zodResolver(editSchema),
-    defaultValues: { nom: '', prenom: '', role: 'manager' },
+    defaultValues: { nom: '', prenom: '', role: 'manager', mattermostUserId: '' },
   })
 
   const mutation = useMutation({
-    mutationFn: (data: EditForm) => updateUser(user!.id, data),
+    mutationFn: (data: EditForm) =>
+      updateUser(user!.id, {
+        ...data,
+        mattermostUserId: data.mattermostUserId?.trim() || null,
+      }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['users'] })
       toast.success('Compte mis à jour.')
@@ -199,7 +230,14 @@ function EditUserModal({ user, onClose }: { user: UserResponse | null; onClose: 
   })
 
   useEffect(() => {
-    if (user) reset({ nom: user.nom, prenom: user.prenom, role: user.role })
+    if (user) {
+      reset({
+        nom: user.nom,
+        prenom: user.prenom,
+        role: user.role,
+        mattermostUserId: user.mattermostUserId ?? '',
+      })
+    }
   }, [user, reset])
 
   return (
@@ -207,7 +245,7 @@ function EditUserModal({ user, onClose }: { user: UserResponse | null; onClose: 
       open={!!user}
       onOpenChange={(o) => !o && onClose()}
       title="Modifier le compte"
-      width={400}
+      width={480}
     >
       {apiError && <Alert message={apiError} />}
       <form onSubmit={handleSubmit((v) => mutation.mutate(v))}>
@@ -235,6 +273,17 @@ function EditUserModal({ user, onClose }: { user: UserResponse | null; onClose: 
                 onBlur={field.onBlur}
               />
             )}
+          />
+        </FormField>
+        <FormField
+          label="ID utilisateur Mattermost"
+          error={errors.mattermostUserId?.message}
+          hint="Optionnel. Utilise pour les messages prives."
+        >
+          <Controller
+            name="mattermostUserId"
+            control={control}
+            render={({ field }) => <Input placeholder="ex: 9x8..." {...field} />}
           />
         </FormField>
         <div className="mt-2 flex justify-end gap-3">
@@ -323,7 +372,15 @@ export function UserManagementPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-[#D8D4CC] bg-[#F7F7F4]">
-                {['Nom', 'E-mail', 'Rôle', 'Statut', 'Dernière connexion', 'Actions'].map((h) => (
+                {[
+                  'Nom',
+                  'E-mail',
+                  'Rôle',
+                  'Mattermost',
+                  'Statut',
+                  'Dernière connexion',
+                  'Actions',
+                ].map((h) => (
                   <th
                     key={h}
                     className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider text-[#9CA3AF] uppercase first:pl-5 last:pr-5"
@@ -358,6 +415,16 @@ export function UserManagementPage() {
                     >
                       {ROLE_LABELS[u.role]}
                     </span>
+                  </td>
+                  <td
+                    style={{ fontFamily: 'var(--font-code)' }}
+                    className="px-4 py-3.5 text-[12px] text-[#6B7280]"
+                  >
+                    {u.mattermostUserId ? (
+                      <span title={u.mattermostUserId}>{u.mattermostUserId.slice(0, 8)}...</span>
+                    ) : (
+                      <span className="text-[#9CA3AF]">Email</span>
+                    )}
                   </td>
                   <td className="px-4 py-3.5">
                     <StatusTag statut={u.statut === 'actif' ? 'Actif' : 'Inactif'} />

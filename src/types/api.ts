@@ -940,6 +940,7 @@ export interface components {
             role: "admin" | "manager";
             nom: string;
             prenom: string;
+            mattermostUserId?: string;
         };
         ApiResponseUserResponse: {
             success?: boolean;
@@ -956,6 +957,7 @@ export interface components {
             role?: "admin" | "manager";
             nom?: string;
             prenom?: string;
+            mattermostUserId?: string;
             /** @enum {string} */
             statut?: "actif" | "inactif";
             /** Format: date-time */
@@ -1094,6 +1096,7 @@ export interface components {
             role: "admin" | "manager";
             nom: string;
             prenom: string;
+            mattermostUserId?: string;
         };
         AnalyseIaReponse: {
             /** Format: uuid */
