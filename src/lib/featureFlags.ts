@@ -11,7 +11,7 @@ export const featureFlags = {
   documents: false,
   config: false,
   delegation: false,
-  notifications: false,
+  notifications: true,
   audit: false,
 } as const
 

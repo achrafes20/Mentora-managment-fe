@@ -50,6 +50,8 @@ export function AppLayout() {
               </p>
             </div>
             <button
+              type="button"
+              aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} non lues` : ''}`}
               onClick={togglePanel}
               className="relative flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg transition-colors hover:bg-[#D8D4CC]/40"
             >
