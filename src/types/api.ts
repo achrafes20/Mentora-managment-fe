@@ -638,6 +638,40 @@ export interface paths {
         patch: operations["activate"];
         trace?: never;
     };
+    "/api/notifications/{id}/lire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Marquer une de mes notifications comme lue */
+        patch: operations["marquerLue"];
+        trace?: never;
+    };
+    "/api/notifications/lire-toutes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Marquer toutes mes notifications comme lues */
+        patch: operations["marquerToutesLues"];
+        trace?: never;
+    };
     "/api/pointages": {
         parameters: {
             query?: never;
@@ -678,6 +712,40 @@ export interface paths {
             cookie?: never;
         };
         get: operations["listerParEmploye"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lister mes notifications non archivees */
+        get: operations["lister_6"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/notifications/non-lues/count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Compter mes notifications non lues */
+        get: operations["compterNonLues"];
         put?: never;
         post?: never;
         delete?: never;
@@ -757,7 +825,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["lister_6"];
+        get: operations["lister_7"];
         put?: never;
         post?: never;
         delete?: never;
@@ -838,7 +906,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["lister_7"];
+        get: operations["lister_8"];
         put?: never;
         post?: never;
         delete?: never;
@@ -872,6 +940,7 @@ export interface components {
             role: "admin" | "manager";
             nom: string;
             prenom: string;
+            mattermostUserId?: string;
         };
         ApiResponseUserResponse: {
             success?: boolean;
@@ -888,6 +957,7 @@ export interface components {
             role?: "admin" | "manager";
             nom?: string;
             prenom?: string;
+            mattermostUserId?: string;
             /** @enum {string} */
             statut?: "actif" | "inactif";
             /** Format: date-time */
@@ -1026,6 +1096,7 @@ export interface components {
             role: "admin" | "manager";
             nom: string;
             prenom: string;
+            mattermostUserId?: string;
         };
         AnalyseIaReponse: {
             /** Format: uuid */
@@ -1369,6 +1440,40 @@ export interface components {
             /** Format: date-time */
             timestamp?: string;
         };
+        ApiResponseNotificationReponse: {
+            success?: boolean;
+            data?: components["schemas"]["NotificationReponse"];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        NotificationReponse: {
+            /** Format: uuid */
+            id?: string;
+            titre?: string;
+            message?: string;
+            module?: string;
+            lienAction?: string;
+            entiteType?: string;
+            /** Format: uuid */
+            entiteId?: string;
+            lu?: boolean;
+            /** Format: date-time */
+            luLe?: string;
+            mattermostTente?: boolean;
+            mattermostReussi?: boolean;
+            /** Format: date-time */
+            creeLe?: string;
+        };
+        ApiResponseMapStringInteger: {
+            success?: boolean;
+            data?: {
+                [key: string]: number;
+            };
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
         ApiResponseListUserResponse: {
             success?: boolean;
             data?: components["schemas"]["UserResponse"][];
@@ -1405,6 +1510,34 @@ export interface components {
         ApiResponseListOffreEmploiReponse: {
             success?: boolean;
             data?: components["schemas"]["OffreEmploiReponse"][];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        ApiResponsePagedResponseNotificationReponse: {
+            success?: boolean;
+            data?: components["schemas"]["PagedResponseNotificationReponse"];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        PagedResponseNotificationReponse: {
+            content?: components["schemas"]["NotificationReponse"][];
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            size?: number;
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+            last?: boolean;
+        };
+        ApiResponseMapStringLong: {
+            success?: boolean;
+            data?: {
+                [key: string]: number;
+            };
             error?: string;
             /** Format: date-time */
             timestamp?: string;
@@ -2842,6 +2975,48 @@ export interface operations {
             };
         };
     };
+    marquerLue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseNotificationReponse"];
+                };
+            };
+        };
+    };
+    marquerToutesLues: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseMapStringInteger"];
+                };
+            };
+        };
+    };
     lister_5: {
         parameters: {
             query: {
@@ -2906,6 +3081,49 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponsePagedResponsePointageReponse"];
+                };
+            };
+        };
+    };
+    lister_6: {
+        parameters: {
+            query?: {
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePagedResponseNotificationReponse"];
+                };
+            };
+        };
+    };
+    compterNonLues: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseMapStringLong"];
                 };
             };
         };
@@ -2999,7 +3217,7 @@ export interface operations {
             };
         };
     };
-    lister_6: {
+    lister_7: {
         parameters: {
             query: {
                 offreId?: string;
@@ -3111,7 +3329,7 @@ export interface operations {
             };
         };
     };
-    lister_7: {
+    lister_8: {
         parameters: {
             query: {
                 resolue?: boolean;

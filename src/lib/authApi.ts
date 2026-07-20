@@ -11,6 +11,7 @@ export interface UserResponse {
   role: RoleUtilisateur
   nom: string
   prenom: string
+  mattermostUserId: string | null
   statut: StatutActifInactif
   creeLe: string
   modifieLe: string
@@ -68,6 +69,7 @@ export async function createUser(data: {
   role: RoleUtilisateur
   nom: string
   prenom: string
+  mattermostUserId?: string | null
 }): Promise<UserResponse> {
   const res = await apiClient.post<ApiEnvelope<UserResponse>>('/api/users', data)
   return res.data.data
@@ -75,7 +77,7 @@ export async function createUser(data: {
 
 export async function updateUser(
   id: string,
-  data: { role: RoleUtilisateur; nom: string; prenom: string },
+  data: { role: RoleUtilisateur; nom: string; prenom: string; mattermostUserId?: string | null },
 ): Promise<UserResponse> {
   const res = await apiClient.put<ApiEnvelope<UserResponse>>(`/api/users/${id}`, data)
   return res.data.data
