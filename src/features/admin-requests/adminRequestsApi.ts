@@ -1,0 +1,157 @@
+import { apiClient } from '@/lib/apiClient'
+
+interface ApiResponse<T> {
+  data?: T
+}
+
+export type TypeDemandeAdministrative = 'conge' | 'bon_sortie' | 'document_libre'
+export type GranulariteConge = 'journee' | 'demi_matin' | 'demi_apres_midi'
+export type StatutDemandeAdministrative = 'en_attente' | 'approuvee' | 'rejetee' | 'annulee'
+export type TypeMouvementConge = 'initialisation' | 'consommation' | 'recredit' | 'ajustement'
+
+export interface DemandeAdministrative {
+  id: string
+  employeId: string
+  employeNomComplet: string
+  typeDemande: TypeDemandeAdministrative
+  statut: StatutDemandeAdministrative
+  granularite?: GranulariteConge
+  dateDebut?: string
+  dateFin?: string
+  heureDepart?: string
+  heureRetourPrevue?: string
+  motif?: string
+  dureeJours?: number
+  creeLe?: string
+  dateDecision?: string
+}
+
+export interface DemandeAdministrativeRequete {
+  employeId: string
+  typeDemande: TypeDemandeAdministrative
+  granularite?: GranulariteConge
+  dateDebut?: string
+  dateFin?: string
+  heureDepart?: string
+  heureRetourPrevue?: string
+  motif?: string
+}
+
+export interface SoldeConge {
+  employeId: string
+  employeNomComplet: string
+  acquisJours: number
+  mouvementsJours: number
+  soldeJours: number
+}
+
+export interface MouvementConge {
+  id: string
+  demandeId?: string
+  typeMouvement: TypeMouvementConge
+  quantiteJours: number
+  commentaire?: string
+  creeLe?: string
+}
+
+export interface JourFerie {
+  id: string
+  dateFerie: string
+  libelle: string
+}
+
+export interface PageDemandesAdministratives {
+  content?: DemandeAdministrative[]
+  page?: number
+  size?: number
+  totalElements?: number
+  totalPages?: number
+  last?: boolean
+}
+
+export interface FiltresDemandes {
+  type?: TypeDemandeAdministrative | ''
+  statut?: StatutDemandeAdministrative | ''
+  employeId?: string
+  debut?: string
+  fin?: string
+  page?: number
+  size?: number
+}
+
+export async function listerDemandes(
+  filtres: FiltresDemandes,
+): Promise<PageDemandesAdministratives> {
+  const { data } = await apiClient.get<ApiResponse<PageDemandesAdministratives>>(
+    '/api/demandes-administratives',
+    { params: filtres },
+  )
+  return data.data ?? { content: [] }
+}
+
+export async function creerDemande(
+  requete: DemandeAdministrativeRequete,
+): Promise<DemandeAdministrative> {
+  const { data } = await apiClient.post<ApiResponse<DemandeAdministrative>>(
+    '/api/demandes-administratives',
+    requete,
+  )
+  return data.data as DemandeAdministrative
+}
+
+export async function approuverDemande(id: string): Promise<DemandeAdministrative> {
+  const { data } = await apiClient.patch<ApiResponse<DemandeAdministrative>>(
+    `/api/demandes-administratives/${id}/approuver`,
+  )
+  return data.data as DemandeAdministrative
+}
+
+export async function rejeterDemande(id: string): Promise<DemandeAdministrative> {
+  const { data } = await apiClient.patch<ApiResponse<DemandeAdministrative>>(
+    `/api/demandes-administratives/${id}/rejeter`,
+  )
+  return data.data as DemandeAdministrative
+}
+
+export async function annulerDemande(id: string): Promise<DemandeAdministrative> {
+  const { data } = await apiClient.patch<ApiResponse<DemandeAdministrative>>(
+    `/api/demandes-administratives/${id}/annuler`,
+  )
+  return data.data as DemandeAdministrative
+}
+
+export async function obtenirSolde(employeId: string): Promise<SoldeConge> {
+  const { data } = await apiClient.get<ApiResponse<SoldeConge>>(
+    `/api/demandes-administratives/employes/${employeId}/solde`,
+  )
+  return data.data as SoldeConge
+}
+
+export async function listerMouvements(employeId: string): Promise<MouvementConge[]> {
+  const { data } = await apiClient.get<ApiResponse<MouvementConge[]>>(
+    `/api/demandes-administratives/employes/${employeId}/mouvements`,
+  )
+  return data.data ?? []
+}
+
+export async function listerJoursFeries(): Promise<JourFerie[]> {
+  const { data } = await apiClient.get<ApiResponse<JourFerie[]>>(
+    '/api/demandes-administratives/jours-feries',
+  )
+  return data.data ?? []
+}
+
+export async function creerJourFerie(requete: {
+  dateFerie: string
+  libelle: string
+}): Promise<JourFerie> {
+  const { data } = await apiClient.post<ApiResponse<JourFerie>>(
+    '/api/demandes-administratives/jours-feries',
+    requete,
+  )
+  return data.data as JourFerie
+}
+
+export async function supprimerJourFerie(id: string): Promise<void> {
+  await apiClient.delete(`/api/demandes-administratives/jours-feries/${id}`)
+}
