@@ -1,7 +1,11 @@
 import { useNavigate } from 'react-router-dom'
 import { AlertTriangle, ChevronRight, UserCheck2 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
-import { DELEGATION_ACTIVE, DEPT_BREAKDOWN, MOCK_REQUESTS } from '@/lib/mockData'
+import { DEPT_BREAKDOWN, MOCK_REQUESTS } from '@/lib/mockData'
+import {
+  useDelegationActive,
+  useUtilisateursPourDelegation,
+} from '@/features/delegation/useDelegation'
 import { CornerMark } from '@/components/ui/CornerMark'
 import { PageHeader, StatCard } from '@/components/ui/StatCard'
 import { MockBanner } from '@/components/ui/MockBanner'
@@ -41,6 +45,14 @@ function EmployeesActiveCard({ onClick }: { onClick: () => void }) {
 export function DashboardPage() {
   const navigate = useNavigate()
   const { role } = useAuth()
+  const { data: delegationActive } = useDelegationActive()
+  const { data: utilisateurs } = useUtilisateursPourDelegation()
+  const nomDelegue = utilisateurs?.find((u) => u.id === delegationActive?.delegueId)
+  const nomDelegueAffiche = nomDelegue ? `${nomDelegue.prenom} ${nomDelegue.nom}` : '—'
+  // Le backend renvoie statut="active" dès la création même si dateDebut est future — cf.
+  // DelegationPage.tsx pour la même distinction d'affichage.
+  const aujourdHui = new Date().toISOString().slice(0, 10)
+  const delegationPlanifiee = Boolean(delegationActive && delegationActive.dateDebut > aujourdHui)
 
   const adminCards = [
     {
@@ -101,13 +113,29 @@ export function DashboardPage() {
     <div className="flex-1 overflow-auto">
       <div className="mx-auto max-w-[1200px] p-8">
         <MockBanner feature="dashboard" />
-        {role === 'admin' && (
+        {role === 'admin' && delegationActive && (
           <div className="mb-5 flex items-center gap-3 rounded-lg border border-[#D8D4CC] bg-[#D8D4CC]/30 px-4 py-3">
             <UserCheck2 size={14} className="flex-shrink-0 text-[#1B2A41]" />
             <p className="flex-1 text-[12px] text-[#1B2A41]">
-              Délégation active — <strong>{DELEGATION_ACTIVE.delegate}</strong> peut approuver les
-              demandes jusqu'au{' '}
-              <span style={{ fontFamily: 'var(--font-code)' }}>{DELEGATION_ACTIVE.until}</span>.
+              {delegationPlanifiee ? (
+                <>
+                  Délégation planifiée — <strong>{nomDelegueAffiche}</strong> pourra approuver les
+                  demandes du{' '}
+                  <span style={{ fontFamily: 'var(--font-code)' }}>
+                    {delegationActive.dateDebut}
+                  </span>{' '}
+                  au{' '}
+                  <span style={{ fontFamily: 'var(--font-code)' }}>{delegationActive.dateFin}</span>
+                  .
+                </>
+              ) : (
+                <>
+                  Délégation active — <strong>{nomDelegueAffiche}</strong> peut approuver les
+                  demandes jusqu'au{' '}
+                  <span style={{ fontFamily: 'var(--font-code)' }}>{delegationActive.dateFin}</span>
+                  .
+                </>
+              )}
             </p>
             <button
               onClick={() => navigate('/delegation')}

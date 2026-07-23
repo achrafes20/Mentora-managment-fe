@@ -440,6 +440,73 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/demandes-administratives": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["lister_5"];
+        put?: never;
+        post: operations["creer_5"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/demandes-administratives/jours-feries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["joursFeries"];
+        put?: never;
+        post: operations["creerJourFerie"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/delegations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Historique complet des délégations */
+        get: operations["lister_6"];
+        put?: never;
+        /** Désignation d'un délégué temporaire */
+        post: operations["creer_6"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/delegations/{id}/revoquer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Révocation manuelle d'une délégation active */
+        post: operations["revoquer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/candidatures/{id}/statut": {
         parameters: {
             query?: never;
@@ -672,6 +739,71 @@ export interface paths {
         patch: operations["marquerToutesLues"];
         trace?: never;
     };
+    "/api/demandes-administratives/{id}/rejeter": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["rejeter"];
+        trace?: never;
+    };
+    "/api/demandes-administratives/{id}/approuver": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["approuver"];
+        trace?: never;
+    };
+    "/api/demandes-administratives/{id}/annuler": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["annuler"];
+        trace?: never;
+    };
+    "/api/users/managers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Comptes Manager actifs (pour sélecteurs) */
+        get: operations["listerManagers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/pointages": {
         parameters: {
             query?: never;
@@ -679,7 +811,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["lister_5"];
+        get: operations["lister_7"];
         put?: never;
         post?: never;
         delete?: never;
@@ -728,7 +860,7 @@ export interface paths {
             cookie?: never;
         };
         /** Lister mes notifications non archivees */
-        get: operations["lister_6"];
+        get: operations["lister_8"];
         put?: never;
         post?: never;
         delete?: never;
@@ -818,6 +950,55 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/demandes-administratives/employes/{employeId}/solde": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["solde"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/demandes-administratives/employes/{employeId}/mouvements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["mouvements"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/delegations/moi": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ma délégation active en tant que délégué (ou aucune) */
+        get: operations["maDelegation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/candidatures": {
         parameters: {
             query?: never;
@@ -825,7 +1006,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["lister_7"];
+        get: operations["lister_9"];
         put?: never;
         post?: never;
         delete?: never;
@@ -906,7 +1087,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["lister_8"];
+        get: operations["lister_10"];
         put?: never;
         post?: never;
         delete?: never;
@@ -926,6 +1107,22 @@ export interface paths {
         put?: never;
         post?: never;
         delete: operations["supprimer"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/demandes-administratives/jours-feries/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["supprimerJourFerie"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1353,6 +1550,121 @@ export interface components {
             /** Format: date-time */
             creeLe?: string;
         };
+        DemandeAdministrativeRequete: {
+            /** Format: uuid */
+            employeId: string;
+            /** @enum {string} */
+            typeDemande: "conge" | "bon_sortie" | "document_libre" | "autre";
+            /** @enum {string} */
+            granularite?: "journee" | "demi_matin" | "demi_apres_midi";
+            /** Format: date */
+            dateDebut?: string;
+            /** Format: date */
+            dateFin?: string;
+            heureDepart?: string;
+            heureRetourPrevue?: string;
+            motif?: string;
+            /** Format: uuid */
+            fichierDocumentLibreId?: string;
+        };
+        ApiResponseDemandeAdministrativeReponse: {
+            success?: boolean;
+            data?: components["schemas"]["DemandeAdministrativeReponse"];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        DemandeAdministrativeReponse: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            employeId?: string;
+            employeNomComplet?: string;
+            /** Format: uuid */
+            managerId?: string;
+            /** @enum {string} */
+            typeDemande?: "conge" | "bon_sortie" | "document_libre" | "autre";
+            /** @enum {string} */
+            granularite?: "journee" | "demi_matin" | "demi_apres_midi";
+            /** Format: date */
+            dateDebut?: string;
+            /** Format: date */
+            dateFin?: string;
+            heureDepart?: string;
+            heureRetourPrevue?: string;
+            motif?: string;
+            /** Format: uuid */
+            fichierDocumentLibreId?: string;
+            /** @enum {string} */
+            statut?: "en_attente" | "approuvee" | "rejetee" | "annulee";
+            dureeJours?: number;
+            /** Format: uuid */
+            approuveRejetePar?: string;
+            /** Format: date-time */
+            dateDecision?: string;
+            /** Format: uuid */
+            creePar?: string;
+            /** Format: date-time */
+            creeLe?: string;
+        };
+        JourFerieRequete: {
+            /** Format: date */
+            dateFerie: string;
+            libelle: string;
+        };
+        ApiResponseJourFerieReponse: {
+            success?: boolean;
+            data?: components["schemas"]["JourFerieReponse"];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        JourFerieReponse: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: date */
+            dateFerie?: string;
+            libelle?: string;
+            /** Format: uuid */
+            gerePar?: string;
+            /** Format: date-time */
+            creeLe?: string;
+        };
+        DelegationCreationRequete: {
+            /** Format: uuid */
+            delegueId: string;
+            /** Format: date */
+            dateDebut: string;
+            /** Format: date */
+            dateFin: string;
+        };
+        ApiResponseDelegationReponse: {
+            success?: boolean;
+            data?: components["schemas"]["DelegationReponse"];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        DelegationReponse: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            adminDelegantId?: string;
+            /** Format: uuid */
+            delegueId?: string;
+            /** Format: date */
+            dateDebut?: string;
+            /** Format: date */
+            dateFin?: string;
+            /** @enum {string} */
+            statut?: "active" | "revoquee" | "expiree";
+            /** Format: uuid */
+            revoqueParId?: string;
+            /** Format: date-time */
+            revoqueLe?: string;
+            /** Format: date-time */
+            creeLe?: string;
+        };
         ChangerStatutRequete: {
             /** @enum {string} */
             statut: "recu" | "preselectionne" | "entretien" | "decision" | "embauche" | "rejete" | "en_attente" | "suggestion_reactivation" | "archivee" | "non_traite";
@@ -1644,6 +1956,77 @@ export interface components {
         ApiResponseListDepartementReponse: {
             success?: boolean;
             data?: components["schemas"]["DepartementReponse"][];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        ApiResponsePagedResponseDemandeAdministrativeReponse: {
+            success?: boolean;
+            data?: components["schemas"]["PagedResponseDemandeAdministrativeReponse"];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        PagedResponseDemandeAdministrativeReponse: {
+            content?: components["schemas"]["DemandeAdministrativeReponse"][];
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            size?: number;
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+            last?: boolean;
+        };
+        ApiResponseListJourFerieReponse: {
+            success?: boolean;
+            data?: components["schemas"]["JourFerieReponse"][];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        ApiResponseSoldeCongeReponse: {
+            success?: boolean;
+            data?: components["schemas"]["SoldeCongeReponse"];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        SoldeCongeReponse: {
+            /** Format: uuid */
+            employeId?: string;
+            employeNomComplet?: string;
+            soldeJours?: number;
+        };
+        ApiResponseListMouvementCongeReponse: {
+            success?: boolean;
+            data?: components["schemas"]["MouvementCongeReponse"][];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        MouvementCongeReponse: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            employeId?: string;
+            /** Format: uuid */
+            demandeId?: string;
+            /** @enum {string} */
+            typeMouvement?: "initialisation" | "consommation" | "recredit" | "ajustement";
+            quantiteJours?: number;
+            /** Format: date */
+            dateMouvement?: string;
+            commentaire?: string;
+            /** Format: uuid */
+            creePar?: string;
+            /** Format: date-time */
+            creeLe?: string;
+        };
+        ApiResponseListDelegationReponse: {
+            success?: boolean;
+            data?: components["schemas"]["DelegationReponse"][];
             error?: string;
             /** Format: date-time */
             timestamp?: string;
@@ -2693,6 +3076,167 @@ export interface operations {
             };
         };
     };
+    lister_5: {
+        parameters: {
+            query: {
+                employeId?: string;
+                type?: "conge" | "bon_sortie" | "document_libre" | "autre";
+                statut?: "en_attente" | "approuvee" | "rejetee" | "annulee";
+                debut?: string;
+                fin?: string;
+                pageable: components["schemas"]["Pageable"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePagedResponseDemandeAdministrativeReponse"];
+                };
+            };
+        };
+    };
+    creer_5: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DemandeAdministrativeRequete"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDemandeAdministrativeReponse"];
+                };
+            };
+        };
+    };
+    joursFeries: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListJourFerieReponse"];
+                };
+            };
+        };
+    };
+    creerJourFerie: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JourFerieRequete"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseJourFerieReponse"];
+                };
+            };
+        };
+    };
+    lister_6: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListDelegationReponse"];
+                };
+            };
+        };
+    };
+    creer_6: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DelegationCreationRequete"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDelegationReponse"];
+                };
+            };
+        };
+    };
+    revoquer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDelegationReponse"];
+                };
+            };
+        };
+    };
     changerStatut: {
         parameters: {
             query?: never;
@@ -3017,7 +3561,93 @@ export interface operations {
             };
         };
     };
-    lister_5: {
+    rejeter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDemandeAdministrativeReponse"];
+                };
+            };
+        };
+    };
+    approuver: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDemandeAdministrativeReponse"];
+                };
+            };
+        };
+    };
+    annuler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDemandeAdministrativeReponse"];
+                };
+            };
+        };
+    };
+    listerManagers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListUserResponse"];
+                };
+            };
+        };
+    };
+    lister_7: {
         parameters: {
             query: {
                 pageable: components["schemas"]["Pageable"];
@@ -3085,7 +3715,7 @@ export interface operations {
             };
         };
     };
-    lister_6: {
+    lister_8: {
         parameters: {
             query?: {
                 page?: number;
@@ -3217,7 +3847,71 @@ export interface operations {
             };
         };
     };
-    lister_7: {
+    solde: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                employeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseSoldeCongeReponse"];
+                };
+            };
+        };
+    };
+    mouvements: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                employeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListMouvementCongeReponse"];
+                };
+            };
+        };
+    };
+    maDelegation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDelegationReponse"];
+                };
+            };
+        };
+    };
+    lister_9: {
         parameters: {
             query: {
                 offreId?: string;
@@ -3329,7 +4023,7 @@ export interface operations {
             };
         };
     };
-    lister_8: {
+    lister_10: {
         parameters: {
             query: {
                 resolue?: boolean;
@@ -3359,6 +4053,28 @@ export interface operations {
             path: {
                 employeId: string;
                 planningId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    supprimerJourFerie: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
             };
             cookie?: never;
         };

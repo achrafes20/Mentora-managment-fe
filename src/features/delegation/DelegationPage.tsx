@@ -1,24 +1,126 @@
+import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
+import { Controller, useForm } from 'react-hook-form'
+import { format } from 'date-fns'
 import { Plus } from 'lucide-react'
-import { DELEGATION_ACTIVE } from '@/lib/mockData'
+import { z } from 'zod'
 import { PageHeader } from '@/components/ui/StatCard'
 import { CornerMark } from '@/components/ui/CornerMark'
-import { MockBanner } from '@/components/ui/MockBanner'
+import { Button } from '@/components/ui/Button'
+import { FormField } from '@/components/ui/FormField'
+import { Select } from '@/components/ui/Select'
+import { DatePicker } from '@/components/ui/DatePicker'
+import { Alert } from '@/components/ui/Alert'
+import { StatusTag } from '@/components/ui/StatusTag'
+import { formatStatut } from '@/components/ui/tokens'
+import { toast } from '@/components/ui/toast'
+import { confirm } from '@/components/ui/confirm'
+import { useAuth } from '@/lib/AuthContext'
+import type { ApiError } from '@/lib/apiClient'
+import {
+  useCreerDelegation,
+  useDelegationActive,
+  useDelegations,
+  useRevoquerDelegation,
+  useUtilisateursPourDelegation,
+} from './useDelegation'
+
+const schema = z
+  .object({
+    delegueId: z.string().min(1, 'Le délégué est requis'),
+    dateDebut: z.date({ required_error: 'La date de début est requise' }),
+    dateFin: z.date({ required_error: 'La date de fin est requise' }),
+  })
+  .refine((v) => v.dateFin >= v.dateDebut, {
+    message: 'La date de fin doit être postérieure à la date de début',
+    path: ['dateFin'],
+  })
+
+type FormValues = z.infer<typeof schema>
 
 export function DelegationPage() {
-  const [active, setActive] = useState(true)
+  const { user } = useAuth()
   const [showForm, setShowForm] = useState(false)
+  const [erreur, setErreur] = useState<string | null>(null)
+
+  const { data: delegations, isLoading } = useDelegations()
+  const { data: active } = useDelegationActive()
+  // Le backend renvoie statut="active" dès la création, même si dateDebut est future (seule
+  // l'échéance dateFin est reflétée dans statutEffectif() côté serveur) — distinction purement
+  // d'affichage ici, pour ne pas annoncer une délégation "active" avant qu'elle ne le soit vraiment.
+  const aujourdHui = format(new Date(), 'yyyy-MM-dd')
+  const estPlanifiee = Boolean(active && active.dateDebut > aujourdHui)
+  const { data: utilisateurs } = useUtilisateursPourDelegation()
+  const creerMutation = useCreerDelegation()
+  const revoquerMutation = useRevoquerDelegation()
+
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<FormValues>({ resolver: zodResolver(schema) })
+
+  const delegablesOptions = (utilisateurs ?? [])
+    .filter((u) => u.statut === 'actif' && u.id !== user?.id)
+    .map((u) => ({
+      label: `${u.prenom} ${u.nom} (${u.role === 'admin' ? 'Admin' : 'Manager'})`,
+      value: u.id,
+    }))
+
+  function nomUtilisateur(id?: string): string {
+    const u = utilisateurs?.find((u) => u.id === id)
+    return u ? `${u.prenom} ${u.nom}` : '—'
+  }
+
+  function ouvrirCreation() {
+    setErreur(null)
+    reset({ delegueId: '', dateDebut: undefined, dateFin: undefined })
+    setShowForm(true)
+  }
+
+  function soumettre(valeurs: FormValues) {
+    creerMutation
+      .mutateAsync({
+        delegueId: valeurs.delegueId,
+        dateDebut: format(valeurs.dateDebut, 'yyyy-MM-dd'),
+        dateFin: format(valeurs.dateFin, 'yyyy-MM-dd'),
+      })
+      .then(() => {
+        toast.success('Délégation créée.')
+        setShowForm(false)
+      })
+      .catch((err: ApiError) => setErreur(err.message))
+  }
+
+  function demanderRevocation() {
+    if (!active?.id) return
+    confirm({
+      title: estPlanifiee ? 'Annuler cette délégation planifiée ?' : 'Révoquer cette délégation ?',
+      content: estPlanifiee
+        ? `La délégation prévue pour ${nomUtilisateur(active.delegueId)} sera annulée avant son démarrage.`
+        : `${nomUtilisateur(active.delegueId)} perdra immédiatement les droits d'approbation délégués.`,
+      okText: estPlanifiee ? 'Annuler la délégation' : 'Révoquer',
+      onOk: async () => {
+        try {
+          await revoquerMutation.mutateAsync(active.id as string)
+          toast.success('Délégation révoquée.')
+        } catch (err) {
+          toast.error((err as ApiError).message)
+        }
+      },
+    })
+  }
 
   return (
     <div className="flex-1 overflow-auto p-8">
-      <MockBanner feature="delegation" />
       <PageHeader
         title="Délégation d'approbation"
         subtitle="Désigner un délégué temporaire"
         actions={
           !active && (
             <button
-              onClick={() => setShowForm(true)}
+              onClick={ouvrirCreation}
               className="flex items-center gap-1.5 rounded-lg bg-[#1B2A41] px-4 py-2 text-[12px] font-medium text-white"
             >
               <Plus size={13} /> Déléguer temporairement
@@ -31,20 +133,29 @@ export function DelegationPage() {
         <div className="relative mb-6 max-w-md rounded-xl border border-[#D8D4CC] bg-white p-5">
           <CornerMark />
           <p className="text-[10px] font-medium tracking-wider text-[#9CA3AF] uppercase">
-            Délégation active
+            {estPlanifiee ? 'Délégation planifiée' : 'Délégation active'}
           </p>
           <p className="mt-2 text-[16px] font-semibold text-[#1B2A41]">
-            {DELEGATION_ACTIVE.delegate}
+            {nomUtilisateur(active.delegueId)}
           </p>
           <p className="mt-1 text-[12px] text-[#6B7280]">
-            Jusqu'au{' '}
-            <span style={{ fontFamily: 'var(--font-code)' }}>{DELEGATION_ACTIVE.until}</span>
+            {estPlanifiee ? (
+              <>
+                À partir du{' '}
+                <span style={{ fontFamily: 'var(--font-code)' }}>{active.dateDebut}</span> jusqu'au{' '}
+                <span style={{ fontFamily: 'var(--font-code)' }}>{active.dateFin}</span>
+              </>
+            ) : (
+              <>
+                Jusqu'au <span style={{ fontFamily: 'var(--font-code)' }}>{active.dateFin}</span>
+              </>
+            )}
           </p>
           <button
-            onClick={() => setActive(false)}
+            onClick={demanderRevocation}
             className="mt-4 rounded-lg border border-[#C1495A]/30 px-3 py-1.5 text-[12px] text-[#C1495A] hover:bg-[#C1495A]/8"
           >
-            Révoquer
+            {estPlanifiee ? 'Annuler' : 'Révoquer'}
           </button>
         </div>
       ) : (
@@ -56,50 +167,62 @@ export function DelegationPage() {
       {showForm && (
         <div className="mb-6 max-w-md rounded-xl border border-[#D8D4CC] bg-white p-5">
           <h3 className="mb-4 text-[13px] font-semibold text-[#1B2A41]">Nouvelle délégation</h3>
+          {erreur && <Alert message={erreur} />}
           <div className="space-y-3">
-            <div>
-              <label className="text-[12px] text-[#6B7280]">Délégué</label>
-              <select className="mt-1 w-full rounded-lg border border-[#D8D4CC] bg-[#F7F7F4] px-3 py-2 text-[13px]">
-                <option>Sophie Martin (Manager)</option>
-                <option>Nour El Hassani (Admin)</option>
-              </select>
-            </div>
+            <FormField label="Délégué" required error={errors.delegueId?.message}>
+              <Controller
+                name="delegueId"
+                control={control}
+                render={({ field }) => (
+                  <Select
+                    value={field.value ?? ''}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    options={delegablesOptions}
+                    placeholder="Sélectionner un compte"
+                  />
+                )}
+              />
+            </FormField>
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-[12px] text-[#6B7280]">Date de début</label>
-                <input
-                  type="date"
-                  className="mt-1 w-full rounded-lg border border-[#D8D4CC] bg-[#F7F7F4] px-3 py-2 text-[13px]"
+              <FormField label="Date de début" required error={errors.dateDebut?.message}>
+                <Controller
+                  name="dateDebut"
+                  control={control}
+                  render={({ field }) => (
+                    <DatePicker
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                    />
+                  )}
                 />
-              </div>
-              <div>
-                <label className="text-[12px] text-[#6B7280]">Date de fin</label>
-                <input
-                  type="date"
-                  className="mt-1 w-full rounded-lg border border-[#D8D4CC] bg-[#F7F7F4] px-3 py-2 text-[13px]"
+              </FormField>
+              <FormField label="Date de fin" required error={errors.dateFin?.message}>
+                <Controller
+                  name="dateFin"
+                  control={control}
+                  render={({ field }) => (
+                    <DatePicker
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                    />
+                  )}
                 />
-              </div>
+              </FormField>
             </div>
             <p className="text-[11px] text-[#9CA3AF]">
               Le délégué obtient les droits d'approbation des demandes et de décision de
               recrutement. Pas de gestion des comptes ni de configuration.
             </p>
             <div className="flex gap-2">
-              <button
-                onClick={() => {
-                  setActive(true)
-                  setShowForm(false)
-                }}
-                className="rounded-lg bg-[#1B2A41] px-4 py-2 text-[12px] text-white"
-              >
+              <Button loading={creerMutation.isPending} onClick={handleSubmit(soumettre)}>
                 Activer
-              </button>
-              <button
-                onClick={() => setShowForm(false)}
-                className="rounded-lg border border-[#D8D4CC] px-4 py-2 text-[12px] text-[#6B7280]"
-              >
+              </Button>
+              <Button variant="secondary" onClick={() => setShowForm(false)}>
                 Annuler
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -121,16 +244,37 @@ export function DelegationPage() {
             </tr>
           </thead>
           <tbody>
-            <tr className="hover:bg-[#F7F7F4]">
-              <td className="px-4 py-3.5 text-[13px] text-[#1B2A41]">Sophie Martin</td>
-              <td
-                style={{ fontFamily: 'var(--font-code)' }}
-                className="px-4 py-3.5 text-[12px] text-[#6B7280]"
-              >
-                01/07 – 15/07/2024
-              </td>
-              <td className="px-4 py-3.5 text-[12px] text-[#4A7C6B]">Active</td>
-            </tr>
+            {isLoading ? (
+              <tr>
+                <td colSpan={3} className="p-8 text-center text-[13px] text-[#9CA3AF]">
+                  Chargement…
+                </td>
+              </tr>
+            ) : (
+              (delegations ?? []).map((d) => (
+                <tr key={d.id} className="hover:bg-[#F7F7F4]">
+                  <td className="px-4 py-3.5 text-[13px] text-[#1B2A41]">
+                    {nomUtilisateur(d.delegueId)}
+                  </td>
+                  <td
+                    style={{ fontFamily: 'var(--font-code)' }}
+                    className="px-4 py-3.5 text-[12px] text-[#6B7280]"
+                  >
+                    {d.dateDebut} – {d.dateFin}
+                  </td>
+                  <td className="px-4 py-3.5">
+                    <StatusTag statut={formatStatut(d.statut ?? '')} />
+                  </td>
+                </tr>
+              ))
+            )}
+            {!isLoading && (delegations ?? []).length === 0 && (
+              <tr>
+                <td colSpan={3} className="p-8 text-center text-[13px] text-[#9CA3AF]">
+                  Aucune délégation pour le moment.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

@@ -4,6 +4,7 @@ import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { FileText } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
+import { useEstDelegueActifMaintenant } from '@/features/delegation/useDelegation'
 import { PageHeader } from '@/components/ui/StatCard'
 import { StatusTag } from '@/components/ui/StatusTag'
 import { Button } from '@/components/ui/Button'
@@ -29,8 +30,12 @@ import { RejectDialog } from './RejectDialog'
 export function CandidatDetailPage() {
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
-  const { role } = useAuth()
-  const estAdmin = role === 'admin'
+  const { role, user } = useAuth()
+  const estDelegueActif = useEstDelegueActifMaintenant()
+  // EF-AUTH-11/12 : un délégué actif hérite des droits de décision recrutement de l'Admin
+  // (CandidatureController — miroir de estAdmin côté backend, jamais pour enregistrerResultatEntretien
+  // qui reste Manager-only).
+  const peutDecider = role === 'admin' || estDelegueActif
   const estManager = role === 'manager'
 
   const { data: candidature, isLoading } = useCandidature(id)
@@ -70,6 +75,11 @@ export function CandidatDetailPage() {
   const managerAssigne = managers?.find((m) => m.id === dernierEntretien?.managerId)
   const managerResoluId = departements?.find((d) => d.id === offre?.departementId)?.managerId
   const entretienResolu = !!dernierEntretien?.resultat
+  // EF-REC-09 : le résultat n'est saisissable que par le Manager précisément assigné à cet
+  // entretien — pas "un manager quelconque" (bug repéré le 2026-07-23 : `estManager` seul
+  // affichait les boutons à tout Manager, backend rejetait ensuite avec
+  // EntretienManagerNonAssigneException).
+  const estManagerAssigne = estManager && user?.id === dernierEntretien?.managerId
 
   function changerStatut(
     statut: string,
@@ -194,7 +204,7 @@ export function CandidatDetailPage() {
                   <FileText size={13} /> Voir le CV
                 </button>
               )}
-              {estAdmin && (
+              {peutDecider && (
                 <button
                   onClick={relancerAnalyse}
                   disabled={relancerMutation.isPending}
@@ -221,7 +231,7 @@ export function CandidatDetailPage() {
         </div>
       </div>
 
-      {candidature.statut === 'suggestion_reactivation' && estAdmin && (
+      {candidature.statut === 'suggestion_reactivation' && peutDecider && (
         <div className="mt-5 rounded-xl border border-[#C87F3A]/30 bg-[#C87F3A]/8 p-5">
           <h3 className="mb-2 text-[12px] font-semibold text-[#1B2A41]">
             Suggestion de réactivation (EF-REC-12)
@@ -260,7 +270,7 @@ export function CandidatDetailPage() {
                 <p className="mt-2 text-[13px] text-[#6B7280]">{dernierEntretien.commentaire}</p>
               )}
             </div>
-          ) : candidature.statut === 'entretien' && estManager ? (
+          ) : candidature.statut === 'entretien' && estManagerAssigne ? (
             <>
               <div className="flex gap-3">
                 <Button
@@ -292,7 +302,7 @@ export function CandidatDetailPage() {
         </div>
       )}
 
-      {estAdmin && (
+      {peutDecider && (
         <div className="mt-5 rounded-xl border border-[#D8D4CC] bg-white p-5">
           <h3 className="mb-3 text-[12px] font-semibold text-[#1B2A41]">Actions</h3>
           <div className="flex flex-wrap gap-3">
@@ -340,11 +350,21 @@ export function CandidatDetailPage() {
                 </Button>
               </>
             )}
-            {candidature.statut === 'embauche' && (
-              <Button onClick={() => navigate(`/employes?depuisCandidatureId=${candidature.id}`)}>
-                Créer la fiche employé
-              </Button>
-            )}
+            {candidature.statut === 'embauche' &&
+              // EF-EMP-05 : "l'Admin ouvre 'Nouvel employé'" (plan T3.B1) — jamais délégable,
+              // contrairement aux décisions de recrutement ci-dessus : EmployeController#creer()
+              // est strictement hasRole('ADMIN'), sans extension délégué (bug repéré le
+              // 2026-07-23 : le bouton restait visible et cliquable pour un délégué, qui
+              // atterrissait sur un formulaire dont la soumission échouait silencieusement en 403).
+              (role === 'admin' ? (
+                <Button onClick={() => navigate(`/employes?depuisCandidatureId=${candidature.id}`)}>
+                  Créer la fiche employé
+                </Button>
+              ) : (
+                <p className="text-[13px] text-[#9CA3AF]">
+                  Seul un Admin peut créer la fiche employé.
+                </p>
+              ))}
           </div>
         </div>
       )}

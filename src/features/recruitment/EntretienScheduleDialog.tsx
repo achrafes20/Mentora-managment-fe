@@ -34,6 +34,13 @@ export function EntretienScheduleDialog({
   submitting,
 }: Props) {
   const { data: managers } = useManagers()
+  // EF-REC-08 : l'entretien est conduit par le Manager du département concerné — un seul, pas un
+  // choix libre parmi tous les managers actifs de l'entreprise (bug repéré le 2026-07-23 :
+  // n'importe quel manager, y compris d'un tout autre département, apparaissait sélectionnable).
+  // managerParDefaut porte déjà cette résolution (cf. managerResoluPour / managerResoluId côté
+  // appelant) ; on restreint les options du sélecteur à ce seul manager plutôt que d'en faire un
+  // vrai choix.
+  const managerResolu = (managers ?? []).find((m) => m.id === managerParDefaut)
   const [managerId, setManagerId] = useState('')
   const [date, setDate] = useState<Date | null>(null)
   const [heure, setHeure] = useState('09:00')
@@ -81,8 +88,14 @@ export function EntretienScheduleDialog({
         <Select
           value={managerId}
           onChange={setManagerId}
-          placeholder="Sélectionner un manager"
-          options={(managers ?? []).map((m) => ({ label: libelleManager(m), value: m.id ?? '' }))}
+          placeholder={
+            managerResolu ? undefined : 'Aucun manager pour le département de cette offre'
+          }
+          options={
+            managerResolu
+              ? [{ label: libelleManager(managerResolu), value: managerResolu.id ?? '' }]
+              : []
+          }
         />
       </FormField>
       <FormField label="Date de l'entretien">

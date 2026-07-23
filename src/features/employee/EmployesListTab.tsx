@@ -84,7 +84,11 @@ export function EmployesListTab() {
   // ne crée jamais la fiche automatiquement (décision verrouillée, cf. plan T3.B1). Dérivé
   // directement de l'URL plutôt que synchronisé via un effet (évite les rendus en cascade).
   const depuisCandidatureId = searchParams.get('depuisCandidatureId') ?? undefined
-  const modaleCreation = modaleCreationManuelle || !!depuisCandidatureId
+  // Défense en profondeur : EmployeController#creer() reste hasRole('ADMIN') strict, jamais
+  // délégable (cf. CandidatDetailPage). Le lien qui pointe ici est déjà masqué pour un délégué,
+  // mais l'URL ?depuisCandidatureId= reste tapable/partageable directement — ne jamais ouvrir la
+  // modale de création pour un non-Admin même dans ce cas.
+  const modaleCreation = estAdmin && (modaleCreationManuelle || !!depuisCandidatureId)
   const { data: candidaturePrefill } = useCandidaturePrefill(depuisCandidatureId)
 
   const prefill: EmployePrefill | null = candidaturePrefill

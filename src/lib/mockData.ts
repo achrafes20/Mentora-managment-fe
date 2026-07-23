@@ -172,11 +172,6 @@ export const MOCK_AUDIT_LOG = [
   },
 ]
 
-export const DELEGATION_ACTIVE = {
-  delegate: 'Sophie Martin',
-  until: '15/07/2024',
-}
-
 export const DEPT_BREAKDOWN = [
   { dept: 'Technologie', abbr: 'IT', count: 18 },
   { dept: 'Marketing', abbr: 'MKT', count: 12 },

@@ -5,6 +5,7 @@ import { PageHeader } from '@/components/ui/StatCard'
 import { StatusTag } from '@/components/ui/StatusTag'
 import { useAuth } from '@/lib/AuthContext'
 import type { ApiError } from '@/lib/apiClient'
+import { useEstDelegueActifMaintenant } from '../delegation/useDelegation'
 import { listerEmployes } from '../employee/employesApi'
 import {
   annulerDemande,
@@ -52,6 +53,11 @@ function formatNombre(valeur?: number) {
 
 export function DemandesPage() {
   const { role } = useAuth()
+  const estDelegueActif = useEstDelegueActifMaintenant()
+  // EF-AUTH-11/12 : un délégué actif peut approuver/rejeter/annuler comme l'Admin — jours fériés
+  // (plus bas) restent strictement Admin, jamais délégables (miroir de verifierAdminOuDelegue()
+  // côté backend, qui ne couvre que ces trois actions).
+  const peutDecider = role === 'admin' || estDelegueActif
   const queryClient = useQueryClient()
   const [tab, setTab] = useState<Tab>('liste')
   const [typeFiltre, setTypeFiltre] = useState<TypeDemandeAdministrative | ''>('')
@@ -289,7 +295,7 @@ export function DemandesPage() {
                       <StatusTag statut={d.statut} />
                     </td>
                     <td className="px-4 py-3.5">
-                      {role === 'admin' && d.statut === 'en_attente' && (
+                      {peutDecider && d.statut === 'en_attente' && (
                         <div className="flex gap-2">
                           <ActionButton
                             label="Approuver"
@@ -306,7 +312,7 @@ export function DemandesPage() {
                           />
                         </div>
                       )}
-                      {role === 'admin' && d.statut === 'approuvee' && (
+                      {peutDecider && d.statut === 'approuvee' && (
                         <ActionButton
                           label="Annuler"
                           danger

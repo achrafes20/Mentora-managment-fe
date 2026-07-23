@@ -10,7 +10,7 @@ export const featureFlags = {
   adminRequests: false,
   documents: false,
   config: false,
-  delegation: false,
+  delegation: true,
   notifications: true,
   audit: false,
 } as const
