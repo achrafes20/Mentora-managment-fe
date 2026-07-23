@@ -49,7 +49,7 @@ export function DelegationPage() {
   // l'échéance dateFin est reflétée dans statutEffectif() côté serveur) — distinction purement
   // d'affichage ici, pour ne pas annoncer une délégation "active" avant qu'elle ne le soit vraiment.
   const aujourdHui = format(new Date(), 'yyyy-MM-dd')
-  const estPlanifiee = Boolean(active && active.dateDebut > aujourdHui)
+  const estPlanifiee = Boolean(active?.dateDebut && active.dateDebut > aujourdHui)
   const { data: utilisateurs } = useUtilisateursPourDelegation()
   const creerMutation = useCreerDelegation()
   const revoquerMutation = useRevoquerDelegation()

@@ -52,7 +52,9 @@ export function DashboardPage() {
   // Le backend renvoie statut="active" dès la création même si dateDebut est future — cf.
   // DelegationPage.tsx pour la même distinction d'affichage.
   const aujourdHui = new Date().toISOString().slice(0, 10)
-  const delegationPlanifiee = Boolean(delegationActive && delegationActive.dateDebut > aujourdHui)
+  const delegationPlanifiee = Boolean(
+    delegationActive?.dateDebut && delegationActive.dateDebut > aujourdHui,
+  )
 
   const adminCards = [
     {

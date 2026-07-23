@@ -25,8 +25,8 @@ const delegation: Delegation = {
   dateDebut: '2026-07-22',
   dateFin: '2026-07-29',
   statut: 'active',
-  revoqueParId: null,
-  revoqueLe: null,
+  revoqueParId: undefined,
+  revoqueLe: undefined,
   creeLe: new Date().toISOString(),
 }
 
@@ -60,10 +60,12 @@ describe('delegationApi', () => {
 
   it('creerDelegation poste sur /api/delegations avec la requête fournie', async () => {
     postMock.mockResolvedValueOnce({ data: { data: delegation } })
+    // Champs littéraux plutôt que dérivés de `delegation` : ses props sont typées optionnelles
+    // (générées depuis l'OpenAPI spec), alors que DelegationCreationRequete les exige toutes.
     const requete = {
-      delegueId: delegation.delegueId,
-      dateDebut: delegation.dateDebut,
-      dateFin: delegation.dateFin,
+      delegueId: 'd05aaeae-638d-4200-8f73-6390162bc417',
+      dateDebut: '2026-07-22',
+      dateFin: '2026-07-29',
     }
 
     await expect(creerDelegation(requete)).resolves.toEqual(delegation)
