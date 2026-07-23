@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { CalendarCheck, ChevronRight } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
+import { useEstDelegueActifMaintenant } from '@/features/delegation/useDelegation'
 import { PageHeader } from '@/components/ui/StatCard'
 import { CornerMark } from '@/components/ui/CornerMark'
 import { Avatar } from '@/components/ui/Avatar'
@@ -156,6 +157,7 @@ function CandidatureCard({
 export function RecruitmentPage() {
   const navigate = useNavigate()
   const { role } = useAuth()
+  const estDelegueActif = useEstDelegueActifMaintenant()
   const [search, setSearch] = useState('')
   const [colonneSurvolee, setColonneSurvolee] = useState<string | null>(null)
   const [dialogEntretienId, setDialogEntretienId] = useState<string | null>(null)
@@ -239,7 +241,11 @@ export function RecruitmentPage() {
 
   const candidatureEntretien = candidatures.find((c) => c.id === dialogEntretienId)
 
-  if (role === 'manager') {
+  // EF-AUTH-11/12 : un délégué actif bascule sur la vue Admin complète (kanban + accès aux
+  // Offres) — sans ça, ce branchement sur `role` seul l'enfermait dans la vue restreinte
+  // "Entretiens à réaliser" et lui rendait la création d'offre inaccessible malgré ses droits
+  // backend (cf. unDelegueActifPeutCreerUneOffreCommeUnAdmin, DelegationIntegrationTest).
+  if (role === 'manager' && !estDelegueActif) {
     const entretiens = candidatures.filter((c) => c.statut === 'entretien')
 
     return (

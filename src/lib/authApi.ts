@@ -63,6 +63,16 @@ export async function listUsers(): Promise<UserResponse[]> {
   return res.data.data
 }
 
+/**
+ * Comptes Manager actifs uniquement — contrairement à listUsers(), accessible à un délégué actif
+ * (EF-AUTH-11/12) : jamais la liste complète des comptes (Admin inclus), qui relèverait de la
+ * gestion des comptes utilisateurs, explicitement jamais déléguée.
+ */
+export async function listManagers(): Promise<UserResponse[]> {
+  const res = await apiClient.get<ApiEnvelope<UserResponse[]>>('/api/users/managers')
+  return res.data.data
+}
+
 export async function createUser(data: {
   email: string
   motDePasse: string

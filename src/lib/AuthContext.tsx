@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { type UserResponse, getMe, login, logout, setAuthToken } from '@/lib/authApi'
 import { apiClient } from '@/lib/apiClient'
 
@@ -29,6 +30,7 @@ const AuthContext = createContext<AuthContextValue | null>(null)
 // ---- Provider ----
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const queryClient = useQueryClient()
   const [state, setState] = useState<AuthState>({
     user: null,
     token: null,
@@ -51,9 +53,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Token expiré ou révoqué → nettoyage silencieux
       localStorage.removeItem(TOKEN_KEY)
       setAuthToken(null)
+      queryClient.clear()
       setState({ user: null, token: null, isAuthenticated: false, isLoading: false })
     }
-  }, [])
+  }, [queryClient])
 
   useEffect(() => {
     setTimeout(() => {
@@ -69,20 +72,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (error?.status === 401 && state.isAuthenticated) {
           localStorage.removeItem(TOKEN_KEY)
           setAuthToken(null)
+          queryClient.clear()
           setState({ user: null, token: null, isAuthenticated: false, isLoading: false })
         }
         return Promise.reject(error)
       },
     )
     return () => apiClient.interceptors.response.eject(id)
-  }, [state.isAuthenticated])
+  }, [state.isAuthenticated, queryClient])
 
-  const signIn = useCallback(async (email: string, password: string) => {
-    const res = await login(email, password)
-    localStorage.setItem(TOKEN_KEY, res.token)
-    setAuthToken(res.token)
-    setState({ user: res.user, token: res.token, isAuthenticated: true, isLoading: false })
-  }, [])
+  const signIn = useCallback(
+    async (email: string, password: string) => {
+      const res = await login(email, password)
+      localStorage.setItem(TOKEN_KEY, res.token)
+      setAuthToken(res.token)
+      // Purge tout résultat de requête mis en cache par une session précédente (autre utilisateur/
+      // rôle partageant le même onglet) avant de laisser les écrans protégés monter leurs requêtes —
+      // sinon staleTime (30s, cf. providers.tsx) affiche brièvement des données mal scopées.
+      queryClient.clear()
+      setState({ user: res.user, token: res.token, isAuthenticated: true, isLoading: false })
+    },
+    [queryClient],
+  )
 
   const signOut = useCallback(async () => {
     try {
@@ -90,9 +101,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       localStorage.removeItem(TOKEN_KEY)
       setAuthToken(null)
+      queryClient.clear()
       setState({ user: null, token: null, isAuthenticated: false, isLoading: false })
     }
-  }, [])
+  }, [queryClient])
 
   const value: AuthContextValue = {
     ...state,

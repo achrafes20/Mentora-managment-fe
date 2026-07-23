@@ -1,18 +1,20 @@
 import { useQuery } from '@tanstack/react-query'
-import { listUsers, type UserResponse } from '../../lib/authApi'
+import { listManagers, type UserResponse } from '../../lib/authApi'
 
 export type Manager = UserResponse
 
 const CLE_MANAGERS = ['managers'] as const
 
-/** Comptes Manager actifs, pour peupler les sélecteurs de manager (Admin uniquement). */
+/**
+ * Comptes Manager actifs, pour peupler les sélecteurs de manager. GET /api/users/managers (pas
+ * /api/users) : accessible à un délégué actif, pas seulement Admin — nécessaire pour que
+ * EntretienScheduleDialog fonctionne pour un Manager délégué (bug E2E du 2026-07-23 : dropdown
+ * vide car /api/users est réservé Admin).
+ */
 export function useManagers() {
   return useQuery({
     queryKey: CLE_MANAGERS,
-    queryFn: async () => {
-      const utilisateurs = await listUsers()
-      return utilisateurs.filter((u) => u.role === 'manager' && u.statut === 'actif')
-    },
+    queryFn: listManagers,
   })
 }
 

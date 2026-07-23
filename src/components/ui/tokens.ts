@@ -24,6 +24,7 @@ const SUCCESS_SET = new Set([
   'Créée',
   'Mise à jour',
   'Réel',
+  'Active',
 ])
 const WARNING_SET = new Set([
   'En attente',
@@ -42,7 +43,7 @@ const WARNING_SET = new Set([
   'Simulation',
   'Suggestion de réactivation',
 ])
-const DANGER_SET = new Set(['Rejeté', 'Inactif', 'inactif', 'Erreur'])
+const DANGER_SET = new Set(['Rejeté', 'Inactif', 'inactif', 'Erreur', 'Révoquée'])
 
 export function tagVariant(statut: string): TagVariant {
   if (SUCCESS_SET.has(statut)) return 'success'
@@ -92,6 +93,10 @@ export function formatStatut(statut: string): string {
     // EF-REC-09 — résultat d'entretien.
     favorable: 'Favorable',
     defavorable: 'Défavorable',
+    // EF-AUTH-11→15 — délégation d'approbation (statut_delegation).
+    active: 'Active',
+    revoquee: 'Révoquée',
+    expiree: 'Expirée',
   }
   return map[statut] ?? statut
 }
