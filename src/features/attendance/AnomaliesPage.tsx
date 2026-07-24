@@ -1,10 +1,20 @@
 import dayjs from 'dayjs'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/components/ui/toast'
+import { Button } from '@/components/ui/Button'
+import type { ApiError } from '@/lib/apiClient'
 import { useAuth } from '@/lib/AuthContext'
 import { StatusTag } from '@/components/ui/StatusTag'
-import { listerAnomalies, resoudreAnomalie, type AnomaliePointageReponse } from './api'
+import {
+  listerAnomalies,
+  modifierPolitiqueAnomalies,
+  obtenirPolitiqueAnomalies,
+  resoudreAnomalie,
+  type AnomaliePointageReponse,
+  type PolitiqueAnomaliesReponse,
+} from './api'
 import { listerEmployes } from '../employee/employesApi'
 
 const TYPES_LABELS: Record<string, string> = {
@@ -12,6 +22,85 @@ const TYPES_LABELS: Record<string, string> = {
   depart_anticipe: 'Départ anticipé',
   absence_checkout: 'Absence de check-out',
   presence_incomplete: 'Présence incomplète',
+}
+
+const CLE_POLITIQUE_ANOMALIES = ['politique-anomalies'] as const
+
+function PolitiqueAnomaliesForm({ politique }: { politique: PolitiqueAnomaliesReponse }) {
+  const queryClient = useQueryClient()
+  const [seuil, setSeuil] = useState(String(politique.seuilAnomalies))
+  const [periode, setPeriode] = useState(String(politique.periodeJours))
+
+  const mutation = useMutation({
+    mutationFn: () =>
+      modifierPolitiqueAnomalies({
+        seuilAnomalies: Number(seuil),
+        periodeJours: Number(periode),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: CLE_POLITIQUE_ANOMALIES })
+      toast.success("Seuil d'alerte mis à jour.")
+    },
+    onError: (err: ApiError) => toast.error(err.message),
+  })
+
+  const modifie =
+    Number(seuil) !== politique.seuilAnomalies || Number(periode) !== politique.periodeJours
+
+  return (
+    <div className="mb-4 flex flex-wrap items-end gap-4 rounded-xl border border-[#D8D4CC] bg-white p-4">
+      <label className="block">
+        <span className="mb-1 block text-[12px] font-medium text-[#1B2A41]">
+          Seuil d'anomalies non résolues
+        </span>
+        <input
+          type="number"
+          min="1"
+          value={seuil}
+          onChange={(e) => setSeuil(e.target.value)}
+          className="w-24 rounded-lg border border-[#D8D4CC] bg-[#F7F7F4] px-3 py-1.5 text-[13px]"
+        />
+      </label>
+      <label className="block">
+        <span className="mb-1 block text-[12px] font-medium text-[#1B2A41]">
+          Sur une période de (jours)
+        </span>
+        <input
+          type="number"
+          min="1"
+          value={periode}
+          onChange={(e) => setPeriode(e.target.value)}
+          className="w-24 rounded-lg border border-[#D8D4CC] bg-[#F7F7F4] px-3 py-1.5 text-[13px]"
+        />
+      </label>
+      <Button
+        variant="primary"
+        disabled={!modifie}
+        loading={mutation.isPending}
+        onClick={() => mutation.mutate()}
+      >
+        Enregistrer
+      </Button>
+      <p className="basis-full text-[11px] text-[#6B7280]">
+        Au-delà de ce seuil, le Manager du département de l'employé est notifié automatiquement.
+      </p>
+    </div>
+  )
+}
+
+function PolitiqueAnomaliesSection() {
+  const { data: politique, isLoading } = useQuery({
+    queryKey: CLE_POLITIQUE_ANOMALIES,
+    queryFn: obtenirPolitiqueAnomalies,
+  })
+
+  if (isLoading || !politique) {
+    return null
+  }
+
+  // key incluant modifieLe : force un remount après un enregistrement réussi, plutôt qu'un
+  // useEffect qui recopierait la prop dans le state (react-hooks/set-state-in-effect).
+  return <PolitiqueAnomaliesForm key={politique.modifieLe ?? 'defaut'} politique={politique} />
 }
 
 export function AnomaliesPage() {
@@ -71,6 +160,8 @@ export function AnomaliesPage() {
 
   return (
     <div>
+      {estAdmin && <PolitiqueAnomaliesSection />}
+
       <div className="mb-4 flex items-center gap-3">
         <span className="text-[12px] text-[#6B7280]">Filtre :</span>
         <select

@@ -22,6 +22,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/politique-anomalies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["obtenir"];
+        put: operations["modifier"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/offres/{id}": {
         parameters: {
             query?: never;
@@ -30,7 +46,7 @@ export interface paths {
             cookie?: never;
         };
         get: operations["detail"];
-        put: operations["modifier"];
+        put: operations["modifier_1"];
         post?: never;
         delete?: never;
         options?: never;
@@ -46,7 +62,7 @@ export interface paths {
             cookie?: never;
         };
         get: operations["detail_1"];
-        put: operations["modifier_1"];
+        put: operations["modifier_2"];
         post?: never;
         delete?: never;
         options?: never;
@@ -78,9 +94,43 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put: operations["modifier_2"];
+        put: operations["modifier_3"];
         post?: never;
         delete: operations["desactiver"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/demandes-administratives/politique-conges/{typeContrat}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["modifierPolitiqueConge"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/config/identite-entreprise": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Consulter l'identité de l'entreprise */
+        get: operations["obtenir_1"];
+        /** Modifier l'identité de l'entreprise */
+        put: operations["modifier_4"];
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -456,6 +506,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/demandes-administratives/periodes-blocage-conges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["periodesBlocageConges"];
+        put?: never;
+        post: operations["creerPeriodeBlocageConges"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/demandes-administratives/jours-feries": {
         parameters: {
             query?: never;
@@ -501,6 +567,24 @@ export interface paths {
         put?: never;
         /** Révocation manuelle d'une délégation active */
         post: operations["revoquer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/config/identite-entreprise/logo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Télécharger le logo de l'entreprise */
+        get: operations["recupererLogo"];
+        put?: never;
+        /** Téléverser (ou remplacer) le logo de l'entreprise */
+        post: operations["televerserLogo"];
         delete?: never;
         options?: never;
         head?: never;
@@ -950,6 +1034,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/demandes-administratives/politique-conges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["politiqueConges"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/demandes-administratives/employes/{employeId}/solde": {
         parameters: {
             query?: never;
@@ -1080,6 +1180,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Rechercher dans le journal d'audit (module/utilisateur/période/texte) */
+        get: operations["rechercher"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/anomalies": {
         parameters: {
             query?: never;
@@ -1107,6 +1224,22 @@ export interface paths {
         put?: never;
         post?: never;
         delete: operations["supprimer"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/demandes-administratives/periodes-blocage-conges/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["supprimerPeriodeBlocageConges"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1159,6 +1292,31 @@ export interface components {
             statut?: "actif" | "inactif";
             /** Format: date-time */
             creeLe?: string;
+            /** Format: date-time */
+            modifieLe?: string;
+        };
+        PolitiqueAnomaliesRequete: {
+            /** Format: int32 */
+            seuilAnomalies?: number;
+            /** Format: int32 */
+            periodeJours?: number;
+        };
+        ApiResponsePolitiqueAnomaliesReponse: {
+            success?: boolean;
+            data?: components["schemas"]["PolitiqueAnomaliesReponse"];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        PolitiqueAnomaliesReponse: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: int32 */
+            seuilAnomalies?: number;
+            /** Format: int32 */
+            periodeJours?: number;
+            /** Format: uuid */
+            modifiePar?: string;
             /** Format: date-time */
             modifieLe?: string;
         };
@@ -1282,6 +1440,51 @@ export interface components {
             statut?: string;
             /** Format: date-time */
             creeLe?: string;
+            /** Format: date-time */
+            modifieLe?: string;
+        };
+        PolitiqueCongeRequete: {
+            joursParMois: number;
+        };
+        ApiResponsePolitiqueCongeReponse: {
+            success?: boolean;
+            data?: components["schemas"]["PolitiqueCongeReponse"];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        PolitiqueCongeReponse: {
+            typeContrat?: string;
+            joursParMois?: number;
+            /** Format: uuid */
+            modifiePar?: string;
+            /** Format: date-time */
+            modifieLe?: string;
+        };
+        IdentiteEntrepriseRequete: {
+            raisonSociale?: string;
+            adresse?: string;
+            telephone?: string;
+            email?: string;
+        };
+        ApiResponseIdentiteEntrepriseReponse: {
+            success?: boolean;
+            data?: components["schemas"]["IdentiteEntrepriseReponse"];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        IdentiteEntrepriseReponse: {
+            /** Format: uuid */
+            id?: string;
+            raisonSociale?: string;
+            adresse?: string;
+            telephone?: string;
+            email?: string;
+            /** Format: uuid */
+            logoFichierId?: string;
+            /** Format: uuid */
+            modifiePar?: string;
             /** Format: date-time */
             modifieLe?: string;
         };
@@ -1602,6 +1805,33 @@ export interface components {
             approuveRejetePar?: string;
             /** Format: date-time */
             dateDecision?: string;
+            /** Format: uuid */
+            creePar?: string;
+            /** Format: date-time */
+            creeLe?: string;
+        };
+        PeriodeBlocageCongesRequete: {
+            /** Format: date */
+            dateDebut: string;
+            /** Format: date */
+            dateFin: string;
+            libelle: string;
+        };
+        ApiResponsePeriodeBlocageCongesReponse: {
+            success?: boolean;
+            data?: components["schemas"]["PeriodeBlocageCongesReponse"];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        PeriodeBlocageCongesReponse: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: date */
+            dateDebut?: string;
+            /** Format: date */
+            dateFin?: string;
+            libelle?: string;
             /** Format: uuid */
             creePar?: string;
             /** Format: date-time */
@@ -1979,6 +2209,20 @@ export interface components {
             totalPages?: number;
             last?: boolean;
         };
+        ApiResponseListPolitiqueCongeReponse: {
+            success?: boolean;
+            data?: components["schemas"]["PolitiqueCongeReponse"][];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        ApiResponseListPeriodeBlocageCongesReponse: {
+            success?: boolean;
+            data?: components["schemas"]["PeriodeBlocageCongesReponse"][];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
         ApiResponseListJourFerieReponse: {
             success?: boolean;
             data?: components["schemas"]["JourFerieReponse"][];
@@ -2057,6 +2301,43 @@ export interface components {
             /** Format: date-time */
             timestamp?: string;
         };
+        ApiResponsePagedResponseJournalAuditReponse: {
+            success?: boolean;
+            data?: components["schemas"]["PagedResponseJournalAuditReponse"];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        JournalAuditReponse: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            utilisateurId?: string;
+            action?: string;
+            /** @enum {string} */
+            module?: "authentification" | "employe" | "presence" | "recrutement" | "demande_administrative" | "document" | "configuration" | "delegation" | "notification";
+            entiteType?: string;
+            /** Format: uuid */
+            entiteId?: string;
+            details?: components["schemas"]["JsonNode"];
+            enDelegation?: boolean;
+            /** Format: uuid */
+            delegationId?: string;
+            /** Format: date-time */
+            horodatage?: string;
+        };
+        PagedResponseJournalAuditReponse: {
+            content?: components["schemas"]["JournalAuditReponse"][];
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            size?: number;
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+            last?: boolean;
+        };
         ApiResponsePagedResponseAnomaliePointageReponse: {
             success?: boolean;
             data?: components["schemas"]["PagedResponseAnomaliePointageReponse"];
@@ -2133,6 +2414,50 @@ export interface operations {
             };
         };
     };
+    obtenir: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePolitiqueAnomaliesReponse"];
+                };
+            };
+        };
+    };
+    modifier: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PolitiqueAnomaliesRequete"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePolitiqueAnomaliesReponse"];
+                };
+            };
+        };
+    };
     detail: {
         parameters: {
             query?: never;
@@ -2155,7 +2480,7 @@ export interface operations {
             };
         };
     };
-    modifier: {
+    modifier_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -2203,7 +2528,7 @@ export interface operations {
             };
         };
     };
-    modifier_1: {
+    modifier_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -2282,7 +2607,7 @@ export interface operations {
             };
         };
     };
-    modifier_2: {
+    modifier_3: {
         parameters: {
             query?: never;
             header?: never;
@@ -2326,6 +2651,76 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    modifierPolitiqueConge: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                typeContrat: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PolitiqueCongeRequete"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePolitiqueCongeReponse"];
+                };
+            };
+        };
+    };
+    obtenir_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseIdentiteEntrepriseReponse"];
+                };
+            };
+        };
+    };
+    modifier_4: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IdentiteEntrepriseRequete"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseIdentiteEntrepriseReponse"];
                 };
             };
         };
@@ -3127,6 +3522,50 @@ export interface operations {
             };
         };
     };
+    periodesBlocageConges: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListPeriodeBlocageCongesReponse"];
+                };
+            };
+        };
+    };
+    creerPeriodeBlocageConges: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PeriodeBlocageCongesRequete"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePeriodeBlocageCongesReponse"];
+                };
+            };
+        };
+    };
     joursFeries: {
         parameters: {
             query?: never;
@@ -3233,6 +3672,53 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseDelegationReponse"];
+                };
+            };
+        };
+    };
+    recupererLogo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
+    televerserLogo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** Format: binary */
+                    logo: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseIdentiteEntrepriseReponse"];
                 };
             };
         };
@@ -3847,6 +4333,26 @@ export interface operations {
             };
         };
     };
+    politiqueConges: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListPolitiqueCongeReponse"];
+                };
+            };
+        };
+    };
     solde: {
         parameters: {
             query?: never;
@@ -4023,6 +4529,34 @@ export interface operations {
             };
         };
     };
+    rechercher: {
+        parameters: {
+            query?: {
+                module?: "authentification" | "employe" | "presence" | "recrutement" | "demande_administrative" | "document" | "configuration" | "delegation" | "notification";
+                utilisateurId?: string;
+                debut?: string;
+                fin?: string;
+                recherche?: string;
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePagedResponseJournalAuditReponse"];
+                };
+            };
+        };
+    };
     lister_10: {
         parameters: {
             query: {
@@ -4053,6 +4587,28 @@ export interface operations {
             path: {
                 employeId: string;
                 planningId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    supprimerPeriodeBlocageConges: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
             };
             cookie?: never;
         };

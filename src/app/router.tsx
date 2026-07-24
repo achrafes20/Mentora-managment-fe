@@ -17,7 +17,7 @@ import { OffresPage } from '@/features/recruitment/OffresPage'
 import { OffreDetailPage } from '@/features/recruitment/OffreDetailPage'
 import { DemandesPage } from '@/features/admin-requests/DemandesPage'
 import { DocumentsPage } from '@/features/documents/DocumentsPage'
-import { ConfigurationPage, FeriesPage } from '@/features/config/ConfigurationPage'
+import { ConfigurationPage } from '@/features/config/ConfigurationPage'
 import { DelegationPage } from '@/features/delegation/DelegationPage'
 import { NotificationsPage } from '@/features/notifications/NotificationsPage'
 import { AuditPage } from '@/features/audit/AuditPage'
@@ -69,7 +69,6 @@ export const router = createBrowserRouter([
       { path: 'demandes', element: <DemandesPage /> },
       { path: 'documents', element: <DocumentsPage /> },
       { path: 'import', element: <ImportPage /> },
-      { path: 'feries', element: <FeriesPage /> },
       {
         path: 'comptes',
         element: (
