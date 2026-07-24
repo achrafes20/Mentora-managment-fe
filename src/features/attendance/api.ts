@@ -42,6 +42,14 @@ export interface AnomaliePointageReponse {
   creeLe: string
 }
 
+export interface PolitiqueAnomaliesReponse {
+  id: string | null
+  seuilAnomalies: number
+  periodeJours: number
+  modifiePar?: string
+  modifieLe?: string
+}
+
 export interface HoraireReferenceReponse {
   id: string
   heureDebutMatin: string
@@ -148,6 +156,24 @@ export async function resoudreAnomalie(id: string): Promise<AnomaliePointageRepo
     `/api/anomalies/${id}/resoudre`,
   )
   return data.data as AnomaliePointageReponse
+}
+
+export async function obtenirPolitiqueAnomalies(): Promise<PolitiqueAnomaliesReponse> {
+  const { data } = await apiClient.get<ApiResponse<PolitiqueAnomaliesReponse>>(
+    '/api/politique-anomalies',
+  )
+  return data.data as PolitiqueAnomaliesReponse
+}
+
+export async function modifierPolitiqueAnomalies(requete: {
+  seuilAnomalies: number
+  periodeJours: number
+}): Promise<PolitiqueAnomaliesReponse> {
+  const { data } = await apiClient.put<ApiResponse<PolitiqueAnomaliesReponse>>(
+    '/api/politique-anomalies',
+    requete,
+  )
+  return data.data as PolitiqueAnomaliesReponse
 }
 
 // ---- Horaires de référence ----

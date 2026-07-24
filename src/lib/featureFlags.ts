@@ -9,10 +9,10 @@ export const featureFlags = {
   recruitment: true,
   adminRequests: false,
   documents: false,
-  config: false,
+  config: true,
   delegation: true,
   notifications: true,
-  audit: false,
+  audit: true,
 } as const
 
 export type FeatureKey = keyof typeof featureFlags

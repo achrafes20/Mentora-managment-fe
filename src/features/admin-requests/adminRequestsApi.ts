@@ -60,6 +60,20 @@ export interface JourFerie {
   libelle: string
 }
 
+export interface PeriodeBlocageConges {
+  id: string
+  dateDebut: string
+  dateFin: string
+  libelle: string
+}
+
+export interface PolitiqueConge {
+  typeContrat: string
+  joursParMois: number
+  modifiePar?: string
+  modifieLe?: string
+}
+
 export interface PageDemandesAdministratives {
   content?: DemandeAdministrative[]
   page?: number
@@ -154,4 +168,45 @@ export async function creerJourFerie(requete: {
 
 export async function supprimerJourFerie(id: string): Promise<void> {
   await apiClient.delete(`/api/demandes-administratives/jours-feries/${id}`)
+}
+
+export async function listerPeriodesBlocageConges(): Promise<PeriodeBlocageConges[]> {
+  const { data } = await apiClient.get<ApiResponse<PeriodeBlocageConges[]>>(
+    '/api/demandes-administratives/periodes-blocage-conges',
+  )
+  return data.data ?? []
+}
+
+export async function creerPeriodeBlocageConges(requete: {
+  dateDebut: string
+  dateFin: string
+  libelle: string
+}): Promise<PeriodeBlocageConges> {
+  const { data } = await apiClient.post<ApiResponse<PeriodeBlocageConges>>(
+    '/api/demandes-administratives/periodes-blocage-conges',
+    requete,
+  )
+  return data.data as PeriodeBlocageConges
+}
+
+export async function supprimerPeriodeBlocageConges(id: string): Promise<void> {
+  await apiClient.delete(`/api/demandes-administratives/periodes-blocage-conges/${id}`)
+}
+
+export async function listerPolitiqueConges(): Promise<PolitiqueConge[]> {
+  const { data } = await apiClient.get<ApiResponse<PolitiqueConge[]>>(
+    '/api/demandes-administratives/politique-conges',
+  )
+  return data.data ?? []
+}
+
+export async function modifierPolitiqueConge(
+  typeContrat: string,
+  joursParMois: number,
+): Promise<PolitiqueConge> {
+  const { data } = await apiClient.put<ApiResponse<PolitiqueConge>>(
+    `/api/demandes-administratives/politique-conges/${typeContrat}`,
+    { joursParMois },
+  )
+  return data.data as PolitiqueConge
 }
