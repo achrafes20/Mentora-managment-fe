@@ -25,7 +25,7 @@ import { PageHeader } from '@/components/ui/StatCard'
 import { StatusTag } from '@/components/ui/StatusTag'
 import { formatStatut } from '@/components/ui/tokens'
 import { toast } from '@/components/ui/toast'
-import { televerserPhotoEmploye } from './employesApi'
+import { exporterEmployes, televerserPhotoEmploye } from './employesApi'
 import { useEmployePhotoUrl } from './useEmployePhoto'
 
 // Lecture minimale de la candidature source (EF-EMP-05/EF-REC-13) — appel direct à l'endpoint
@@ -143,6 +143,24 @@ export function EmployesListTab() {
       .catch((err: ApiError) => setErreur(err.message))
   }
 
+  async function lancerExport(fmt: 'xlsx' | 'pdf') {
+    setShowExport(false)
+    try {
+      await exporterEmployes(
+        {
+          departementId: filtres.departementId,
+          managerId: filtres.managerId,
+          typeContrat: filtres.typeContrat,
+          statut: filtres.statut,
+          recherche: filtres.recherche,
+        },
+        fmt,
+      )
+    } catch {
+      void toast.error("Échec de l'export")
+    }
+  }
+
   function toggleSelect(id: string) {
     setSelected((prev) => {
       const next = new Set(prev)
@@ -172,56 +190,62 @@ export function EmployesListTab() {
         title="Employés"
         subtitle={`${total} employé${total !== 1 ? 's' : ''}`}
         actions={
-          estAdmin && (
-            <>
+          <>
+            {estAdmin && (
               <button
                 onClick={() => navigate('/import')}
                 className="flex items-center gap-1.5 rounded-lg border border-[#D8D4CC] px-3 py-2 text-[12px] text-[#6B7280] transition-colors hover:border-[#1B2A41] hover:text-[#1B2A41]"
               >
                 <FileSpreadsheet size={13} /> Importer
               </button>
-              <div className="relative">
+            )}
+            {/* EF-EXP-01 : Export ouvert à Admin + Manager côté backend (EmployeController#exporter),
+                donc jamais restreint au bloc Admin-only ci-dessous. */}
+            <div className="relative">
+              <button
+                onClick={() => setShowExport((v) => !v)}
+                className="flex items-center gap-1.5 rounded-lg border border-[#D8D4CC] px-3 py-2 text-[12px] text-[#6B7280] transition-colors hover:border-[#1B2A41] hover:text-[#1B2A41]"
+              >
+                <Download size={13} /> Exporter
+              </button>
+              {showExport && (
+                <div className="absolute top-full right-0 z-10 mt-1 w-36 overflow-hidden rounded-lg border border-[#D8D4CC] bg-white shadow-lg">
+                  {(['xlsx', 'pdf'] as const).map((fmt) => (
+                    <button
+                      key={fmt}
+                      onClick={() => void lancerExport(fmt)}
+                      className="block w-full px-4 py-2.5 text-left text-[12px] text-[#1B2A41] transition-colors hover:bg-[#F7F7F4]"
+                    >
+                      {fmt === 'xlsx' ? 'Excel (.xlsx)' : 'PDF'}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            {estAdmin && (
+              <>
                 <button
-                  onClick={() => setShowExport((v) => !v)}
-                  className="flex items-center gap-1.5 rounded-lg border border-[#D8D4CC] px-3 py-2 text-[12px] text-[#6B7280] transition-colors hover:border-[#1B2A41] hover:text-[#1B2A41]"
+                  onClick={() => {
+                    setSelectionMode((v) => !v)
+                    setSelected(new Set())
+                  }}
+                  className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-[12px] transition-colors ${
+                    selectionMode
+                      ? 'border-[#1B2A41] bg-[#1B2A41]/8 text-[#1B2A41]'
+                      : 'border-[#D8D4CC] text-[#6B7280] hover:border-[#1B2A41] hover:text-[#1B2A41]'
+                  }`}
                 >
-                  <Download size={13} /> Exporter
+                  <CheckSquare size={13} /> {selectionMode ? 'Annuler' : 'Sélectionner'}
                 </button>
-                {showExport && (
-                  <div className="absolute top-full right-0 z-10 mt-1 w-36 overflow-hidden rounded-lg border border-[#D8D4CC] bg-white shadow-lg">
-                    {['Excel (.xlsx)', 'PDF'].map((fmt) => (
-                      <button
-                        key={fmt}
-                        onClick={() => setShowExport(false)}
-                        className="block w-full px-4 py-2.5 text-left text-[12px] text-[#1B2A41] transition-colors hover:bg-[#F7F7F4]"
-                      >
-                        {fmt}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <button
-                onClick={() => {
-                  setSelectionMode((v) => !v)
-                  setSelected(new Set())
-                }}
-                className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-[12px] transition-colors ${
-                  selectionMode
-                    ? 'border-[#1B2A41] bg-[#1B2A41]/8 text-[#1B2A41]'
-                    : 'border-[#D8D4CC] text-[#6B7280] hover:border-[#1B2A41] hover:text-[#1B2A41]'
-                }`}
-              >
-                <CheckSquare size={13} /> {selectionMode ? 'Annuler' : 'Sélectionner'}
-              </button>
-              <button
-                onClick={() => setModaleCreationManuelle(true)}
-                className="flex items-center gap-1.5 rounded-lg bg-[#1B2A41] px-4 py-2 text-[12px] font-medium text-white transition-colors hover:bg-[#243650]"
-              >
-                <Plus size={13} /> Ajouter un employé
-              </button>
-            </>
-          )
+                <button
+                  onClick={() => setModaleCreationManuelle(true)}
+                  className="flex items-center gap-1.5 rounded-lg bg-[#1B2A41] px-4 py-2 text-[12px] font-medium text-white transition-colors hover:bg-[#243650]"
+                >
+                  <Plus size={13} /> Ajouter un employé
+                </button>
+              </>
+            )}
+          </>
         }
       />
 
