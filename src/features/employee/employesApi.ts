@@ -1,4 +1,5 @@
 import { apiClient } from '../../lib/apiClient'
+import { declencherTelechargement } from '../../lib/downloadBlob'
 import type { components } from '../../types/api'
 
 export type Employe = components['schemas']['EmployeReponse']
@@ -29,6 +30,19 @@ export async function listerEmployes(filtres: FiltresEmployes): Promise<PageEmpl
     params: filtres,
   })
   return data.data as PageEmployes
+}
+
+// EF-EXP-01 : mêmes filtres que listerEmployes (hors pagination — l'export porte toujours sur
+// l'ensemble filtré).
+export async function exporterEmployes(
+  filtres: Omit<FiltresEmployes, 'page' | 'size'>,
+  format: 'xlsx' | 'pdf',
+): Promise<void> {
+  const { data } = await apiClient.get<Blob>('/api/employes/export', {
+    params: { ...filtres, format },
+    responseType: 'blob',
+  })
+  declencherTelechargement(data, `employes.${format}`)
 }
 
 export async function obtenirEmploye(id: string): Promise<Employe> {

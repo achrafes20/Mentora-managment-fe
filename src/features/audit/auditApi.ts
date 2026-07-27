@@ -1,4 +1,5 @@
 import { apiClient } from '@/lib/apiClient'
+import { declencherTelechargement } from '@/lib/downloadBlob'
 import type { components } from '@/types/api'
 
 export type JournalAuditEntree = components['schemas']['JournalAuditReponse']
@@ -49,4 +50,23 @@ export async function rechercherAudit(filtres: FiltresAudit): Promise<PageJourna
     },
   })
   return data.data ?? PAGE_VIDE
+}
+
+// EF-CFG-05 : mêmes filtres que rechercherAudit, sans pagination.
+export async function exporterAudit(
+  filtres: Omit<FiltresAudit, 'page' | 'size'>,
+  format: 'xlsx' | 'pdf',
+): Promise<void> {
+  const { data } = await apiClient.get<Blob>('/api/audit/export', {
+    params: {
+      module: filtres.module || undefined,
+      utilisateurId: filtres.utilisateurId || undefined,
+      debut: filtres.debut || undefined,
+      fin: filtres.fin || undefined,
+      recherche: filtres.recherche || undefined,
+      format,
+    },
+    responseType: 'blob',
+  })
+  declencherTelechargement(data, `audit.${format}`)
 }

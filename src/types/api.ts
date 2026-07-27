@@ -920,6 +920,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/pointages/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["exporter"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/pointages/employe/{employeId}": {
         parameters: {
             query?: never;
@@ -1034,6 +1050,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/employes/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["exporter_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/demandes-administratives/politique-conges": {
         parameters: {
             query?: never;
@@ -1042,6 +1074,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["politiqueConges"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/demandes-administratives/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["exporter_2"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1189,6 +1237,23 @@ export interface paths {
         };
         /** Rechercher dans le journal d'audit (module/utilisateur/période/texte) */
         get: operations["rechercher"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/audit/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Exporter le journal d'audit filtré (Excel ou PDF) */
+        get: operations["exporter_3"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4177,6 +4242,31 @@ export interface operations {
             };
         };
     };
+    exporter: {
+        parameters: {
+            query: {
+                format: "xlsx" | "pdf";
+                employeId?: string;
+                debut: string;
+                fin: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
     listerParEmploye: {
         parameters: {
             query: {
@@ -4333,6 +4423,33 @@ export interface operations {
             };
         };
     };
+    exporter_1: {
+        parameters: {
+            query: {
+                format: "xlsx" | "pdf";
+                departementId?: string;
+                managerId?: string;
+                typeContrat?: "CDI" | "CDD" | "STAGIAIRE" | "STAGIAIRE_REMUNERE";
+                statut?: "actif" | "inactif";
+                recherche?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
     politiqueConges: {
         parameters: {
             query?: never;
@@ -4349,6 +4466,33 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseListPolitiqueCongeReponse"];
+                };
+            };
+        };
+    };
+    exporter_2: {
+        parameters: {
+            query: {
+                format: "xlsx" | "pdf";
+                employeId?: string;
+                type?: "conge" | "bon_sortie" | "document_libre" | "autre";
+                statut?: "en_attente" | "approuvee" | "rejetee" | "annulee";
+                debut?: string;
+                fin?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
                 };
             };
         };
@@ -4553,6 +4697,33 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponsePagedResponseJournalAuditReponse"];
+                };
+            };
+        };
+    };
+    exporter_3: {
+        parameters: {
+            query: {
+                format: "xlsx" | "pdf";
+                module?: "authentification" | "employe" | "presence" | "recrutement" | "demande_administrative" | "document" | "configuration" | "delegation" | "notification";
+                utilisateurId?: string;
+                debut?: string;
+                fin?: string;
+                recherche?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
                 };
             };
         };

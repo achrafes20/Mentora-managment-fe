@@ -2,14 +2,16 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
+import { Download } from 'lucide-react'
 import { PageHeader } from '@/components/ui/StatCard'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Select, type SelectOption } from '@/components/ui/Select'
 import { DatePicker } from '@/components/ui/DatePicker'
 import { Spinner } from '@/components/ui/Spinner'
+import { toast } from '@/components/ui/toast'
 import { listUsers } from '@/lib/authApi'
-import { rechercherAudit, type ModuleAudit } from './auditApi'
+import { exporterAudit, rechercherAudit, type ModuleAudit } from './auditApi'
 
 const MODULE_LABELS: Record<ModuleAudit, string> = {
   authentification: 'Authentification',
@@ -28,6 +30,59 @@ const MODULE_OPTIONS: SelectOption[] = Object.entries(MODULE_LABELS).map(([value
   label,
 }))
 
+// Mêmes libellés que côté export (AuditExportService#LIBELLES_ACTION) — dupliqués volontairement,
+// écran et fichier généré sont deux couches distinctes sans partage possible via l'API générée.
+const ACTION_LABELS: Record<string, string> = {
+  creation: 'Création',
+  approbation: 'Approbation',
+  suppression: 'Suppression',
+  ingestion: 'Réception CV',
+  relance_analyse: 'Relance analyse IA',
+  entretien_planifie: 'Planification entretien',
+  statut_decision_auto: 'Décision auto (IA)',
+  statut_embauche: 'Statut -> Embauché',
+  statut_entretien: 'Statut -> Entretien',
+  statut_preselectionne: 'Statut -> Présélectionné',
+  statut_rejete: 'Statut -> Rejeté',
+}
+
+const ENTITE_LABELS: Record<string, string> = {
+  employe: 'Employé',
+  departement: 'Département',
+  demande_administrative: 'Demande administrative',
+  periode_blocage_conges: 'Période de blocage congés',
+  politique_conges: 'Politique de congés',
+  politique_anomalies: "Politique d'anomalies",
+  identite_entreprise: 'Identité entreprise',
+  import_lot: "Lot d'import",
+  candidature: 'Candidature',
+  offre_emploi: 'Offre d’emploi',
+}
+
+// Valeur non recensée ci-dessus (nouvelle action/entité, oubli de mise à jour) : "ma_nouvelle_action"
+// -> "Ma nouvelle action" plutôt que de l'afficher brute.
+function libelleParDefaut(valeur: string): string {
+  const avecEspaces = valeur.replace(/[_.]/g, ' ')
+  return avecEspaces.length === 0
+    ? avecEspaces
+    : avecEspaces[0].toUpperCase() + avecEspaces.slice(1)
+}
+
+// Une seule cellule "Action" (verbe court + libellé d'entité), même principe que le fichier
+// généré : Module dit déjà "dans quel module", pas besoin d'une colonne "Élément" séparée qui ne
+// faisait alors que répéter "sur quoi" à côté d'un verbe déjà connu.
+function libelleAction(
+  action: string | null | undefined,
+  entiteType: string | null | undefined,
+): string {
+  if (!action) return '—'
+  const verbe = action.endsWith('.modifiee')
+    ? 'Modification'
+    : (ACTION_LABELS[action] ?? libelleParDefaut(action))
+  const entite = entiteType ? (ENTITE_LABELS[entiteType] ?? libelleParDefaut(entiteType)) : ''
+  return entite ? `${verbe} - ${entite}` : verbe
+}
+
 function dateVersParam(date: Date | null): string | undefined {
   return date ? format(date, 'yyyy-MM-dd') : undefined
 }
@@ -40,6 +95,7 @@ export function AuditPage() {
   const [recherche, setRecherche] = useState('')
   const [rechercheAppliquee, setRechercheAppliquee] = useState('')
   const [page, setPage] = useState(0)
+  const [showExport, setShowExport] = useState(false)
 
   const { data: utilisateurs } = useQuery({ queryKey: ['utilisateurs-audit'], queryFn: listUsers })
 
@@ -60,6 +116,24 @@ export function AuditPage() {
 
   const utilisateurOptions: SelectOption[] =
     utilisateurs?.map((u) => ({ value: u.id, label: `${u.prenom} ${u.nom} (${u.email})` })) ?? []
+
+  async function lancerExport(fmt: 'xlsx' | 'pdf') {
+    setShowExport(false)
+    try {
+      await exporterAudit(
+        {
+          module,
+          utilisateurId,
+          debut: dateVersParam(debut),
+          fin: dateVersParam(fin),
+          recherche: rechercheAppliquee || undefined,
+        },
+        fmt,
+      )
+    } catch {
+      void toast.error("Échec de l'export")
+    }
+  }
 
   function reinitialiser() {
     setModule(undefined)
@@ -124,18 +198,46 @@ export function AuditPage() {
       </div>
 
       <div className="mb-5 flex items-center justify-between">
-        <Button
-          variant="secondary"
-          onClick={() => {
-            setPage(0)
-            setRechercheAppliquee(recherche)
-          }}
-        >
-          Rechercher
-        </Button>
-        <button onClick={reinitialiser} className="text-[12px] text-[#6B7280] hover:text-[#1B2A41]">
-          Réinitialiser les filtres
-        </button>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setPage(0)
+              setRechercheAppliquee(recherche)
+            }}
+          >
+            Rechercher
+          </Button>
+          <button
+            onClick={reinitialiser}
+            className="text-[12px] text-[#6B7280] hover:text-[#1B2A41]"
+          >
+            Réinitialiser les filtres
+          </button>
+        </div>
+        {/* EF-CFG-05 : export du journal filtré, réutilisant le module Export commun (EF-EXP). */}
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setShowExport((v) => !v)}
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-[#D8D4CC] px-3 text-[12px] text-[#6B7280] transition-colors hover:border-[#1B2A41] hover:text-[#1B2A41]"
+          >
+            <Download size={13} /> Exporter
+          </button>
+          {showExport && (
+            <div className="absolute top-full right-0 z-10 mt-1 w-36 overflow-hidden rounded-lg border border-[#D8D4CC] bg-white shadow-lg">
+              {(['xlsx', 'pdf'] as const).map((fmt) => (
+                <button
+                  key={fmt}
+                  onClick={() => void lancerExport(fmt)}
+                  className="block w-full px-4 py-2.5 text-left text-[12px] text-[#1B2A41] transition-colors hover:bg-[#F7F7F4]"
+                >
+                  {fmt === 'xlsx' ? 'Excel (.xlsx)' : 'PDF'}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {isLoading ? (
@@ -151,16 +253,14 @@ export function AuditPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-[#D8D4CC] bg-[#F7F7F4]">
-                {['Date/Heure', 'Utilisateur', 'Action', 'Module', 'Élément', 'Délégation'].map(
-                  (h) => (
-                    <th
-                      key={h}
-                      className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider text-[#9CA3AF] uppercase"
-                    >
-                      {h}
-                    </th>
-                  ),
-                )}
+                {['Date/Heure', 'Utilisateur', 'Action', 'Module', 'Délégation'].map((h) => (
+                  <th
+                    key={h}
+                    className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider text-[#9CA3AF] uppercase"
+                  >
+                    {h}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
@@ -184,12 +284,11 @@ export function AuditPage() {
                     <td className="px-4 py-3.5 text-[12px] text-[#1B2A41]">
                       {utilisateur ? `${utilisateur.prenom} ${utilisateur.nom}` : '—'}
                     </td>
-                    <td className="px-4 py-3.5 text-[12px] text-[#6B7280]">{entree.action}</td>
+                    <td className="px-4 py-3.5 text-[12px] text-[#6B7280]">
+                      {libelleAction(entree.action, entree.entiteType)}
+                    </td>
                     <td className="px-4 py-3.5 text-[12px] text-[#6B7280]">
                       {entree.module ? MODULE_LABELS[entree.module] : '—'}
-                    </td>
-                    <td className="px-4 py-3.5 text-[12px] text-[#9CA3AF]">
-                      {entree.entiteType ?? '—'}
                     </td>
                     <td className="px-4 py-3.5 text-[12px] text-[#9CA3AF]">
                       {entree.enDelegation ? 'Oui' : '—'}

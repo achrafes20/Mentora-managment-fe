@@ -1,8 +1,11 @@
 import { FormEvent, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { CalendarDays, Check, Plus, X } from 'lucide-react'
+import { format } from 'date-fns'
+import { CalendarDays, Check, Download, Plus, X } from 'lucide-react'
+import { DatePicker } from '@/components/ui/DatePicker'
 import { PageHeader } from '@/components/ui/StatCard'
 import { StatusTag } from '@/components/ui/StatusTag'
+import { toast } from '@/components/ui/toast'
 import { useAuth } from '@/lib/AuthContext'
 import type { ApiError } from '@/lib/apiClient'
 import { useEstDelegueActifMaintenant } from '../delegation/useDelegation'
@@ -13,6 +16,7 @@ import {
   creerDemande,
   creerJourFerie,
   creerPeriodeBlocageConges,
+  exporterDemandes,
   listerDemandes,
   listerJoursFeries,
   listerMouvements,
@@ -28,6 +32,10 @@ import {
   type StatutDemandeAdministrative,
   type TypeDemandeAdministrative,
 } from './adminRequestsApi'
+
+function dateVersParam(date: Date | null): string | undefined {
+  return date ? format(date, 'yyyy-MM-dd') : undefined
+}
 
 type Tab = 'liste' | 'nouvelle' | 'registre' | 'feries' | 'blocage' | 'politique'
 
@@ -74,6 +82,9 @@ export function DemandesPage() {
   const [tab, setTab] = useState<Tab>('liste')
   const [typeFiltre, setTypeFiltre] = useState<TypeDemandeAdministrative | ''>('')
   const [statutFiltre, setStatutFiltre] = useState<StatutDemandeAdministrative | ''>('en_attente')
+  const [debutFiltre, setDebutFiltre] = useState<Date | null>(null)
+  const [finFiltre, setFinFiltre] = useState<Date | null>(null)
+  const [showExport, setShowExport] = useState(false)
   const [employeRegistreId, setEmployeRegistreId] = useState('')
   const [message, setMessage] = useState<string | null>(null)
   const [erreur, setErreur] = useState<string | null>(null)
@@ -100,16 +111,33 @@ export function DemandesPage() {
   const employes = employesQuery.data?.content ?? []
   const employeSoldeId = form.employeId || employeRegistreId
 
+  const debutParam = dateVersParam(debutFiltre)
+  const finParam = dateVersParam(finFiltre)
+
   const demandesQuery = useQuery({
-    queryKey: ['demandes-administratives', typeFiltre, statutFiltre],
+    queryKey: ['demandes-administratives', typeFiltre, statutFiltre, debutParam, finParam],
     queryFn: () =>
       listerDemandes({
         type: typeFiltre,
         statut: statutFiltre,
+        debut: debutParam,
+        fin: finParam,
         page: 0,
         size: 50,
       }),
   })
+
+  async function lancerExportDemandes(fmt: 'xlsx' | 'pdf') {
+    setShowExport(false)
+    try {
+      await exporterDemandes(
+        { type: typeFiltre, statut: statutFiltre, debut: debutParam, fin: finParam },
+        fmt,
+      )
+    } catch {
+      void toast.error("Échec de l'export")
+    }
+  }
 
   const soldeQuery = useQuery({
     queryKey: ['solde-conge', employeSoldeId],
@@ -298,7 +326,7 @@ export function DemandesPage() {
 
       {tab === 'liste' && (
         <section className="space-y-4">
-          <div className="flex flex-wrap gap-3 rounded-xl border border-[#D8D4CC] bg-white p-4">
+          <div className="flex flex-wrap items-end gap-3 rounded-xl border border-[#D8D4CC] bg-white p-4">
             <Select
               label="Type"
               value={typeFiltre}
@@ -311,6 +339,36 @@ export function DemandesPage() {
               onChange={(v) => setStatutFiltre(v as StatutDemandeAdministrative | '')}
               options={[{ value: '', label: 'Tous' }, ...STATUTS]}
             />
+            <div className="min-w-[140px]">
+              <label className="mb-1 block text-[11px] font-medium text-[#6B7280]">Du</label>
+              <DatePicker value={debutFiltre} onChange={setDebutFiltre} />
+            </div>
+            <div className="min-w-[140px]">
+              <label className="mb-1 block text-[11px] font-medium text-[#6B7280]">Au</label>
+              <DatePicker value={finFiltre} onChange={setFinFiltre} />
+            </div>
+            <div className="relative ml-auto">
+              <button
+                type="button"
+                onClick={() => setShowExport((v) => !v)}
+                className="flex h-9 items-center gap-1.5 rounded-lg border border-[#D8D4CC] px-3 text-[12px] text-[#6B7280] transition-colors hover:border-[#1B2A41] hover:text-[#1B2A41]"
+              >
+                <Download size={13} /> Exporter
+              </button>
+              {showExport && (
+                <div className="absolute top-full right-0 z-10 mt-1 w-36 overflow-hidden rounded-lg border border-[#D8D4CC] bg-white shadow-lg">
+                  {(['xlsx', 'pdf'] as const).map((fmt) => (
+                    <button
+                      key={fmt}
+                      onClick={() => void lancerExportDemandes(fmt)}
+                      className="block w-full px-4 py-2.5 text-left text-[12px] text-[#1B2A41] transition-colors hover:bg-[#F7F7F4]"
+                    >
+                      {fmt === 'xlsx' ? 'Excel (.xlsx)' : 'PDF'}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="overflow-hidden rounded-xl border border-[#D8D4CC] bg-white">

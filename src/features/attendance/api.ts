@@ -1,4 +1,5 @@
 import { apiClient } from '../../lib/apiClient'
+import { declencherTelechargement } from '../../lib/downloadBlob'
 
 // ---- Types ----
 
@@ -121,6 +122,19 @@ export async function listerPointagesEmploye(
     { params: { page, size } },
   )
   return data.data as PagedResponse<PointageReponse>
+}
+
+// EF-EXP-02 / EF-ATT-10 : feuille de présence sur une période, un employé (si fourni) ou
+// l'équipe/l'ensemble des employés actifs sinon — même périmètre Manager que le reste du module.
+export async function exporterPresence(
+  filtres: { employeId?: string; debut: string; fin: string },
+  format: 'xlsx' | 'pdf',
+): Promise<void> {
+  const { data } = await apiClient.get<Blob>('/api/pointages/export', {
+    params: { ...filtres, format },
+    responseType: 'blob',
+  })
+  declencherTelechargement(data, `presence_${filtres.debut}_${filtres.fin}.${format}`)
 }
 
 export async function corrigerPointage(

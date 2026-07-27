@@ -1,4 +1,5 @@
 import { apiClient } from '@/lib/apiClient'
+import { declencherTelechargement } from '@/lib/downloadBlob'
 
 interface ApiResponse<T> {
   data?: T
@@ -101,6 +102,18 @@ export async function listerDemandes(
     { params: filtres },
   )
   return data.data ?? { content: [] }
+}
+
+// EF-EXP-03 : mêmes filtres que listerDemandes (hors pagination).
+export async function exporterDemandes(
+  filtres: Omit<FiltresDemandes, 'page' | 'size'>,
+  format: 'xlsx' | 'pdf',
+): Promise<void> {
+  const { data } = await apiClient.get<Blob>('/api/demandes-administratives/export', {
+    params: { ...filtres, format },
+    responseType: 'blob',
+  })
+  declencherTelechargement(data, `demandes_administratives.${format}`)
 }
 
 export async function creerDemande(
