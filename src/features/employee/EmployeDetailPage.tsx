@@ -6,7 +6,6 @@ import {
   ArrowRight,
   BookOpen,
   Download,
-  Eye,
   FileCheck,
   Mail,
   Move,
@@ -53,6 +52,11 @@ import {
   type QrCodeReponse,
 } from '../attendance/api'
 import { EmployeTeletravailCard } from '../attendance/EmployeTeletravailCard'
+import {
+  useEnvoyerCertificatTravail,
+  useEnvoyerCertificatStage,
+  useEnvoisDocuments,
+} from '../documents/useDocuments'
 
 type Tab = 'profil' | 'presence' | 'documents'
 
@@ -67,11 +71,14 @@ export function EmployeDetailPage() {
   const { data: departements } = useDepartements()
   const { data: managers } = useManagers()
   const { data: documents } = useDocumentsEmploye(id)
+  const { data: envoisDocuments } = useEnvoisDocuments(id)
   const { data: transferts } = useHistoriqueTransferts(id)
 
   const modifierMutation = useModifierEmploye(id ?? '')
   const transfererMutation = useTransfererEmploye(id ?? '')
   const desactiverMutation = useDesactiverEmploye(id ?? '')
+  const envoyerCertifTravailMutation = useEnvoyerCertificatTravail()
+  const envoyerCertifStageMutation = useEnvoyerCertificatStage()
   const attacherMutation = useAttacherDocument(id ?? '')
   const supprimerDocMutation = useSupprimerDocument(id ?? '')
   const envoyerCarteMutation = useEnvoyerCarteEmail(id ?? '')
@@ -154,6 +161,11 @@ export function EmployeDetailPage() {
   const isActif = employe.statut === 'actif'
   const isCdd = employe.typeContrat === 'CDD'
   const isCdiCdd = employe.typeContrat === 'CDI' || employe.typeContrat === 'CDD'
+  const estStagiaire = employe.typeContrat?.startsWith('STAGIAIRE')
+  const envoi = envoisDocuments?.find((e) =>
+    estStagiaire ? e.typeDocument === 'certificat_stage' : e.typeDocument === 'certificat_travail',
+  )
+  const dejaEnvoye = !!envoi
 
   const joursRestantsCdd =
     employe.dateFinContratPrevue != null
@@ -171,6 +183,26 @@ export function EmployeDetailPage() {
       void toast.error('Erreur lors de la génération')
     } finally {
       setQrLoading(false)
+    }
+  }
+
+  const handleEnvoyerCertificat = async () => {
+    try {
+      if (estStagiaire) {
+        if (!employe.id) {
+          throw new Error('Employé introuvable')
+        }
+        await envoyerCertifStageMutation.mutateAsync(employe.id)
+      } else {
+        if (!employe.id) {
+          throw new Error('Employé introuvable')
+        }
+        await envoyerCertifTravailMutation.mutateAsync(employe.id)
+      }
+      setCertEnvoye(true)
+      void toast.success('Certificat envoyé avec succès')
+    } catch {
+      void toast.error("Erreur lors de l'envoi du certificat")
     }
   }
 
@@ -567,7 +599,7 @@ export function EmployeDetailPage() {
               </div>
             )}
 
-            {!isActif && isCdiCdd && (
+            {!isActif && (isCdiCdd || estStagiaire) && (
               <div className="mt-4 rounded-xl border border-[#D8D4CC] bg-white p-5">
                 <p className="mb-4 text-[10px] font-semibold tracking-wider text-[#9CA3AF] uppercase">
                   Documents de fin de contrat
@@ -577,29 +609,37 @@ export function EmployeDetailPage() {
                   <FileCheck size={18} className="flex-shrink-0 text-[#4A7C6B]" />
                   <div className="flex-1">
                     <p className="text-[13px] font-semibold text-[#1B2A41]">
-                      {employe.typeContrat === 'CDD'
-                        ? 'Certificat de travail'
-                        : 'Certificat de travail'}
+                      {estStagiaire ? 'Certificat de stage' : 'Certificat de travail'}
                     </p>
                     <p className="text-[11px] text-[#9CA3AF]">
                       {employe.prenom} {employe.nom} · {formatStatut(employe.typeContrat ?? '')}
                     </p>
                   </div>
-                  {certEnvoye ? (
-                    <span className="flex items-center gap-1.5 text-[11px] text-[#4A7C6B]">
-                      Envoyé
-                    </span>
+                  {dejaEnvoye || certEnvoye ? (
+                    <div className="flex items-center gap-3">
+                      <span className="flex items-center gap-1.5 text-[11px] text-[#4A7C6B]">
+                        ✓ Envoyé
+                      </span>
+                      {envoi?.fichierId && (
+                        <a
+                          href={`${import.meta.env.VITE_API_BASE_URL}/api/fichiers/${envoi.fichierId}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center gap-1.5 rounded-lg border border-[#D8D4CC] px-3 py-1.5 text-[11px] text-[#4A7C6B] hover:border-[#4A7C6B]"
+                        >
+                          <Download size={11} /> Ouvrir PDF
+                        </a>
+                      )}
+                    </div>
                   ) : (
                     <div className="flex items-center gap-2">
-                      <button className="flex items-center gap-1.5 rounded-lg border border-[#D8D4CC] px-3 py-1.5 text-[11px] text-[#6B7280] hover:border-[#1B2A41]">
-                        <Eye size={11} /> Aperçu PDF
-                      </button>
                       <button
-                        onClick={() => {
-                          setCertEnvoye(true)
-                          void toast.success('Certificat marqué comme envoyé (mock)')
-                        }}
-                        className="flex items-center gap-1.5 rounded-lg bg-[#1B2A41] px-3 py-1.5 text-[11px] font-medium text-white hover:bg-[#243650]"
+                        onClick={() => void handleEnvoyerCertificat()}
+                        disabled={
+                          envoyerCertifTravailMutation.isPending ||
+                          envoyerCertifStageMutation.isPending
+                        }
+                        className="flex items-center gap-1.5 rounded-lg bg-[#1B2A41] px-3 py-1.5 text-[11px] font-medium text-white hover:bg-[#243650] disabled:opacity-50"
                       >
                         <Send size={11} /> Confirmer l'envoi
                       </button>

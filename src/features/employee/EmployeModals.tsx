@@ -134,13 +134,14 @@ interface DepartureProps {
   employe: Employe
   submitting: boolean
   onClose: () => void
-  onConfirm: (values: DesactivationRequete) => void
+  onConfirm: (values: DesactivationRequete, genererCertificat: boolean) => void
 }
 
 export function DepartureModal({ employe, submitting, onClose, onConfirm }: DepartureProps) {
   const [step, setStep] = useState(1)
   const [dateDepart, setDateDepart] = useState('')
   const [motif, setMotif] = useState<DesactivationRequete['motif'] | ''>('')
+  const [genererCertificat, setGenererCertificat] = useState(true)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
@@ -263,6 +264,15 @@ export function DepartureModal({ employe, submitting, onClose, onConfirm }: Depa
                   <strong>{dateDepart}</strong>.
                 </p>
               </div>
+              <label className="mt-2 flex cursor-pointer items-center gap-2 text-[12px] text-[#1B2A41]">
+                <input
+                  type="checkbox"
+                  checked={genererCertificat}
+                  onChange={(e) => setGenererCertificat(e.target.checked)}
+                  className="rounded border-[#D8D4CC] text-[#1B2A41] focus:ring-[#1B2A41]"
+                />
+                Générer et envoyer le certificat de travail par e-mail
+              </label>
               <div className="flex gap-3">
                 <button
                   onClick={() => setStep(2)}
@@ -273,7 +283,10 @@ export function DepartureModal({ employe, submitting, onClose, onConfirm }: Depa
                 <button
                   disabled={submitting}
                   onClick={() =>
-                    onConfirm({ motif: motif as DesactivationRequete['motif'], dateDepart })
+                    onConfirm(
+                      { motif: motif as DesactivationRequete['motif'], dateDepart },
+                      genererCertificat,
+                    )
                   }
                   className="flex-1 rounded-lg bg-[#C1495A] py-2.5 text-[13px] font-medium text-white hover:bg-[#a83d4b] disabled:opacity-40"
                 >
