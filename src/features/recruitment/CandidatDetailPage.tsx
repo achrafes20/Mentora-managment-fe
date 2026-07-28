@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { FileText } from 'lucide-react'
+import { Spinner } from '@/components/ui/Spinner'
 import { useAuth } from '@/lib/AuthContext'
 import { useEstDelegueActifMaintenant } from '@/features/delegation/useDelegation'
 import { PageHeader } from '@/components/ui/StatCard'
@@ -186,10 +187,16 @@ export function CandidatDetailPage() {
             {score ?? '—'}
             {score !== null && '%'}
           </p>
-          {analyseEnAttente && (
-            <p className="mt-2 text-[11px] text-[#C87F3A]">
-              {analyse?.statut === 'echec' ? 'Analyse en échec' : 'Analyse en attente'}
+          {relancerMutation.isPending ? (
+            <p className="mt-2 flex items-center gap-1.5 text-[11px] text-[#6B7280]">
+              <Spinner size="small" /> Analyse en cours…
             </p>
+          ) : (
+            analyseEnAttente && (
+              <p className="mt-2 text-[11px] text-[#C87F3A]">
+                {analyse?.statut === 'echec' ? 'Analyse en échec' : 'Analyse en attente'}
+              </p>
+            )
           )}
         </div>
         <div className="col-span-2 rounded-xl border border-[#D8D4CC] bg-white p-5">
@@ -208,9 +215,10 @@ export function CandidatDetailPage() {
                 <button
                   onClick={relancerAnalyse}
                   disabled={relancerMutation.isPending}
-                  className="text-[12px] text-[#6B7280] hover:text-[#1B2A41]"
+                  className="flex items-center gap-1.5 text-[12px] text-[#6B7280] hover:text-[#1B2A41] disabled:cursor-not-allowed disabled:text-[#9CA3AF]"
                 >
-                  Relancer l'analyse
+                  {relancerMutation.isPending && <Spinner size="small" />}
+                  {relancerMutation.isPending ? 'Analyse en cours…' : "Relancer l'analyse"}
                 </button>
               )}
             </div>
@@ -230,6 +238,19 @@ export function CandidatDetailPage() {
           </div>
         </div>
       </div>
+
+      {candidature.messageCandidat && candidature.messageCandidat.trim() !== '' && (
+        <div className="mt-5 rounded-xl border border-[#D8D4CC] bg-white p-5">
+          <h3 className="mb-2 text-[12px] font-semibold text-[#1B2A41]">Message du candidat</h3>
+          <p className="mb-3 text-[11px] text-[#9CA3AF]">
+            Corps de l'e-mail de candidature — jamais extrait du CV, écrit directement par le
+            candidat.
+          </p>
+          <p className="text-[12px] whitespace-pre-line text-[#1B2A41]">
+            {candidature.messageCandidat}
+          </p>
+        </div>
+      )}
 
       {candidature.statut === 'suggestion_reactivation' && peutDecider && (
         <div className="mt-5 rounded-xl border border-[#C87F3A]/30 bg-[#C87F3A]/8 p-5">

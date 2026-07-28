@@ -282,6 +282,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/internal/surveillance/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["executerSurveillance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/import/previsualiser": {
         parameters: {
             query?: never;
@@ -452,6 +468,70 @@ export interface paths {
         get: operations["lister_3"];
         put?: never;
         post: operations["creer_3"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/surveillance/{notifId}/renvoyer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["renvoyerDocumentSurveillance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/employes/{employeId}/document-libre": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["envoyerDocumentLibre"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/employes/{employeId}/certificat-travail": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["envoyerCertificatTravail"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/employes/{employeId}/certificat-stage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["envoyerCertificatStage"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1018,6 +1098,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/fichiers/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["telecharger"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/employes/{id}/transferts": {
         parameters: {
             query?: never;
@@ -1058,6 +1154,38 @@ export interface paths {
             cookie?: never;
         };
         get: operations["exporter_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/surveillance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listerSurveillance"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/employes/{employeId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listerEnvois"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1604,6 +1732,7 @@ export interface components {
             dateIngestion?: string;
             /** Format: date-time */
             dateArchivage?: string;
+            messageCandidat?: string;
             derniereAnalyse?: components["schemas"]["AnalyseIaReponse"];
         };
         ApiResponseInteger: {
@@ -1817,6 +1946,28 @@ export interface components {
             jours?: ("lundi" | "mardi" | "mercredi" | "jeudi" | "vendredi" | "samedi" | "dimanche")[];
             /** Format: date-time */
             creeLe?: string;
+        };
+        ApiResponseEnvoiDocumentResponse: {
+            success?: boolean;
+            data?: components["schemas"]["EnvoiDocumentResponse"];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        EnvoiDocumentResponse: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            employeId?: string;
+            /** @enum {string} */
+            typeDocument?: "certificat_stage" | "certificat_travail" | "document_libre" | "email_rejet_candidature";
+            /** Format: uuid */
+            fichierId?: string;
+            destinataireEmail?: string;
+            /** Format: date-time */
+            dateEnvoi?: string;
+            /** Format: uuid */
+            envoyePar?: string;
         };
         DemandeAdministrativeRequete: {
             /** Format: uuid */
@@ -2244,6 +2395,30 @@ export interface components {
         ApiResponseListPlanningTeletravailReponse: {
             success?: boolean;
             data?: components["schemas"]["PlanningTeletravailReponse"][];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        ApiResponseListNotificationPlanifieeReponse: {
+            success?: boolean;
+            data?: components["schemas"]["NotificationPlanifieeReponse"][];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        NotificationPlanifieeReponse: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            employeId?: string;
+            typeFinSurveillee?: string;
+            /** Format: date */
+            dateEcheance?: string;
+            statut?: string;
+        };
+        ApiResponseListEnvoiDocumentResponse: {
+            success?: boolean;
+            data?: components["schemas"]["EnvoiDocumentResponse"][];
             error?: string;
             /** Format: date-time */
             timestamp?: string;
@@ -3053,6 +3228,28 @@ export interface operations {
             };
         };
     };
+    executerSurveillance: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Internal-Webhook-Secret"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": Record<string, never>;
+                };
+            };
+        };
+    };
     previsualiser: {
         parameters: {
             query: {
@@ -3466,6 +3663,101 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponsePlanningTeletravailReponse"];
+                };
+            };
+        };
+    };
+    renvoyerDocumentSurveillance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                notifId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseEnvoiDocumentResponse"];
+                };
+            };
+        };
+    };
+    envoyerDocumentLibre: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                employeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseEnvoiDocumentResponse"];
+                };
+            };
+        };
+    };
+    envoyerCertificatTravail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                employeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseEnvoiDocumentResponse"];
+                };
+            };
+        };
+    };
+    envoyerCertificatStage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                employeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseEnvoiDocumentResponse"];
                 };
             };
         };
@@ -4378,6 +4670,28 @@ export interface operations {
             };
         };
     };
+    telecharger: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
     historiqueTransferts: {
         parameters: {
             query?: never;
@@ -4446,6 +4760,48 @@ export interface operations {
                 };
                 content: {
                     "*/*": string;
+                };
+            };
+        };
+    };
+    listerSurveillance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListNotificationPlanifieeReponse"];
+                };
+            };
+        };
+    };
+    listerEnvois: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                employeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListEnvoiDocumentResponse"];
                 };
             };
         };
