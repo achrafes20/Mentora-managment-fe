@@ -1,12 +1,15 @@
+import * as PopoverPrimitive from '@radix-ui/react-popover'
 import dayjs from 'dayjs'
 import { format as formatDate } from 'date-fns'
-import { ChevronLeft, ChevronRight, Download } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Download, Info, Pencil } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { DatePicker } from '@/components/ui/DatePicker'
 import { toast } from '@/components/ui/toast'
 import { StatusTag } from '@/components/ui/StatusTag'
-import { exporterPresence, listerPointages, type PointageReponse } from './api'
+import { useAuth } from '@/lib/AuthContext'
+import { corrigerPointage, exporterPresence, listerPointages, type PointageReponse } from './api'
 import { listerEmployes } from '../employee/employesApi'
+import { CorrigerPointageDialog } from './CorrigerPointageDialog'
 
 function debutDuMois(): Date {
   const date = new Date()
@@ -14,7 +17,35 @@ function debutDuMois(): Date {
   return date
 }
 
+// Clic plutôt que survol (title natif) : lisible au tactile, jamais tronqué, cohérent avec le
+// Popover déjà utilisé par DatePicker.
+function MotifCorrectionBadge({ motif }: { motif: string | null }) {
+  return (
+    <PopoverPrimitive.Root>
+      <PopoverPrimitive.Trigger asChild>
+        <button
+          type="button"
+          className="inline-flex items-center gap-1 text-[11px] text-[#C87F3A] hover:underline"
+        >
+          Corrigé <Info size={12} />
+        </button>
+      </PopoverPrimitive.Trigger>
+      <PopoverPrimitive.Portal>
+        <PopoverPrimitive.Content
+          sideOffset={4}
+          className="z-1000 max-w-[260px] rounded-lg border border-[#D8D4CC] bg-white p-3 text-[12px] shadow-lg"
+        >
+          <p className="mb-1 font-medium text-[#1B2A41]">Motif de la correction</p>
+          <p className="text-[#6B7280]">{motif}</p>
+        </PopoverPrimitive.Content>
+      </PopoverPrimitive.Portal>
+    </PopoverPrimitive.Root>
+  )
+}
+
 export function PointagesPage() {
+  const { role } = useAuth()
+  const estAdmin = role === 'admin'
   const [data, setData] = useState<PointageReponse[]>([])
   const [loading, setLoading] = useState(false)
   const [page, setPage] = useState(0)
@@ -25,6 +56,8 @@ export function PointagesPage() {
   const [debutExport, setDebutExport] = useState<Date | null>(debutDuMois())
   const [finExport, setFinExport] = useState<Date | null>(new Date())
   const [showExport, setShowExport] = useState(false)
+  const [pointageACorrige, setPointageACorrige] = useState<PointageReponse | null>(null)
+  const [correction, setCorrection] = useState(false)
   const pageSize = 20
 
   const charger = useCallback(async () => {
@@ -64,6 +97,21 @@ export function PointagesPage() {
   }, [charger])
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
+
+  async function confirmerCorrection(nouvelHorodatage: string, motif: string) {
+    if (!pointageACorrige) return
+    setCorrection(true)
+    try {
+      await corrigerPointage(pointageACorrige.id, nouvelHorodatage, motif)
+      void toast.success('Pointage corrigé')
+      setPointageACorrige(null)
+      await charger()
+    } catch {
+      void toast.error('Échec de la correction du pointage')
+    } finally {
+      setCorrection(false)
+    }
+  }
 
   async function lancerExport(fmt: 'xlsx' | 'pdf') {
     if (!debutExport || !finExport) {
@@ -146,14 +194,16 @@ export function PointagesPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-[#D8D4CC] bg-[#F7F7F4]">
-                {['Employé', 'Type', 'Horodatage', 'Correction'].map((h) => (
-                  <th
-                    key={h}
-                    className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider text-[#9CA3AF] uppercase first:pl-5 last:pr-5"
-                  >
-                    {h}
-                  </th>
-                ))}
+                {['Employé', 'Type', 'Horodatage', 'Correction', ...(estAdmin ? [''] : [])].map(
+                  (h, i) => (
+                    <th
+                      key={h || `action-${i}`}
+                      className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider text-[#9CA3AF] uppercase first:pl-5 last:pr-5"
+                    >
+                      {h}
+                    </th>
+                  ),
+                )}
               </tr>
             </thead>
             <tbody>
@@ -177,15 +227,24 @@ export function PointagesPage() {
                   >
                     {dayjs(p.horodatage).format('DD/MM/YYYY HH:mm:ss')}
                   </td>
-                  <td className="py-3.5 pr-5">
+                  <td className={estAdmin ? 'py-3.5 pr-4 pl-4' : 'py-3.5 pr-5'}>
                     {p.corrigeManuellement ? (
-                      <span className="text-[11px] text-[#C87F3A]" title={p.motifCorrection ?? ''}>
-                        Corrigé
-                      </span>
+                      <MotifCorrectionBadge motif={p.motifCorrection} />
                     ) : (
                       <span className="text-[12px] text-[#9CA3AF]">Original</span>
                     )}
                   </td>
+                  {estAdmin && (
+                    <td className="py-3.5 pr-5 text-right">
+                      <button
+                        type="button"
+                        onClick={() => setPointageACorrige(p)}
+                        className="inline-flex items-center gap-1 rounded-lg border border-[#D8D4CC] px-2.5 py-1.5 text-[11px] text-[#6B7280] transition-colors hover:border-[#1B2A41] hover:text-[#1B2A41]"
+                      >
+                        <Pencil size={12} /> Corriger
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -217,6 +276,13 @@ export function PointagesPage() {
           </div>
         </div>
       )}
+
+      <CorrigerPointageDialog
+        pointage={pointageACorrige}
+        onCancel={() => setPointageACorrige(null)}
+        onConfirm={confirmerCorrection}
+        submitting={correction}
+      />
     </div>
   )
 }
