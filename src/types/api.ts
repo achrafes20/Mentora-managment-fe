@@ -951,6 +951,40 @@ export interface paths {
         patch: operations["annuler"];
         trace?: never;
     };
+    "/api/auth/me/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Modifier son propre mot de passe */
+        patch: operations["changerMotDePasse"];
+        trace?: never;
+    };
+    "/api/auth/me/email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Modifier son propre e-mail */
+        patch: operations["changerEmail"];
+        trace?: never;
+    };
     "/api/users/managers": {
         parameters: {
             query?: never;
@@ -1267,6 +1301,40 @@ export interface paths {
         };
         /** Ma délégation active en tant que délégué (ou aucune) */
         get: operations["maDelegation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/dashboard/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Statistiques tableau de bord Admin (EF-DASH-01) */
+        get: operations["statsAdmin"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/dashboard/stats/manager": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Statistiques tableau de bord Manager (EF-DASH-02) */
+        get: operations["statsManager"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2232,6 +2300,14 @@ export interface components {
             /** Format: date-time */
             timestamp?: string;
         };
+        ChangePasswordRequest: {
+            motDePasseActuel: string;
+            nouveauMotDePasse: string;
+        };
+        ChangeEmailRequest: {
+            /** Format: email */
+            nouvelEmail: string;
+        };
         ApiResponseListUserResponse: {
             success?: boolean;
             data?: components["schemas"]["UserResponse"][];
@@ -2514,6 +2590,32 @@ export interface components {
             error?: string;
             /** Format: date-time */
             timestamp?: string;
+        };
+        ApiResponseDashboardStatsReponse: {
+            success?: boolean;
+            data?: components["schemas"]["DashboardStatsReponse"];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        DashboardStatsReponse: {
+            /** Format: int64 */
+            employesActifs?: number;
+            /** Format: int64 */
+            demandesEnAttente?: number;
+            /** Format: int64 */
+            anomaliesDuJour?: number;
+            repartitionParDepartement?: components["schemas"]["RepartitionDepartement"][];
+            /** Format: int64 */
+            candidaturesEnCours?: number;
+            /** Format: int64 */
+            finContratDans7Jours?: number;
+        };
+        RepartitionDepartement: {
+            departementId?: string;
+            nom?: string;
+            /** Format: int64 */
+            count?: number;
         };
         ApiResponsePagedResponseCandidatureReponse: {
             success?: boolean;
@@ -4470,6 +4572,54 @@ export interface operations {
             };
         };
     };
+    changerMotDePasse: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangePasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    changerEmail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangeEmailRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
     listerManagers: {
         parameters: {
             query?: never;
@@ -4913,6 +5063,46 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseDelegationReponse"];
+                };
+            };
+        };
+    };
+    statsAdmin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDashboardStatsReponse"];
+                };
+            };
+        };
+    };
+    statsManager: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDashboardStatsReponse"];
                 };
             };
         };

@@ -3,37 +3,107 @@ name: CI
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
   pull_request:
     branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
 
 permissions:
   contents: read
 
 jobs:
   build-test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npm run format:check
-      - run: npm run lint
-      - run: npm run typecheck
-      - run: npm run test
-      - run: npm run build
-
-  trivy:
+    name: Build, lint et tests (Node 22)
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      security-events: write
+      # Nécessaire au rapport de tests ci-dessous (publication d'un "check run"
+      # annotant les tests en échec sur la Pull Request).
+      checks: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: aquasecurity/trivy-action@master
+      - name: Récupération du code
+        uses: actions/checkout@v4
+
+      - name: Installation de Node 22 + cache npm
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Installation des dépendances
+        run: npm ci
+
+      - name: Vérification du formatage (Prettier)
+        run: npm run format:check
+
+      - name: Analyse statique (ESLint)
+        run: npm run lint
+
+      - name: Vérification des types (tsc)
+        run: npm run typecheck
+
+      - name: Tests unitaires (Vitest)
+        # Rapport JUnit en plus de la sortie console, pour alimenter les annotations
+        # de PR à l'étape suivante. La sortie par défaut reste affichée.
+        run: npm run test -- --reporter=default --reporter=junit --outputFile=vitest-junit.xml
+
+      - name: Rapport de tests (annotations PR + récapitulatif)
+        if: always()
+        uses: mikepenz/action-junit-report@v5
+        with:
+          report_paths: 'vitest-junit.xml'
+          check_name: 'Résultats des tests frontend'
+          detailed_summary: true
+          include_passed: false
+          require_tests: false
+
+      - name: Build de production (Vite)
+        run: npm run build
+
+  trivy:
+    name: Scan de vulnérabilités des dépendances (Trivy)
+    runs-on: ubuntu-latest
+    # Pas de security-events: write — l'upload SARIF vers l'onglet Security exige
+    # GitHub Advanced Security sur un dépôt privé (non budgété). Le résultat est
+    # publié dans le récapitulatif du run.
+    permissions:
+      contents: read
+    steps:
+      - name: Récupération du code
+        uses: actions/checkout@v4
+
+      - name: Scan des dépendances npm
+        uses: aquasecurity/trivy-action@master
         with:
           scan-type: fs
+          # Explicite, et aligné sur le backend : sans cette clé, Trivy activerait
+          # aussi la recherche de secrets, et les deux dépôts ne scanneraient pas
+          # la même chose.
+          scanners: vuln
           severity: CRITICAL,HIGH
+          # Même politique que le backend et que le scan d'image de release.yml.
+          ignore-unfixed: true
           exit-code: '1'
+          format: table
+          output: trivy-dependances.txt
+
+      - name: Publication du résultat dans le récapitulatif du run
+        if: always()
+        run: |
+          {
+            echo "## Scan de vulnérabilités — dépendances npm"
+            echo
+            echo "Politique : \`CRITICAL,HIGH\`, \`ignore-unfixed: true\` (les CVE sans correctif publié sont ignorées)."
+            echo
+            if [ -s trivy-dependances.txt ]; then
+              echo '```'
+              cat trivy-dependances.txt
+              echo '```'
+            else
+              echo "Aucune vulnérabilité CRITICAL/HIGH corrigeable détectée."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
