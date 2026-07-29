@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   Briefcase,
   Clock,
@@ -17,6 +18,7 @@ import { useNotifications } from '@/lib/NotifContext'
 import { HBLogo } from '@/components/ui/HBLogo'
 import { NotifPanel } from '@/components/ui/NotifPanel'
 import { ROSE_MARQUE, ROSE_MARQUE_UI } from '@/components/ui/tokens'
+import { MonCompteDialog } from '@/features/auth/MonCompteDialog'
 import { mainNavItems, adminBottomNavItems } from './modules'
 
 export function AppLayout() {
@@ -24,6 +26,7 @@ export function AppLayout() {
   const location = useLocation()
   const { user, role, signOut } = useAuth()
   const { unreadCount, togglePanel } = useNotifications()
+  const [compteOpen, setCompteOpen] = useState(false)
 
   const isActive = (path: string) => {
     if (path === '/employes') {
@@ -127,12 +130,20 @@ export function AppLayout() {
               )
             })}
           {user && (
-            <div className="mt-0.5 mb-0.5 px-3 py-2">
-              <p className="text-[11px] font-medium text-[#1B2A41]">
-                {user.prenom} {user.nom}
-              </p>
-              <p className="text-[10px] text-[#9CA3AF] capitalize">{user.role}</p>
-            </div>
+            <button
+              type="button"
+              onClick={() => setCompteOpen(true)}
+              className="mt-0.5 mb-0.5 flex w-full items-center gap-2.5 rounded-lg px-3 py-[7px] text-left transition-colors hover:bg-[#D8D4CC]/40"
+              title="Modifier mon e-mail ou mon mot de passe"
+            >
+              <Settings size={13} className="flex-shrink-0 text-[#9CA3AF]" />
+              <span className="min-w-0 flex-1">
+                <p className="truncate text-[11px] font-medium text-[#1B2A41]">
+                  {user.prenom} {user.nom}
+                </p>
+                <p className="text-[10px] text-[#9CA3AF] capitalize">{user.role} · Mon compte</p>
+              </span>
+            </button>
           )}
           <button
             onClick={() => void signOut()}
@@ -147,6 +158,8 @@ export function AppLayout() {
       <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <Outlet />
       </main>
+
+      <MonCompteDialog open={compteOpen} onClose={() => setCompteOpen(false)} />
     </div>
   )
 }

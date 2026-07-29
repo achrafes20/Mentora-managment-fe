@@ -30,3 +30,6 @@ pnpm-debug.log*
 # OS
 .DS_Store
 Thumbs.db
+
+# Rapport de tests JUnit genere en CI (annotations de PR) — jamais commite
+vitest-junit.xml

@@ -56,6 +56,23 @@ export async function resetPassword(token: string, nouveauMotDePasse: string): P
   await apiClient.post('/api/auth/reset-password', { token, nouveauMotDePasse })
 }
 
+/**
+ * Modification de son propre e-mail. Révoque toutes les sessions actives côté backend, y compris
+ * celle en cours : l'appelant doit se déconnecter juste après (voir MonCompteDialog) — le jeton en
+ * main ne redeviendra pas valide.
+ */
+export async function changerEmail(nouvelEmail: string): Promise<void> {
+  await apiClient.patch('/api/auth/me/email', { nouvelEmail })
+}
+
+/** Modification de son propre mot de passe (mot de passe actuel exigé). Révoque les sessions. */
+export async function changerMotDePasse(
+  motDePasseActuel: string,
+  nouveauMotDePasse: string,
+): Promise<void> {
+  await apiClient.patch('/api/auth/me/password', { motDePasseActuel, nouveauMotDePasse })
+}
+
 // ---- Users API (Admin) ----
 
 export async function listUsers(): Promise<UserResponse[]> {

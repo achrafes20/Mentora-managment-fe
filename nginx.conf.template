@@ -1,0 +1,60 @@
+server {
+    listen 8081;
+    server_name localhost;
+
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # --- API ---
+    # Le bundle React est construit SANS URL d'API en dur (VITE_API_BASE_URL="" dans le
+    # stage build) : il appelle donc /api/... en relatif, sur sa propre origine. C'est ce
+    # bloc qui relaie vers le backend.
+    #
+    # Conséquence voulue : la même image tourne en recette et en production, seule
+    # BACKEND_ORIGIN change au déploiement. C'est la condition pour pouvoir épingler un
+    # tag sha-<court> immuable côté GitOps — une URL d'API compilée dans le bundle
+    # obligerait à reconstruire une image par environnement.
+    #
+    # ${BACKEND_ORIGIN} est substitué au démarrage du conteneur par le point d'entrée
+    # nginx (docker-entrypoint.d/20-envsubst-on-templates.sh), qui rend ce fichier vers
+    # /etc/nginx/conf.d/default.conf. NGINX_ENVSUBST_FILTER (voir Dockerfile) restreint la
+    # substitution à cette seule variable, pour que les $uri/$host ci-dessous soient
+    # laissés intacts et interprétés par nginx.
+    location /api/ {
+        # Résolution DNS différée, à la requête, plutôt qu'au démarrage de nginx.
+        # Deux raisons, les deux importantes en Kubernetes :
+        #  1. un `proxy_pass http://hote:port` littéral fait échouer le DÉMARRAGE de nginx
+        #     si le nom n'est pas encore résolvable (CrashLoopBackOff du pod frontend
+        #     simplement parce que le backend n'est pas encore déployé) ;
+        #  2. nginx résoudrait alors ce nom une seule fois et garderait l'IP en cache à vie,
+        #     ce qui casse dès que l'IP du Service change.
+        # Passer par une variable + resolver donne un 502 transitoire au lieu d'un pod mort,
+        # et suit les changements d'IP. NGINX_LOCAL_RESOLVERS est fourni par le point
+        # d'entrée de l'image (15-local-resolvers.envsh), d'après /etc/resolv.conf.
+        resolver ${NGINX_LOCAL_RESOLVERS} valid=10s;
+        set $backend_origin ${BACKEND_ORIGIN};
+
+        # $request_uri explicite : avec un proxy_pass variabilisé, nginx ne reconstruit pas
+        # l'URI amont tout seul. On transmet donc le chemin d'origine tel quel, query string
+        # comprise — le backend reçoit bien /api/... et non /.
+        proxy_pass $backend_origin$request_uri;
+        proxy_http_version 1.1;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Upload de CV / pièces jointes employé. La vraie limite métier est appliquée par
+        # le backend (app.file-storage.max-size-mb, 10 Mo par défaut) : on garde nginx
+        # volontairement plus permissif, pour que ce soit bien le backend qui réponde avec
+        # le motif de rejet attendu (NFR-SEC-07) plutôt qu'un 413 nginx opaque.
+        client_max_body_size 50m;
+    }
+
+    # --- SPA ---
+    # React Router gère les routes côté client : toute URL inconnue de nginx doit renvoyer
+    # index.html, sinon un rafraîchissement (F5) sur /employes renverrait un 404.
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
