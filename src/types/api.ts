@@ -554,6 +554,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/documents/employes/{employeId}/attestation-travail": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["envoyerAttestationTravail"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/departements": {
         parameters: {
             query?: never;
@@ -663,6 +679,24 @@ export interface paths {
         put?: never;
         /** Révocation manuelle d'une délégation active */
         post: operations["revoquer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/config/identite-entreprise/signature": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Télécharger la signature/cachet de l'entreprise */
+        get: operations["recupererSignature"];
+        put?: never;
+        /** Téléverser (ou remplacer) la signature/cachet de l'entreprise */
+        post: operations["televerserSignature"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1641,6 +1675,9 @@ export interface components {
             dateFinContratPrevue?: string;
             /** Format: date */
             dateFinStagePrevue?: string;
+            /** @enum {string} */
+            sexe?: "HOMME" | "FEMME";
+            cin?: string;
         };
         ApiResponseEmployeReponse: {
             success?: boolean;
@@ -1677,6 +1714,8 @@ export interface components {
             photoFichierId?: string;
             /** Format: uuid */
             candidatureOrigineId?: string;
+            sexe?: string;
+            cin?: string;
             /** Format: date-time */
             creeLe?: string;
             /** Format: date-time */
@@ -1747,6 +1786,13 @@ export interface components {
             adresse?: string;
             telephone?: string;
             email?: string;
+            ice?: string;
+            rc?: string;
+            ville?: string;
+            signataireNom?: string;
+            signataireFonction?: string;
+            /** @enum {string} */
+            signataireSexe?: "HOMME" | "FEMME";
         };
         ApiResponseIdentiteEntrepriseReponse: {
             success?: boolean;
@@ -1762,8 +1808,16 @@ export interface components {
             adresse?: string;
             telephone?: string;
             email?: string;
+            ice?: string;
+            rc?: string;
+            ville?: string;
             /** Format: uuid */
             logoFichierId?: string;
+            /** Format: uuid */
+            signatureFichierId?: string;
+            signataireNom?: string;
+            signataireFonction?: string;
+            signataireSexe?: string;
             /** Format: uuid */
             modifiePar?: string;
             /** Format: date-time */
@@ -1983,6 +2037,9 @@ export interface components {
             candidatureOrigineId?: string;
             /** Format: uuid */
             cvFichierId?: string;
+            /** @enum {string} */
+            sexe?: "HOMME" | "FEMME";
+            cin?: string;
         };
         TransfertRequete: {
             /** Format: uuid */
@@ -2050,7 +2107,7 @@ export interface components {
             /** Format: uuid */
             employeId?: string;
             /** @enum {string} */
-            typeDocument?: "certificat_stage" | "certificat_travail" | "document_libre" | "email_rejet_candidature";
+            typeDocument?: "certificat_stage" | "certificat_travail" | "attestation_travail" | "document_libre" | "email_rejet_candidature";
             /** Format: uuid */
             fichierId?: string;
             destinataireEmail?: string;
@@ -2058,6 +2115,9 @@ export interface components {
             dateEnvoi?: string;
             /** Format: uuid */
             envoyePar?: string;
+        };
+        CertificatStageRequete: {
+            sujetStage?: string;
         };
         DemandeAdministrativeRequete: {
             /** Format: uuid */
@@ -3893,6 +3953,32 @@ export interface operations {
             };
             cookie?: never;
         };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CertificatStageRequete"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseEnvoiDocumentResponse"];
+                };
+            };
+        };
+    };
+    envoyerAttestationTravail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                employeId: string;
+            };
+            cookie?: never;
+        };
         requestBody?: never;
         responses: {
             /** @description Created */
@@ -4173,6 +4259,53 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseDelegationReponse"];
+                };
+            };
+        };
+    };
+    recupererSignature: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
+    televerserSignature: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** Format: binary */
+                    signature: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseIdentiteEntrepriseReponse"];
                 };
             };
         };

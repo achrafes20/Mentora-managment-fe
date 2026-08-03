@@ -6,6 +6,7 @@ import {
   ArrowRight,
   BookOpen,
   Download,
+  ExternalLink,
   FileCheck,
   Mail,
   Move,
@@ -23,6 +24,7 @@ import type { ApiError } from '@/lib/apiClient'
 import { EmployeeBadge } from '@/components/ui/EmployeeBadge'
 import { CornerMark } from '@/components/ui/CornerMark'
 import { StatusTag } from '@/components/ui/StatusTag'
+import { Input } from '@/components/ui/Input'
 import { formatStatut } from '@/components/ui/tokens'
 import { EmployeFormModal, type EmployeFormValues } from './EmployeFormModal'
 import { CarteEmailModal } from './CarteEmailModal'
@@ -55,6 +57,7 @@ import { EmployeTeletravailCard } from '../attendance/EmployeTeletravailCard'
 import {
   useEnvoyerCertificatTravail,
   useEnvoyerCertificatStage,
+  useEnvoyerAttestationTravail,
   useEnvoisDocuments,
 } from '../documents/useDocuments'
 
@@ -79,6 +82,7 @@ export function EmployeDetailPage() {
   const desactiverMutation = useDesactiverEmploye(id ?? '')
   const envoyerCertifTravailMutation = useEnvoyerCertificatTravail()
   const envoyerCertifStageMutation = useEnvoyerCertificatStage()
+  const envoyerAttestationMutation = useEnvoyerAttestationTravail()
   const attacherMutation = useAttacherDocument(id ?? '')
   const supprimerDocMutation = useSupprimerDocument(id ?? '')
   const envoyerCarteMutation = useEnvoyerCarteEmail(id ?? '')
@@ -94,6 +98,8 @@ export function EmployeDetailPage() {
   const [qr, setQr] = useState<QrCodeReponse | null>(null)
   const [qrLoading, setQrLoading] = useState(false)
   const [certEnvoye, setCertEnvoye] = useState(false)
+  const [attestationEnvoyee, setAttestationEnvoyee] = useState(false)
+  const [sujetStage, setSujetStage] = useState('')
   const [pointages, setPointages] = useState<PointageReponse[]>([])
   const [pointagesLoading, setPointagesLoading] = useState(false)
 
@@ -166,6 +172,7 @@ export function EmployeDetailPage() {
     estStagiaire ? e.typeDocument === 'certificat_stage' : e.typeDocument === 'certificat_travail',
   )
   const dejaEnvoye = !!envoi
+  const envoiAttestation = envoisDocuments?.find((e) => e.typeDocument === 'attestation_travail')
 
   const joursRestantsCdd =
     employe.dateFinContratPrevue != null
@@ -198,7 +205,10 @@ export function EmployeDetailPage() {
         if (!employe.id) {
           throw new Error('Employé introuvable')
         }
-        await envoyerCertifStageMutation.mutateAsync(employe.id)
+        await envoyerCertifStageMutation.mutateAsync({
+          employeId: employe.id,
+          sujetStage: sujetStage.trim() || undefined,
+        })
       } else {
         if (!employe.id) {
           throw new Error('Employé introuvable')
@@ -209,6 +219,18 @@ export function EmployeDetailPage() {
       void toast.success('Certificat envoyé avec succès')
     } catch {
       void toast.error("Erreur lors de l'envoi du certificat")
+    }
+  }
+
+  const handleEnvoyerAttestation = async () => {
+    if (!employe.id) return
+    try {
+      await envoyerAttestationMutation.mutateAsync(employe.id)
+      setAttestationEnvoyee(true)
+      void toast.success('Attestation de travail envoyée avec succès')
+    } catch (err) {
+      const apiError = err as ApiError
+      void toast.error(apiError.message ?? "Erreur lors de l'envoi de l'attestation")
     }
   }
 
@@ -262,13 +284,16 @@ export function EmployeDetailPage() {
           employe={employe}
           submitting={desactiverMutation.isPending}
           onClose={() => setModaleDeparture(false)}
-          onConfirm={(v) => {
+          onConfirm={(v, genererCertificat) => {
             desactiverMutation
               .mutateAsync(v)
-              .then(() => {
+              .then(async () => {
                 void toast.success('Employé désactivé')
                 setModaleDeparture(false)
                 setErreur(null)
+                if (genererCertificat) {
+                  await handleEnvoyerCertificat()
+                }
               })
               .catch((err: ApiError) => setErreur(err.message))
           }}
@@ -300,6 +325,8 @@ export function EmployeDetailPage() {
               dateFinStagePrevue: values.dateFinStagePrevue
                 ? format(values.dateFinStagePrevue, 'yyyy-MM-dd')
                 : undefined,
+              sexe: values.sexe || undefined,
+              cin: values.cin || undefined,
             })
             .then(async () => {
               if (photo && id) {
@@ -638,6 +665,54 @@ export function EmployeDetailPage() {
               </div>
             )}
 
+            {isActif && isCdiCdd && (
+              <div className="mt-4 rounded-xl border border-[#D8D4CC] bg-white p-5">
+                <p className="mb-4 text-[10px] font-semibold tracking-wider text-[#9CA3AF] uppercase">
+                  Documents administratifs
+                </p>
+                <div className="relative flex items-center gap-5 rounded-xl border border-[#D8D4CC] bg-[#F7F7F4] p-4">
+                  <CornerMark />
+                  <FileCheck size={18} className="flex-shrink-0 text-[#4A7C6B]" />
+                  <div className="flex-1">
+                    <p className="text-[13px] font-semibold text-[#1B2A41]">
+                      Attestation de travail
+                    </p>
+                    <p className="text-[11px] text-[#9CA3AF]">
+                      {employe.prenom} {employe.nom} · {formatStatut(employe.typeContrat ?? '')} ·
+                      toujours en poste
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {(envoiAttestation || attestationEnvoyee) && (
+                      <>
+                        <span className="flex items-center gap-1.5 text-[11px] text-[#4A7C6B]">
+                          ✓ Envoyée
+                        </span>
+                        {envoiAttestation?.fichierId && (
+                          <a
+                            href={`${import.meta.env.VITE_API_BASE_URL}/api/fichiers/${envoiAttestation.fichierId}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex items-center gap-1.5 rounded-lg border border-[#D8D4CC] px-3 py-1.5 text-[11px] text-[#4A7C6B] hover:border-[#4A7C6B]"
+                          >
+                            <ExternalLink size={11} /> Ouvrir PDF
+                          </a>
+                        )}
+                      </>
+                    )}
+                    <button
+                      onClick={() => void handleEnvoyerAttestation()}
+                      disabled={envoyerAttestationMutation.isPending}
+                      className="flex items-center gap-1.5 rounded-lg bg-[#1B2A41] px-3 py-1.5 text-[11px] font-medium text-white hover:bg-[#243650] disabled:opacity-50"
+                    >
+                      <Send size={11} />{' '}
+                      {envoiAttestation || attestationEnvoyee ? 'Renvoyer' : "Confirmer l'envoi"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {!isActif && (isCdiCdd || estStagiaire) && (
               <div className="mt-4 rounded-xl border border-[#D8D4CC] bg-white p-5">
                 <p className="mb-4 text-[10px] font-semibold tracking-wider text-[#9CA3AF] uppercase">
@@ -654,36 +729,44 @@ export function EmployeDetailPage() {
                       {employe.prenom} {employe.nom} · {formatStatut(employe.typeContrat ?? '')}
                     </p>
                   </div>
-                  {dejaEnvoye || certEnvoye ? (
-                    <div className="flex items-center gap-3">
-                      <span className="flex items-center gap-1.5 text-[11px] text-[#4A7C6B]">
-                        ✓ Envoyé
-                      </span>
-                      {envoi?.fichierId && (
-                        <a
-                          href={`${import.meta.env.VITE_API_BASE_URL}/api/fichiers/${envoi.fichierId}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="flex items-center gap-1.5 rounded-lg border border-[#D8D4CC] px-3 py-1.5 text-[11px] text-[#4A7C6B] hover:border-[#4A7C6B]"
-                        >
-                          <Download size={11} /> Ouvrir PDF
-                        </a>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => void handleEnvoyerCertificat()}
-                        disabled={
-                          envoyerCertifTravailMutation.isPending ||
-                          envoyerCertifStageMutation.isPending
-                        }
-                        className="flex items-center gap-1.5 rounded-lg bg-[#1B2A41] px-3 py-1.5 text-[11px] font-medium text-white hover:bg-[#243650] disabled:opacity-50"
-                      >
-                        <Send size={11} /> Confirmer l'envoi
-                      </button>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {(dejaEnvoye || certEnvoye) && (
+                      <>
+                        <span className="flex items-center gap-1.5 text-[11px] text-[#4A7C6B]">
+                          ✓ Envoyé
+                        </span>
+                        {envoi?.fichierId && (
+                          <a
+                            href={`${import.meta.env.VITE_API_BASE_URL}/api/fichiers/${envoi.fichierId}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex items-center gap-1.5 rounded-lg border border-[#D8D4CC] px-3 py-1.5 text-[11px] text-[#4A7C6B] hover:border-[#4A7C6B]"
+                          >
+                            <ExternalLink size={11} /> Ouvrir PDF
+                          </a>
+                        )}
+                      </>
+                    )}
+                    {estStagiaire && (
+                      <Input
+                        value={sujetStage}
+                        onChange={(e) => setSujetStage(e.target.value)}
+                        placeholder="Sujet de stage (optionnel)"
+                        className="w-56"
+                      />
+                    )}
+                    <button
+                      onClick={() => void handleEnvoyerCertificat()}
+                      disabled={
+                        envoyerCertifTravailMutation.isPending ||
+                        envoyerCertifStageMutation.isPending
+                      }
+                      className="flex items-center gap-1.5 rounded-lg bg-[#1B2A41] px-3 py-1.5 text-[11px] font-medium text-white hover:bg-[#243650] disabled:opacity-50"
+                    >
+                      <Send size={11} />{' '}
+                      {dejaEnvoye || certEnvoye ? 'Renvoyer' : "Confirmer l'envoi"}
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

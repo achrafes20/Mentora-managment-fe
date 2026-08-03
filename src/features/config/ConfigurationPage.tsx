@@ -5,13 +5,16 @@ import { PageHeader } from '@/components/ui/StatCard'
 import { Button } from '@/components/ui/Button'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
+import { Select } from '@/components/ui/Select'
 import { toast } from '@/components/ui/toast'
 import type { ApiError } from '@/lib/apiClient'
 import {
   chargerLogoEntreprise,
+  chargerSignatureEntreprise,
   modifierIdentiteEntreprise,
   obtenirIdentiteEntreprise,
   televerserLogoEntreprise,
+  televerserSignatureEntreprise,
   type IdentiteEntreprise,
 } from './identiteEntrepriseApi'
 
@@ -24,14 +27,38 @@ function IdentiteEntrepriseForm({ identite }: { identite: IdentiteEntreprise }) 
     queryFn: chargerLogoEntreprise,
     enabled: !!identite.logoFichierId,
   })
+  const { data: signatureUrl } = useQuery({
+    queryKey: [...CLE_IDENTITE, 'signature', identite.signatureFichierId],
+    queryFn: chargerSignatureEntreprise,
+    enabled: !!identite.signatureFichierId,
+  })
 
   const [raisonSociale, setRaisonSociale] = useState(identite.raisonSociale ?? '')
   const [adresse, setAdresse] = useState(identite.adresse ?? '')
   const [telephone, setTelephone] = useState(identite.telephone ?? '')
   const [email, setEmail] = useState(identite.email ?? '')
+  const [ice, setIce] = useState(identite.ice ?? '')
+  const [rc, setRc] = useState(identite.rc ?? '')
+  const [ville, setVille] = useState(identite.ville ?? '')
+  const [signataireNom, setSignataireNom] = useState(identite.signataireNom ?? '')
+  const [signataireFonction, setSignataireFonction] = useState(identite.signataireFonction ?? '')
+  const [signataireSexe, setSignataireSexe] = useState(identite.signataireSexe ?? '')
 
   const enregistrer = useMutation({
-    mutationFn: () => modifierIdentiteEntreprise({ raisonSociale, adresse, telephone, email }),
+    mutationFn: () =>
+      modifierIdentiteEntreprise({
+        raisonSociale,
+        adresse,
+        telephone,
+        email,
+        ice: ice || undefined,
+        rc: rc || undefined,
+        ville: ville || undefined,
+        signataireNom: signataireNom || undefined,
+        signataireFonction: signataireFonction || undefined,
+        signataireSexe:
+          signataireSexe === 'HOMME' || signataireSexe === 'FEMME' ? signataireSexe : undefined,
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: CLE_IDENTITE })
       toast.success("Identité de l'entreprise mise à jour.")
@@ -44,6 +71,15 @@ function IdentiteEntrepriseForm({ identite }: { identite: IdentiteEntreprise }) 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: CLE_IDENTITE })
       toast.success('Logo mis à jour.')
+    },
+    onError: (err: ApiError) => toast.error(err.message),
+  })
+
+  const televerserSignature = useMutation({
+    mutationFn: (fichier: File) => televerserSignatureEntreprise(fichier),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: CLE_IDENTITE })
+      toast.success('Signature et cachet mis à jour.')
     },
     onError: (err: ApiError) => toast.error(err.message),
   })
@@ -67,6 +103,53 @@ function IdentiteEntrepriseForm({ identite }: { identite: IdentiteEntreprise }) 
         </FormField>
         <FormField label="E-mail de contact">
           <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        </FormField>
+      </div>
+
+      <p className="mt-4 mb-1 text-[12px] font-semibold text-[#1B2A41]">Identifiants légaux</p>
+      <p className="mb-3 text-[11px] text-[#9CA3AF]">
+        Affichés en en-tête de l'attestation de travail.
+      </p>
+      <div className="grid grid-cols-3 gap-4">
+        <FormField label="ICE">
+          <Input value={ice} onChange={(e) => setIce(e.target.value)} />
+        </FormField>
+        <FormField label="RC">
+          <Input value={rc} onChange={(e) => setRc(e.target.value)} />
+        </FormField>
+        <FormField label="Ville">
+          <Input value={ville} onChange={(e) => setVille(e.target.value)} placeholder="Tétouan" />
+        </FormField>
+      </div>
+
+      <p className="mt-4 mb-1 text-[12px] font-semibold text-[#1B2A41]">
+        Signataire des certificats
+      </p>
+      <p className="mb-3 text-[11px] text-[#9CA3AF]">
+        Utilisé pour le paragraphe d'ouverture ("Je soussigné(e), ... atteste par la présente que
+        :"). Laissé vide, le certificat retombe sur une formule collective générique.
+      </p>
+      <div className="grid grid-cols-3 gap-4">
+        <FormField label="Nom du signataire">
+          <Input value={signataireNom} onChange={(e) => setSignataireNom(e.target.value)} />
+        </FormField>
+        <FormField label="Fonction">
+          <Input
+            value={signataireFonction}
+            onChange={(e) => setSignataireFonction(e.target.value)}
+            placeholder="Responsable RH"
+          />
+        </FormField>
+        <FormField label="Sexe">
+          <Select
+            value={signataireSexe || '__non_renseigne__'}
+            onChange={(v) => setSignataireSexe(v === '__non_renseigne__' ? '' : v)}
+            options={[
+              { value: '__non_renseigne__', label: 'Non renseigné' },
+              { value: 'HOMME', label: 'Homme' },
+              { value: 'FEMME', label: 'Femme' },
+            ]}
+          />
         </FormField>
       </div>
 
@@ -95,6 +178,42 @@ function IdentiteEntrepriseForm({ identite }: { identite: IdentiteEntreprise }) 
             onChange={(e) => {
               const fichier = e.target.files?.[0]
               if (fichier) televerser.mutate(fichier)
+              e.target.value = ''
+            }}
+          />
+        </label>
+      </div>
+
+      <div className="mt-4 flex items-end gap-4">
+        <div>
+          <span className="mb-1 block text-[12px] font-medium text-[#1B2A41]">
+            Signature et cachet
+          </span>
+          <p className="mb-1 max-w-xs text-[11px] text-[#9CA3AF]">
+            Remplace l'encart à compléter à la main sur les certificats générés.
+          </p>
+          {signatureUrl ? (
+            <img
+              src={signatureUrl}
+              alt="Signature et cachet de l'entreprise"
+              className="h-16 w-auto rounded border border-[#D8D4CC]"
+            />
+          ) : (
+            <div className="flex h-16 w-24 items-center justify-center rounded border border-dashed border-[#D8D4CC] text-[11px] text-[#9CA3AF]">
+              Aucune signature
+            </div>
+          )}
+        </div>
+        <label className="cursor-pointer text-[12px] text-[#4A7C6B] hover:underline">
+          {televerserSignature.isPending ? 'Envoi…' : 'Téléverser une signature'}
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            disabled={televerserSignature.isPending}
+            onChange={(e) => {
+              const fichier = e.target.files?.[0]
+              if (fichier) televerserSignature.mutate(fichier)
               e.target.value = ''
             }}
           />

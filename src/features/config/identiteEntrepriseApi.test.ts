@@ -4,6 +4,7 @@ import {
   modifierIdentiteEntreprise,
   obtenirIdentiteEntreprise,
   televerserLogoEntreprise,
+  televerserSignatureEntreprise,
   type IdentiteEntreprise,
 } from './identiteEntrepriseApi'
 
@@ -63,6 +64,19 @@ describe('identiteEntrepriseApi', () => {
     await expect(televerserLogoEntreprise(fichier)).resolves.toEqual(miseAJour)
     expect(postMock).toHaveBeenCalledWith(
       '/api/config/identite-entreprise/logo',
+      expect.any(FormData),
+      { headers: { 'Content-Type': 'multipart/form-data' } },
+    )
+  })
+
+  it('televerse la signature via POST multipart', async () => {
+    const miseAJour = { ...identite, signatureFichierId: 'fichier-2' }
+    postMock.mockResolvedValueOnce({ data: { data: miseAJour } })
+    const fichier = new File(['contenu'], 'signature.png', { type: 'image/png' })
+
+    await expect(televerserSignatureEntreprise(fichier)).resolves.toEqual(miseAJour)
+    expect(postMock).toHaveBeenCalledWith(
+      '/api/config/identite-entreprise/signature',
       expect.any(FormData),
       { headers: { 'Content-Type': 'multipart/form-data' } },
     )

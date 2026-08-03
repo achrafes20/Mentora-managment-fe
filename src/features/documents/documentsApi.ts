@@ -4,7 +4,11 @@ export interface EnvoiDocumentResponse {
   id: string
   employeId: string
   typeDocument:
-    'certificat_stage' | 'certificat_travail' | 'document_libre' | 'email_rejet_candidature'
+    | 'certificat_stage'
+    | 'certificat_travail'
+    | 'attestation_travail'
+    | 'document_libre'
+    | 'email_rejet_candidature'
   fichierId: string
   destinataireEmail: string
   dateEnvoi: string
@@ -22,9 +26,13 @@ export async function listerEnvoisDocuments(employeId: string): Promise<EnvoiDoc
   return data.data ?? []
 }
 
-export async function envoyerCertificatStage(employeId: string): Promise<EnvoiDocumentResponse> {
+export async function envoyerCertificatStage(
+  employeId: string,
+  sujetStage?: string,
+): Promise<EnvoiDocumentResponse> {
   const { data } = await apiClient.post<ApiResponse<EnvoiDocumentResponse>>(
     `/api/documents/employes/${employeId}/certificat-stage`,
+    sujetStage ? { sujetStage } : undefined,
   )
   return data.data!
 }
@@ -32,6 +40,13 @@ export async function envoyerCertificatStage(employeId: string): Promise<EnvoiDo
 export async function envoyerCertificatTravail(employeId: string): Promise<EnvoiDocumentResponse> {
   const { data } = await apiClient.post<ApiResponse<EnvoiDocumentResponse>>(
     `/api/documents/employes/${employeId}/certificat-travail`,
+  )
+  return data.data!
+}
+
+export async function envoyerAttestationTravail(employeId: string): Promise<EnvoiDocumentResponse> {
+  const { data } = await apiClient.post<ApiResponse<EnvoiDocumentResponse>>(
+    `/api/documents/employes/${employeId}/attestation-travail`,
   )
   return data.data!
 }

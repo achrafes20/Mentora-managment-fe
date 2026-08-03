@@ -133,6 +133,8 @@ export function EmployesListTab() {
           : undefined,
         candidatureOrigineId: depuisCandidatureId,
         cvFichierId: candidaturePrefill?.cvFichierId ?? undefined,
+        sexe: valeurs.sexe || undefined,
+        cin: valeurs.cin || undefined,
       })
       .then(async (employe) => {
         if (photo && employe.id) {
