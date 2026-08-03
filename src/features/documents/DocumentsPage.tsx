@@ -1,15 +1,19 @@
 import { PageHeader } from '@/components/ui/StatCard'
-import { useSurveillance, useRenvoyerDocumentSurveillance } from './useDocuments'
+import {
+  useExecuterSurveillance,
+  useSurveillance,
+  useRenvoyerDocumentSurveillance,
+} from './useDocuments'
 import { useEmployes } from '../employee/useEmployes'
 import dayjs from 'dayjs'
 import { toast } from '@/components/ui/toast'
-import { apiClient } from '@/lib/apiClient'
 import type { ApiError } from '@/lib/apiClient'
 
 export function DocumentsPage() {
   const { data: surveillance } = useSurveillance()
   const { data: employesData } = useEmployes({})
   const renvoyerMutation = useRenvoyerDocumentSurveillance()
+  const executerSurveillanceMutation = useExecuterSurveillance()
 
   const pendingNotifs = surveillance ?? []
   const employes = employesData?.content ?? []
@@ -44,19 +48,15 @@ export function DocumentsPage() {
         <button
           onClick={async () => {
             try {
-              await apiClient.post(
-                '/api/internal/surveillance/run',
-                {},
-                {
-                  headers: { 'X-Internal-Webhook-Secret': 'MentoraDevSecret' },
-                },
-              )
+              await executerSurveillanceMutation.mutateAsync()
               toast.success('File de surveillance exécutée avec succès')
-            } catch {
-              toast.error("Erreur lors de l'exécution du cron")
+            } catch (error) {
+              const apiError = error as ApiError
+              toast.error(apiError.message ?? "Erreur lors de l'exécution du cron")
             }
           }}
-          className="rounded-lg bg-[#C87F3A] px-3 py-1.5 text-[12px] text-white hover:bg-[#a66a31]"
+          disabled={executerSurveillanceMutation.isPending}
+          className="rounded-lg bg-[#C87F3A] px-3 py-1.5 text-[12px] text-white hover:bg-[#a66a31] disabled:opacity-50"
         >
           Forcer exécution Cron
         </button>

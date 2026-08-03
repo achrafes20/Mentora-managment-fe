@@ -173,6 +173,12 @@ export function EmployeDetailPage() {
       : null
   const cddAlert = isCdd && joursRestantsCdd != null && joursRestantsCdd <= 15
 
+  const joursRestantsStage =
+    employe.dateFinStagePrevue != null
+      ? dayjs(employe.dateFinStagePrevue).diff(dayjs(), 'day')
+      : null
+  const stageAlert = estStagiaire && joursRestantsStage != null && joursRestantsStage <= 3
+
   async function handleGenererQr() {
     if (!id) return
     setQrLoading(true)
@@ -291,6 +297,9 @@ export function EmployeDetailPage() {
               dateFinContratPrevue: values.dateFinContratPrevue
                 ? format(values.dateFinContratPrevue, 'yyyy-MM-dd')
                 : undefined,
+              dateFinStagePrevue: values.dateFinStagePrevue
+                ? format(values.dateFinStagePrevue, 'yyyy-MM-dd')
+                : undefined,
             })
             .then(async () => {
               if (photo && id) {
@@ -395,6 +404,12 @@ export function EmployeDetailPage() {
                     <span className="flex items-center gap-1 rounded border border-[#C87F3A]/25 bg-[#C87F3A]/10 px-2 py-0.5 text-[10px] font-medium text-[#C87F3A]">
                       <AlertTriangle size={9} /> Fin de contrat prévue le{' '}
                       {dayjs(employe.dateFinContratPrevue).format('DD/MM/YYYY')}
+                    </span>
+                  )}
+                  {stageAlert && employe.dateFinStagePrevue && (
+                    <span className="flex items-center gap-1 rounded border border-[#C87F3A]/25 bg-[#C87F3A]/10 px-2 py-0.5 text-[10px] font-medium text-[#C87F3A]">
+                      <AlertTriangle size={9} /> Fin de stage prévue le{' '}
+                      {dayjs(employe.dateFinStagePrevue).format('DD/MM/YYYY')}
                     </span>
                   )}
                   {qr?.bloque && (
@@ -543,6 +558,30 @@ export function EmployeDetailPage() {
                         {cddAlert && joursRestantsCdd != null && (
                           <span className="rounded bg-[#C87F3A]/10 px-1.5 py-0.5 text-[10px] font-medium text-[#C87F3A]">
                             J−{joursRestantsCdd}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="mt-0.5 text-[13px] text-[#9CA3AF] italic">Non renseignée</p>
+                    )}
+                  </div>
+                )}
+
+                {estStagiaire && (
+                  <div
+                    className={`col-span-1 border-b border-[#D8D4CC]/50 pb-3 ${stageAlert ? '-mx-2 rounded bg-[#C87F3A]/4 px-2' : ''}`}
+                  >
+                    <p className="text-[10px] tracking-wider text-[#9CA3AF] uppercase">
+                      Date de fin de stage prévue
+                    </p>
+                    {employe.dateFinStagePrevue ? (
+                      <div className="mt-0.5 flex items-center gap-2">
+                        <p className="text-[13px] text-[#1B2A41]">
+                          {dayjs(employe.dateFinStagePrevue).format('DD/MM/YYYY')}
+                        </p>
+                        {stageAlert && joursRestantsStage != null && (
+                          <span className="rounded bg-[#C87F3A]/10 px-1.5 py-0.5 text-[10px] font-medium text-[#C87F3A]">
+                            J−{joursRestantsStage}
                           </span>
                         )}
                       </div>

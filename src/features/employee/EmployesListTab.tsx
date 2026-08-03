@@ -128,6 +128,9 @@ export function EmployesListTab() {
         dateFinContratPrevue: valeurs.dateFinContratPrevue
           ? format(valeurs.dateFinContratPrevue, 'yyyy-MM-dd')
           : undefined,
+        dateFinStagePrevue: valeurs.dateFinStagePrevue
+          ? format(valeurs.dateFinStagePrevue, 'yyyy-MM-dd')
+          : undefined,
         candidatureOrigineId: depuisCandidatureId,
         cvFichierId: candidaturePrefill?.cvFichierId ?? undefined,
       })

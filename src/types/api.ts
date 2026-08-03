@@ -490,6 +490,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/documents/surveillance/executer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["executerSurveillance_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/documents/employes/{employeId}/document-libre": {
         parameters: {
             query?: never;
@@ -1623,6 +1639,8 @@ export interface components {
             typeContrat: "CDI" | "CDD" | "STAGIAIRE" | "STAGIAIRE_REMUNERE";
             /** Format: date */
             dateFinContratPrevue?: string;
+            /** Format: date */
+            dateFinStagePrevue?: string;
         };
         ApiResponseEmployeReponse: {
             success?: boolean;
@@ -1649,6 +1667,8 @@ export interface components {
             typeContrat?: string;
             /** Format: date */
             dateFinContratPrevue?: string;
+            /** Format: date */
+            dateFinStagePrevue?: string;
             /** Format: date */
             dateDepart?: string;
             motifDepart?: string;
@@ -1957,6 +1977,8 @@ export interface components {
             typeContrat: "CDI" | "CDD" | "STAGIAIRE" | "STAGIAIRE_REMUNERE";
             /** Format: date */
             dateFinContratPrevue?: string;
+            /** Format: date */
+            dateFinStagePrevue?: string;
             /** Format: uuid */
             candidatureOrigineId?: string;
             /** Format: uuid */
@@ -3787,6 +3809,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseEnvoiDocumentResponse"];
+                };
+            };
+        };
+    };
+    executerSurveillance_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
                 };
             };
         };
