@@ -30,11 +30,22 @@ const schema = z
     dateEmbauche: z.date({ required_error: "La date d'embauche est requise" }),
     typeContrat: z.enum(TYPES_CONTRAT),
     dateFinContratPrevue: z.date().nullable(),
+    dateFinStagePrevue: z.date().nullable(),
   })
   .refine((valeurs) => valeurs.typeContrat === 'CDD' || !valeurs.dateFinContratPrevue, {
     message: "La date de fin de contrat prévue n'est applicable qu'aux CDD",
     path: ['dateFinContratPrevue'],
   })
+  .refine(
+    (valeurs) =>
+      valeurs.typeContrat === 'STAGIAIRE' ||
+      valeurs.typeContrat === 'STAGIAIRE_REMUNERE' ||
+      !valeurs.dateFinStagePrevue,
+    {
+      message: "La date de fin de stage prévue n'est applicable qu'aux stagiaires",
+      path: ['dateFinStagePrevue'],
+    },
+  )
 
 export type EmployeFormValues = z.infer<typeof schema>
 
@@ -99,6 +110,7 @@ export function EmployeFormModal({
       dateEmbauche: new Date(),
       typeContrat: 'CDI',
       dateFinContratPrevue: null,
+      dateFinStagePrevue: null,
     },
   })
 
@@ -117,6 +129,9 @@ export function EmployeFormModal({
         typeContrat: (employe?.typeContrat as (typeof TYPES_CONTRAT)[number]) ?? 'CDI',
         dateFinContratPrevue: employe?.dateFinContratPrevue
           ? new Date(employe.dateFinContratPrevue)
+          : null,
+        dateFinStagePrevue: employe?.dateFinStagePrevue
+          ? new Date(employe.dateFinStagePrevue)
           : null,
       })
       setPhoto(null)
@@ -270,6 +285,25 @@ export function EmployeFormModal({
               onChange={(d) => field.onChange(d)}
               onBlur={field.onBlur}
               disabled={typeContratActuel !== 'CDD'}
+            />
+          )}
+        />
+      </FormField>
+      <FormField
+        label="Date de fin de stage prévue (Stagiaire uniquement)"
+        error={errors.dateFinStagePrevue?.message}
+      >
+        <Controller
+          name="dateFinStagePrevue"
+          control={control}
+          render={({ field }) => (
+            <DatePicker
+              value={field.value}
+              onChange={(d) => field.onChange(d)}
+              onBlur={field.onBlur}
+              disabled={
+                typeContratActuel !== 'STAGIAIRE' && typeContratActuel !== 'STAGIAIRE_REMUNERE'
+              }
             />
           )}
         />

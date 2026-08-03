@@ -4,6 +4,7 @@ import {
   envoyerCertificatStage,
   envoyerCertificatTravail,
   envoyerDocumentLibre,
+  executerSurveillance,
   listerSurveillance,
   renvoyerDocumentSurveillance,
 } from './documentsApi'
@@ -61,6 +62,16 @@ export function useRenvoyerDocumentSurveillance() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['surveillance'] })
       queryClient.invalidateQueries({ queryKey: ['employes'] })
+    },
+  })
+}
+
+export function useExecuterSurveillance() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: executerSurveillance,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['surveillance'] })
     },
   })
 }

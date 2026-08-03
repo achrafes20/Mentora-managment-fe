@@ -75,3 +75,10 @@ export async function renvoyerDocumentSurveillance(
   )
   return data.data!
 }
+
+// Déclenchement manuel du balayage par un Admin authentifié (Bearer, RBAC normal) — distinct de
+// /api/internal/surveillance/run, réservé au cron n8n via un secret partagé qui ne doit jamais
+// être embarqué côté frontend (cf. InternalWebhookGuard).
+export async function executerSurveillance(): Promise<void> {
+  await apiClient.post('/api/documents/surveillance/executer')
+}
