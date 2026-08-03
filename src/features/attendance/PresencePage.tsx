@@ -2,35 +2,31 @@ import { useState } from 'react'
 import { PointagesPage } from './PointagesPage'
 import { AnomaliesPage } from './AnomaliesPage'
 import { HorairesReferencePage } from './HorairesReferencePage'
+import { KiosqueActivationsPanel } from './KiosqueActivationsPanel'
 import { PageHeader } from '@/components/ui/StatCard'
+import { useAuth } from '@/lib/AuthContext'
+import { useEstDelegueActifMaintenant } from '../delegation/useDelegation'
 
-type Tab = 'pointages' | 'anomalies' | 'horaires'
+type Tab = 'pointages' | 'anomalies' | 'horaires' | 'kiosque'
 
 export function PresencePage() {
   const [tab, setTab] = useState<Tab>('pointages')
+  const { role } = useAuth()
+  const estDelegueActif = useEstDelegueActifMaintenant()
+  // NFR-UX-02 : génération/révocation des codes réservée à l'Admin (ou délégué actif) côté
+  // backend — même garde ici pour ne pas afficher un onglet qui renverrait 403.
+  const peutGererKiosque = role === 'admin' || estDelegueActif
 
   const tabs: { key: Tab; label: string }[] = [
     { key: 'pointages', label: 'Historique pointages' },
     { key: 'anomalies', label: 'Anomalies' },
     { key: 'horaires', label: 'Horaires de référence' },
+    ...(peutGererKiosque ? [{ key: 'kiosque' as const, label: 'Kiosque' }] : []),
   ]
 
   return (
     <div className="flex-1 overflow-auto p-8">
-      <PageHeader
-        title="Présence"
-        subtitle="Pointages, anomalies et horaires"
-        actions={
-          <a
-            href="/kiosque"
-            target="_blank"
-            rel="noreferrer"
-            className="rounded-lg border border-[#D8D4CC] px-3 py-2 text-[12px] text-[#6B7280] transition-colors hover:border-[#1B2A41] hover:text-[#1B2A41]"
-          >
-            Ouvrir le kiosque →
-          </a>
-        }
-      />
+      <PageHeader title="Présence" subtitle="Pointages, anomalies et horaires" />
 
       <div className="mb-5 flex gap-1 border-b border-[#D8D4CC]">
         {tabs.map((t) => (
@@ -51,6 +47,7 @@ export function PresencePage() {
       {tab === 'pointages' && <PointagesPage />}
       {tab === 'anomalies' && <AnomaliesPage />}
       {tab === 'horaires' && <HorairesReferencePage />}
+      {tab === 'kiosque' && peutGererKiosque && <KiosqueActivationsPanel />}
     </div>
   )
 }

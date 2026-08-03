@@ -170,22 +170,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/recruitment/candidatures/archiver-expirees": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["archiverExpirees"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/pointages/{id}/corriger": {
         parameters: {
             query?: never;
@@ -282,6 +266,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/kiosque/activations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["lister_1"];
+        put?: never;
+        post: operations["genererCode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kiosque/activations/{id}/revoquer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["revoquer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kiosque/activation/verifier": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["verifierCode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/internal/surveillance/run": {
         parameters: {
             query?: never;
@@ -353,7 +385,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["lister_1"];
+        get: operations["lister_2"];
         put?: never;
         post: operations["creer_1"];
         delete?: never;
@@ -369,7 +401,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["lister_2"];
+        get: operations["lister_3"];
         put?: never;
         post: operations["creer_2"];
         delete?: never;
@@ -465,7 +497,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["lister_3"];
+        get: operations["lister_4"];
         put?: never;
         post: operations["creer_3"];
         delete?: never;
@@ -561,7 +593,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["lister_4"];
+        get: operations["lister_5"];
         put?: never;
         post: operations["creer_4"];
         delete?: never;
@@ -593,7 +625,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["lister_5"];
+        get: operations["lister_6"];
         put?: never;
         post: operations["creer_5"];
         delete?: never;
@@ -642,7 +674,7 @@ export interface paths {
             cookie?: never;
         };
         /** Historique complet des délégations */
-        get: operations["lister_6"];
+        get: operations["lister_7"];
         put?: never;
         /** Désignation d'un délégué temporaire */
         post: operations["creer_6"];
@@ -662,7 +694,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** Révocation manuelle d'une délégation active */
-        post: operations["revoquer"];
+        post: operations["revoquer_1"];
         delete?: never;
         options?: never;
         head?: never;
@@ -761,6 +793,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["reprogrammerEntretien"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/candidatures/archiver-expirees": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["archiverExpirees"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1025,7 +1073,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["lister_7"];
+        get: operations["lister_8"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1090,7 +1138,7 @@ export interface paths {
             cookie?: never;
         };
         /** Lister mes notifications non archivees */
-        get: operations["lister_8"];
+        get: operations["lister_9"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1108,6 +1156,22 @@ export interface paths {
         };
         /** Compter mes notifications non lues */
         get: operations["compterNonLues"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kiosque/activation/statut": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["statutActivation"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1366,7 +1430,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["lister_9"];
+        get: operations["lister_10"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1481,7 +1545,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["lister_10"];
+        get: operations["lister_11"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1823,14 +1887,6 @@ export interface components {
             messageCandidat?: string;
             derniereAnalyse?: components["schemas"]["AnalyseIaReponse"];
         };
-        ApiResponseInteger: {
-            success?: boolean;
-            /** Format: int32 */
-            data?: number;
-            error?: string;
-            /** Format: date-time */
-            timestamp?: string;
-        };
         CorrectionPointageRequete: {
             /** Format: date-time */
             nouvelHorodatage: string;
@@ -1877,6 +1933,38 @@ export interface components {
             valeurQr: string;
             /** @enum {string} */
             typeScan: "entree" | "sortie";
+        };
+        ApiResponseCodeGenereReponse: {
+            success?: boolean;
+            data?: components["schemas"]["CodeGenereReponse"];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        CodeGenereReponse: {
+            /** Format: uuid */
+            id?: string;
+            code?: string;
+        };
+        ApiResponseVoid: {
+            success?: boolean;
+            data?: unknown;
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        CodeActivationRequete: {
+            code: string;
+        };
+        ApiResponseJetonAppareilReponse: {
+            success?: boolean;
+            data?: components["schemas"]["JetonAppareilReponse"];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        JetonAppareilReponse: {
+            jetonAppareil?: string;
         };
         ApiResponseImportApercuReponse: {
             success?: boolean;
@@ -1997,13 +2085,6 @@ export interface components {
             motif: "demission" | "licenciement" | "fin_cdd" | "rupture" | "autre";
             /** Format: date */
             dateDepart: string;
-        };
-        ApiResponseVoid: {
-            success?: boolean;
-            data?: unknown;
-            error?: string;
-            /** Format: date-time */
-            timestamp?: string;
         };
         CarteEmailRequete: {
             objet: string;
@@ -2244,6 +2325,14 @@ export interface components {
             /** Format: date-time */
             dateEntretien?: string;
         };
+        ApiResponseInteger: {
+            success?: boolean;
+            /** Format: int32 */
+            data?: number;
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
         ResetPasswordRequest: {
             token: string;
             nouveauMotDePasse: string;
@@ -2397,6 +2486,41 @@ export interface components {
             error?: string;
             /** Format: date-time */
             timestamp?: string;
+        };
+        ApiResponseListKiosqueActivationReponse: {
+            success?: boolean;
+            data?: components["schemas"]["KiosqueActivationReponse"][];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        KiosqueActivationReponse: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            emisPar?: string;
+            /** Format: uuid */
+            delegationId?: string;
+            /** Format: date-time */
+            emisLe?: string;
+            /** @enum {string} */
+            statut?: "en_attente" | "active" | "revoquee";
+            /** Format: date-time */
+            activeeLe?: string;
+            /** Format: date-time */
+            revoqueeLe?: string;
+            /** Format: uuid */
+            revoqueePar?: string;
+        };
+        ApiResponseStatutActivationReponse: {
+            success?: boolean;
+            data?: components["schemas"]["StatutActivationReponse"];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        StatutActivationReponse: {
+            actif?: boolean;
         };
         ApiResponsePagedResponseImportLotReponse: {
             success?: boolean;
@@ -3168,28 +3292,6 @@ export interface operations {
             };
         };
     };
-    archiverExpirees: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Internal-Webhook-Secret"?: string;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["ApiResponseInteger"];
-                };
-            };
-        };
-    };
     corrigerManuellement: {
         parameters: {
             query?: never;
@@ -3331,7 +3433,9 @@ export interface operations {
     scanner: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Kiosque-Device-Token"?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -3348,6 +3452,92 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponsePointageReponse"];
+                };
+            };
+        };
+    };
+    lister_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListKiosqueActivationReponse"];
+                };
+            };
+        };
+    };
+    genererCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCodeGenereReponse"];
+                };
+            };
+        };
+    };
+    revoquer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    verifierCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CodeActivationRequete"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseJetonAppareilReponse"];
                 };
             };
         };
@@ -3467,7 +3657,7 @@ export interface operations {
             };
         };
     };
-    lister_1: {
+    lister_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -3511,7 +3701,7 @@ export interface operations {
             };
         };
     };
-    lister_2: {
+    lister_3: {
         parameters: {
             query: {
                 departementId?: string;
@@ -3743,7 +3933,7 @@ export interface operations {
             };
         };
     };
-    lister_3: {
+    lister_4: {
         parameters: {
             query?: never;
             header?: never;
@@ -3906,7 +4096,7 @@ export interface operations {
             };
         };
     };
-    lister_4: {
+    lister_5: {
         parameters: {
             query?: never;
             header?: never;
@@ -3972,7 +4162,7 @@ export interface operations {
             };
         };
     };
-    lister_5: {
+    lister_6: {
         parameters: {
             query: {
                 employeId?: string;
@@ -4111,7 +4301,7 @@ export interface operations {
             };
         };
     };
-    lister_6: {
+    lister_7: {
         parameters: {
             query?: never;
             header?: never;
@@ -4155,7 +4345,7 @@ export interface operations {
             };
         };
     };
-    revoquer: {
+    revoquer_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -4342,6 +4532,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseEntretienReponse"];
+                };
+            };
+        };
+    };
+    archiverExpirees: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseInteger"];
                 };
             };
         };
@@ -4682,7 +4892,7 @@ export interface operations {
             };
         };
     };
-    lister_7: {
+    lister_8: {
         parameters: {
             query: {
                 pageable: components["schemas"]["Pageable"];
@@ -4775,7 +4985,7 @@ export interface operations {
             };
         };
     };
-    lister_8: {
+    lister_9: {
         parameters: {
             query?: {
                 page?: number;
@@ -4814,6 +5024,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseMapStringLong"];
+                };
+            };
+        };
+    };
+    statutActivation: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Kiosque-Device-Token"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseStatutActivationReponse"];
                 };
             };
         };
@@ -5149,7 +5381,7 @@ export interface operations {
             };
         };
     };
-    lister_9: {
+    lister_10: {
         parameters: {
             query: {
                 offreId?: string;
@@ -5316,7 +5548,7 @@ export interface operations {
             };
         };
     };
-    lister_10: {
+    lister_11: {
         parameters: {
             query: {
                 resolue?: boolean;
