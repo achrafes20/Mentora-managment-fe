@@ -26,6 +26,30 @@ export async function listerEnvoisDocuments(employeId: string): Promise<EnvoiDoc
   return data.data ?? []
 }
 
+// EF-DOC : aperçu du PDF avant confirmation d'envoi — même génération que l'envoi réel côté
+// backend, mais sans e-mail ni enregistrement dans l'historique. Ouvert dans un nouvel onglet
+// plutôt qu'un lien <a href> brut : l'intercepteur Authorization ne porte pas sur une navigation
+// directe (même principe que `ouvrirDocument` dans employesApi.ts).
+async function ouvrirApercu(url: string): Promise<void> {
+  const { data } = await apiClient.get<Blob>(url, { responseType: 'blob' })
+  const blobUrl = URL.createObjectURL(data)
+  window.open(blobUrl, '_blank', 'noreferrer')
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000)
+}
+
+export async function apercuCertificatStage(employeId: string, sujetStage?: string): Promise<void> {
+  const params = sujetStage ? `?sujetStage=${encodeURIComponent(sujetStage)}` : ''
+  await ouvrirApercu(`/api/documents/employes/${employeId}/certificat-stage/apercu${params}`)
+}
+
+export async function apercuCertificatTravail(employeId: string): Promise<void> {
+  await ouvrirApercu(`/api/documents/employes/${employeId}/certificat-travail/apercu`)
+}
+
+export async function apercuAttestationTravail(employeId: string): Promise<void> {
+  await ouvrirApercu(`/api/documents/employes/${employeId}/attestation-travail/apercu`)
+}
+
 export async function envoyerCertificatStage(
   employeId: string,
   sujetStage?: string,

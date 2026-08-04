@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { PointagesPage } from './PointagesPage'
 import { AnomaliesPage } from './AnomaliesPage'
 import { HorairesReferencePage } from './HorairesReferencePage'
@@ -6,8 +7,14 @@ import { PageHeader } from '@/components/ui/StatCard'
 
 type Tab = 'pointages' | 'anomalies' | 'horaires'
 
+const TABS_VALIDES: Tab[] = ['pointages', 'anomalies', 'horaires']
+
 export function PresencePage() {
-  const [tab, setTab] = useState<Tab>('pointages')
+  const [searchParams] = useSearchParams()
+  const tabParam = searchParams.get('tab')
+  const [tab, setTab] = useState<Tab>(
+    TABS_VALIDES.includes(tabParam as Tab) ? (tabParam as Tab) : 'pointages',
+  )
 
   const tabs: { key: Tab; label: string }[] = [
     { key: 'pointages', label: 'Historique pointages' },

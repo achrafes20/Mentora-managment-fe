@@ -55,6 +55,9 @@ import {
 } from '../attendance/api'
 import { EmployeTeletravailCard } from '../attendance/EmployeTeletravailCard'
 import {
+  useApercuCertificatTravail,
+  useApercuCertificatStage,
+  useApercuAttestationTravail,
   useEnvoyerCertificatTravail,
   useEnvoyerCertificatStage,
   useEnvoyerAttestationTravail,
@@ -83,6 +86,9 @@ export function EmployeDetailPage() {
   const envoyerCertifTravailMutation = useEnvoyerCertificatTravail()
   const envoyerCertifStageMutation = useEnvoyerCertificatStage()
   const envoyerAttestationMutation = useEnvoyerAttestationTravail()
+  const apercuCertifTravailMutation = useApercuCertificatTravail()
+  const apercuCertifStageMutation = useApercuCertificatStage()
+  const apercuAttestationMutation = useApercuAttestationTravail()
   const attacherMutation = useAttacherDocument(id ?? '')
   const supprimerDocMutation = useSupprimerDocument(id ?? '')
   const envoyerCarteMutation = useEnvoyerCarteEmail(id ?? '')
@@ -217,8 +223,9 @@ export function EmployeDetailPage() {
       }
       setCertEnvoye(true)
       void toast.success('Certificat envoyé avec succès')
-    } catch {
-      void toast.error("Erreur lors de l'envoi du certificat")
+    } catch (err) {
+      const apiError = err as ApiError
+      void toast.error(apiError.message ?? "Erreur lors de l'envoi du certificat")
     }
   }
 
@@ -231,6 +238,35 @@ export function EmployeDetailPage() {
     } catch (err) {
       const apiError = err as ApiError
       void toast.error(apiError.message ?? "Erreur lors de l'envoi de l'attestation")
+    }
+  }
+
+  // Aperçu du PDF avant confirmation d'envoi (EF-DOC) — ouvre le même document dans un nouvel
+  // onglet, sans e-mail ni entrée dans l'historique des envois.
+  const handleApercuCertificat = async () => {
+    if (!employe.id) return
+    try {
+      if (estStagiaire) {
+        await apercuCertifStageMutation.mutateAsync({
+          employeId: employe.id,
+          sujetStage: sujetStage.trim() || undefined,
+        })
+      } else {
+        await apercuCertifTravailMutation.mutateAsync(employe.id)
+      }
+    } catch (err) {
+      const apiError = err as ApiError
+      void toast.error(apiError.message ?? "Erreur lors de l'aperçu du certificat")
+    }
+  }
+
+  const handleApercuAttestation = async () => {
+    if (!employe.id) return
+    try {
+      await apercuAttestationMutation.mutateAsync(employe.id)
+    } catch (err) {
+      const apiError = err as ApiError
+      void toast.error(apiError.message ?? "Erreur lors de l'aperçu de l'attestation")
     }
   }
 
@@ -684,22 +720,17 @@ export function EmployeDetailPage() {
                   </div>
                   <div className="flex items-center gap-3">
                     {(envoiAttestation || attestationEnvoyee) && (
-                      <>
-                        <span className="flex items-center gap-1.5 text-[11px] text-[#4A7C6B]">
-                          ✓ Envoyée
-                        </span>
-                        {envoiAttestation?.fichierId && (
-                          <a
-                            href={`${import.meta.env.VITE_API_BASE_URL}/api/fichiers/${envoiAttestation.fichierId}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="flex items-center gap-1.5 rounded-lg border border-[#D8D4CC] px-3 py-1.5 text-[11px] text-[#4A7C6B] hover:border-[#4A7C6B]"
-                          >
-                            <ExternalLink size={11} /> Ouvrir PDF
-                          </a>
-                        )}
-                      </>
+                      <span className="flex items-center gap-1.5 text-[11px] text-[#4A7C6B]">
+                        ✓ Envoyée
+                      </span>
                     )}
+                    <button
+                      onClick={() => void handleApercuAttestation()}
+                      disabled={apercuAttestationMutation.isPending}
+                      className="flex items-center gap-1.5 rounded-lg border border-[#D8D4CC] px-3 py-1.5 text-[11px] text-[#6B7280] transition-colors hover:border-[#1B2A41] hover:text-[#1B2A41] disabled:opacity-50"
+                    >
+                      <ExternalLink size={11} /> Aperçu
+                    </button>
                     <button
                       onClick={() => void handleEnvoyerAttestation()}
                       disabled={envoyerAttestationMutation.isPending}
@@ -731,21 +762,9 @@ export function EmployeDetailPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     {(dejaEnvoye || certEnvoye) && (
-                      <>
-                        <span className="flex items-center gap-1.5 text-[11px] text-[#4A7C6B]">
-                          ✓ Envoyé
-                        </span>
-                        {envoi?.fichierId && (
-                          <a
-                            href={`${import.meta.env.VITE_API_BASE_URL}/api/fichiers/${envoi.fichierId}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="flex items-center gap-1.5 rounded-lg border border-[#D8D4CC] px-3 py-1.5 text-[11px] text-[#4A7C6B] hover:border-[#4A7C6B]"
-                          >
-                            <ExternalLink size={11} /> Ouvrir PDF
-                          </a>
-                        )}
-                      </>
+                      <span className="flex items-center gap-1.5 text-[11px] text-[#4A7C6B]">
+                        ✓ Envoyé
+                      </span>
                     )}
                     {estStagiaire && (
                       <Input
@@ -755,6 +774,15 @@ export function EmployeDetailPage() {
                         className="w-56"
                       />
                     )}
+                    <button
+                      onClick={() => void handleApercuCertificat()}
+                      disabled={
+                        apercuCertifTravailMutation.isPending || apercuCertifStageMutation.isPending
+                      }
+                      className="flex items-center gap-1.5 rounded-lg border border-[#D8D4CC] px-3 py-1.5 text-[11px] text-[#6B7280] transition-colors hover:border-[#1B2A41] hover:text-[#1B2A41] disabled:opacity-50"
+                    >
+                      <ExternalLink size={11} /> Aperçu
+                    </button>
                     <button
                       onClick={() => void handleEnvoyerCertificat()}
                       disabled={

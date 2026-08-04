@@ -16,7 +16,6 @@ export function HorairesReferencePage() {
   const [heureDebutApresMidi, setHeureDebutApresMidi] = useState('14:00')
   const [heureFinApresMidi, setHeureFinApresMidi] = useState('17:00')
   const [toleranceMinutes, setToleranceMinutes] = useState(10)
-  const [dateEffet, setDateEffet] = useState(dayjs().format('YYYY-MM-DD'))
 
   const charger = useCallback(async () => {
     setLoading(true)
@@ -44,7 +43,7 @@ export function HorairesReferencePage() {
         heureDebutApresMidi: `${heureDebutApresMidi}:00`,
         heureFinApresMidi: `${heureFinApresMidi}:00`,
         toleranceMinutes,
-        dateEffet,
+        dateEffet: dayjs().format('YYYY-MM-DD'),
       })
       void toast.success('Horaire de référence enregistré')
       void charger()
@@ -99,21 +98,7 @@ export function HorairesReferencePage() {
                 className="mt-1 w-full rounded-lg border border-[#D8D4CC] bg-[#F7F7F4] px-3 py-2 text-[13px] focus:border-[#1B2A41] focus:outline-none"
               />
             </div>
-            <div>
-              <label className="text-[11px] font-medium text-[#1B2A41]">Date d'effet</label>
-              <input
-                type="date"
-                value={dateEffet}
-                onChange={(e) => setDateEffet(e.target.value)}
-                required
-                className="mt-1 w-full rounded-lg border border-[#D8D4CC] bg-[#F7F7F4] px-3 py-2 text-[13px] focus:border-[#1B2A41] focus:outline-none"
-              />
-            </div>
           </div>
-          <p className="mt-3 text-[11px] text-[#9CA3AF]">
-            Ce changement s'applique uniquement aux pointages futurs. Les pointages passés restent
-            évalués selon l'horaire en vigueur à leur date.
-          </p>
           <button
             type="submit"
             disabled={submitting}

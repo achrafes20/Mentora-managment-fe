@@ -1,7 +1,7 @@
 import * as PopoverPrimitive from '@radix-ui/react-popover'
 import dayjs from 'dayjs'
 import { format as formatDate } from 'date-fns'
-import { ChevronLeft, ChevronRight, Download, Info, Pencil } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Download, Info, Pencil, RotateCcw } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { DatePicker } from '@/components/ui/DatePicker'
 import { toast } from '@/components/ui/toast'
@@ -52,18 +52,32 @@ export function PointagesPage() {
   const [total, setTotal] = useState(0)
   const [employes, setEmployes] = useState<Record<string, string>>({})
   const [optionsEmployes, setOptionsEmployes] = useState<{ id: string; nom: string }[]>([])
-  const [employeExportId, setEmployeExportId] = useState('')
-  const [debutExport, setDebutExport] = useState<Date | null>(debutDuMois())
-  const [finExport, setFinExport] = useState<Date | null>(new Date())
   const [showExport, setShowExport] = useState(false)
   const [pointageACorrige, setPointageACorrige] = useState<PointageReponse | null>(null)
   const [correction, setCorrection] = useState(false)
   const pageSize = 20
 
+  // Filtres de recherche sur l'historique (distincts des champs d'export ci-dessous : ici on
+  // réduit la table paginée affichée, l'export porte toujours sur sa propre période choisie).
+  const [filtreEmployeId, setFiltreEmployeId] = useState('')
+  const [filtreType, setFiltreType] = useState<'' | 'entree' | 'sortie'>('')
+  const [filtreDebut, setFiltreDebut] = useState<Date | null>(null)
+  const [filtreFin, setFiltreFin] = useState<Date | null>(null)
+  const filtresActifs = Boolean(filtreEmployeId || filtreType || filtreDebut || filtreFin)
+
   const charger = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await listerPointages(page, pageSize)
+      const res = await listerPointages(
+        {
+          employeId: filtreEmployeId || undefined,
+          typeScan: filtreType || undefined,
+          debut: filtreDebut ? formatDate(filtreDebut, 'yyyy-MM-dd') : undefined,
+          fin: filtreFin ? formatDate(filtreFin, 'yyyy-MM-dd') : undefined,
+        },
+        page,
+        pageSize,
+      )
       setData(res.content)
       setTotal(res.totalElements)
     } catch {
@@ -71,7 +85,15 @@ export function PointagesPage() {
     } finally {
       setLoading(false)
     }
-  }, [page])
+  }, [page, filtreEmployeId, filtreType, filtreDebut, filtreFin])
+
+  function reinitialiserFiltres() {
+    setFiltreEmployeId('')
+    setFiltreType('')
+    setFiltreDebut(null)
+    setFiltreFin(null)
+    setPage(0)
+  }
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -113,18 +135,17 @@ export function PointagesPage() {
     }
   }
 
+  // Réutilise les filtres de la table (pas de nouvelle sélection à l'export) : Employé/Du/Au déjà
+  // choisis ci-dessus, avec un repli sur "depuis le début du mois jusqu'à aujourd'hui" si aucune
+  // période n'est filtrée (l'export exige toujours une période, contrairement à la table).
   async function lancerExport(fmt: 'xlsx' | 'pdf') {
-    if (!debutExport || !finExport) {
-      void toast.error('Choisissez une période avant d’exporter')
-      return
-    }
     setShowExport(false)
     try {
       await exporterPresence(
         {
-          employeId: employeExportId || undefined,
-          debut: formatDate(debutExport, 'yyyy-MM-dd'),
-          fin: formatDate(finExport, 'yyyy-MM-dd'),
+          employeId: filtreEmployeId || undefined,
+          debut: formatDate(filtreDebut ?? debutDuMois(), 'yyyy-MM-dd'),
+          fin: formatDate(filtreFin ?? new Date(), 'yyyy-MM-dd'),
         },
         fmt,
       )
@@ -135,17 +156,21 @@ export function PointagesPage() {
 
   return (
     <div>
-      {/* EF-EXP-02 : feuille de présence sur une période, distincte de l'historique paginé
-          ci-dessous — l'export porte toujours sur l'ensemble filtré, jamais sur la page affichée. */}
+      {/* Filtres de recherche sur l'historique paginé ci-dessous, + export à droite (EF-EXP-02 :
+          feuille de présence sur une période, distincte de l'historique paginé — l'export porte
+          toujours sur l'ensemble filtré, jamais sur la page affichée). */}
       <div className="mb-4 flex flex-wrap items-end gap-3 rounded-xl border border-[#D8D4CC] bg-white p-4">
         <div className="min-w-[180px]">
           <label className="mb-1 block text-[11px] font-medium text-[#6B7280]">Employé</label>
           <select
-            value={employeExportId}
-            onChange={(e) => setEmployeExportId(e.target.value)}
+            value={filtreEmployeId}
+            onChange={(e) => {
+              setFiltreEmployeId(e.target.value)
+              setPage(0)
+            }}
             className="h-9 w-full cursor-pointer rounded-lg border border-[#D8D4CC] bg-white px-3 text-[13px] text-[#1B2A41] focus:border-[#1B2A41] focus:outline-none"
           >
-            <option value="">Toute l'équipe</option>
+            <option value="">Tous les employés</option>
             {optionsEmployes.map((e) => (
               <option key={e.id} value={e.id}>
                 {e.nom}
@@ -154,23 +179,60 @@ export function PointagesPage() {
           </select>
         </div>
         <div className="min-w-[140px]">
+          <label className="mb-1 block text-[11px] font-medium text-[#6B7280]">Type</label>
+          <select
+            value={filtreType}
+            onChange={(e) => {
+              setFiltreType(e.target.value as '' | 'entree' | 'sortie')
+              setPage(0)
+            }}
+            className="h-9 w-full cursor-pointer rounded-lg border border-[#D8D4CC] bg-white px-3 text-[13px] text-[#1B2A41] focus:border-[#1B2A41] focus:outline-none"
+          >
+            <option value="">Entrée et sortie</option>
+            <option value="entree">Entrée</option>
+            <option value="sortie">Sortie</option>
+          </select>
+        </div>
+        <div className="min-w-[140px]">
           <label className="mb-1 block text-[11px] font-medium text-[#6B7280]">Du</label>
-          <DatePicker value={debutExport} onChange={setDebutExport} />
+          <DatePicker
+            value={filtreDebut}
+            onChange={(d) => {
+              setFiltreDebut(d)
+              setPage(0)
+            }}
+          />
         </div>
         <div className="min-w-[140px]">
           <label className="mb-1 block text-[11px] font-medium text-[#6B7280]">Au</label>
-          <DatePicker value={finExport} onChange={setFinExport} />
+          <DatePicker
+            value={filtreFin}
+            onChange={(d) => {
+              setFiltreFin(d)
+              setPage(0)
+            }}
+          />
         </div>
+        {filtresActifs && (
+          <button
+            type="button"
+            onClick={reinitialiserFiltres}
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-[#D8D4CC] px-3 text-[12px] text-[#6B7280] transition-colors hover:border-[#1B2A41] hover:text-[#1B2A41]"
+          >
+            <RotateCcw size={13} /> Réinitialiser
+          </button>
+        )}
+
         <div className="relative ml-auto">
           <button
             type="button"
             onClick={() => setShowExport((v) => !v)}
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-[#D8D4CC] px-3 text-[12px] text-[#6B7280] transition-colors hover:border-[#1B2A41] hover:text-[#1B2A41]"
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-[#D8D4CC] bg-white px-3 text-[12px] text-[#6B7280] transition-colors hover:border-[#1B2A41] hover:text-[#1B2A41]"
           >
             <Download size={13} /> Exporter la feuille de présence
           </button>
           {showExport && (
-            <div className="absolute top-full right-0 z-10 mt-1 w-36 overflow-hidden rounded-lg border border-[#D8D4CC] bg-white shadow-lg">
+            <div className="absolute top-full right-0 z-10 mt-1 w-44 overflow-hidden rounded-lg border border-[#D8D4CC] bg-white shadow-lg">
               {(['xlsx', 'pdf'] as const).map((fmt) => (
                 <button
                   key={fmt}
@@ -189,7 +251,9 @@ export function PointagesPage() {
         {loading ? (
           <p className="p-8 text-center text-[13px] text-[#9CA3AF]">Chargement…</p>
         ) : data.length === 0 ? (
-          <p className="p-8 text-center text-[13px] text-[#9CA3AF]">Aucun pointage</p>
+          <p className="p-8 text-center text-[13px] text-[#9CA3AF]">
+            Aucun pointage {filtresActifs ? 'pour ces filtres' : ''}
+          </p>
         ) : (
           <table className="w-full">
             <thead>

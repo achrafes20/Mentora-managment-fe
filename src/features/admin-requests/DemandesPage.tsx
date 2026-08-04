@@ -1,4 +1,5 @@
 import { FormEvent, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { CalendarDays, Check, Download, Plus, X } from 'lucide-react'
@@ -38,6 +39,8 @@ function dateVersParam(date: Date | null): string | undefined {
 }
 
 type Tab = 'liste' | 'nouvelle' | 'registre' | 'feries' | 'blocage' | 'politique'
+
+const TABS_VALIDES: Tab[] = ['liste', 'nouvelle', 'registre', 'feries', 'blocage', 'politique']
 
 const LABELS_TYPE_CONTRAT: Record<string, string> = {
   CDI: 'CDI',
@@ -79,7 +82,11 @@ export function DemandesPage() {
   // côté backend, qui ne couvre que ces trois actions).
   const peutDecider = role === 'admin' || estDelegueActif
   const queryClient = useQueryClient()
-  const [tab, setTab] = useState<Tab>('liste')
+  const [searchParams] = useSearchParams()
+  const tabParam = searchParams.get('tab')
+  const [tab, setTab] = useState<Tab>(
+    TABS_VALIDES.includes(tabParam as Tab) ? (tabParam as Tab) : 'liste',
+  )
   const [typeFiltre, setTypeFiltre] = useState<TypeDemandeAdministrative | ''>('')
   const [statutFiltre, setStatutFiltre] = useState<StatutDemandeAdministrative | ''>('en_attente')
   const [debutFiltre, setDebutFiltre] = useState<Date | null>(null)
@@ -455,7 +462,7 @@ export function DemandesPage() {
       {tab === 'nouvelle' && (
         <form
           onSubmit={soumettreDemande}
-          className="grid max-w-4xl gap-5 rounded-xl border border-[#D8D4CC] bg-white p-6 md:grid-cols-[1fr_280px]"
+          className="grid gap-5 rounded-xl border border-[#D8D4CC] bg-white p-6 md:grid-cols-[1fr_320px]"
         >
           <div className="space-y-4">
             <Select
@@ -565,7 +572,7 @@ export function DemandesPage() {
       )}
 
       {tab === 'registre' && (
-        <section className="max-w-3xl space-y-4">
+        <section className="space-y-4">
           <Select
             label="Employé"
             value={employeRegistreId}
@@ -610,7 +617,7 @@ export function DemandesPage() {
       )}
 
       {tab === 'feries' && (
-        <section className="grid max-w-4xl gap-5 md:grid-cols-[1fr_320px]">
+        <section className="grid gap-5 md:grid-cols-[1fr_320px]">
           <div className="overflow-hidden rounded-xl border border-[#D8D4CC] bg-white">
             {(joursFeriesQuery.data ?? []).map((j) => (
               <div
@@ -670,7 +677,7 @@ export function DemandesPage() {
       )}
 
       {tab === 'blocage' && (
-        <section className="grid max-w-4xl gap-5 md:grid-cols-[1fr_320px]">
+        <section className="grid gap-5 md:grid-cols-[1fr_320px]">
           <div className="overflow-hidden rounded-xl border border-[#D8D4CC] bg-white">
             {(periodesBlocageQuery.data ?? []).map((p) => (
               <div
@@ -748,7 +755,7 @@ export function DemandesPage() {
       )}
 
       {tab === 'politique' && (
-        <section className="max-w-2xl overflow-hidden rounded-xl border border-[#D8D4CC] bg-white">
+        <section className="overflow-hidden rounded-xl border border-[#D8D4CC] bg-white">
           <table className="w-full">
             <thead>
               <tr className="border-b border-[#D8D4CC] bg-[#F7F7F4]">

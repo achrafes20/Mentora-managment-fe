@@ -1,6 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   listerEnvoisDocuments,
+  apercuCertificatStage,
+  apercuCertificatTravail,
+  apercuAttestationTravail,
   envoyerCertificatStage,
   envoyerCertificatTravail,
   envoyerAttestationTravail,
@@ -15,6 +18,25 @@ export function useEnvoisDocuments(employeId: string | undefined) {
     queryKey: ['employes', employeId, 'envois_documents'],
     queryFn: () => listerEnvoisDocuments(employeId!),
     enabled: !!employeId,
+  })
+}
+
+export function useApercuCertificatStage() {
+  return useMutation({
+    mutationFn: ({ employeId, sujetStage }: { employeId: string; sujetStage?: string }) =>
+      apercuCertificatStage(employeId, sujetStage),
+  })
+}
+
+export function useApercuCertificatTravail() {
+  return useMutation({
+    mutationFn: (employeId: string) => apercuCertificatTravail(employeId),
+  })
+}
+
+export function useApercuAttestationTravail() {
+  return useMutation({
+    mutationFn: (employeId: string) => apercuAttestationTravail(employeId),
   })
 }
 
