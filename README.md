@@ -25,9 +25,10 @@ cd ../Mentora-managment-be
 docker compose up --build
 ```
 
-Démarre les 5 services : `db` (PostgreSQL 14), `backend` (Spring Boot,
+Démarre les 6 services : `db` (PostgreSQL 14), `backend` (Spring Boot,
 port `8080`), `frontend` — **ce repo**, Vite dev server avec HMR (port
-`5173`), `mailpit` (port `8025`) et `n8n` (port `5678`). Détail complet
+`5173`), `mailpit` (port `8025`), `n8n` (port `5678`, bootstrap manuel
+requis au premier lancement) et `pgadmin` (port `8082`). Détail complet
 dans le README du repo backend.
 
 ### Option 2 : Démarrage local sans Docker (pour le dev rapide)
@@ -109,39 +110,3 @@ ou juste un module pas encore branché.
   retenu, pas encore implémenté.
 - Pas de CodeQL/SAST — retiré (licence GitHub Advanced Security non
   budgétée sur repo privé) ; à revoir en T6.4 (durcissement).
-
-## Dépannage
-
-Problèmes réels rencontrés en développant ce projet — voir
-`avancement-projet.md` (côté backend, Suivi de session) pour le détail
-complet.
-
-- **Un écran affiche `MockBanner` alors que son backend est visiblement
-  déjà implémenté.** Vérifier `src/lib/featureFlags.ts` avant de chercher
-  un bug — un flag peut simplement ne pas avoir été basculé à `true`
-  après la livraison backend (arrivé au moins une fois avec
-  `adminRequests`/`documents`, cf. `avancement-projet.md` T4.B2). Ce
-  n'est jamais à corriger silencieusement : le module appartient à
-  l'autre dev, à clarifier avec lui avant de changer le flag.
-- **`npm run generate:types` échoue ou produit un contrat vide/obsolète.**
-  Le backend doit avoir tourné au moins une fois récemment pour que
-  `../Mentora-managment-be/contracts/openapi.json` reflète les derniers
-  endpoints — lancer `make openapi-export` côté backend d'abord.
-- **Erreur de lint `react-hooks/set-state-in-effect`.** Piège récurrent
-  sur ce projet : ne pas resynchroniser un state local depuis une prop
-  via `useEffect` + `setState`. Pattern utilisé partout à la place :
-  ajuster le state pendant le rendu (comparer une valeur "précédente" en
-  state à la prop courante, cf. `EntretienScheduleDialog.tsx` ou
-  `CorrigerPointageDialog.tsx` pour des exemples).
-- **Après avoir changé de rôle (Admin ↔ Manager) dans le même onglet, des
-  données de l'ancienne session restent affichées brièvement.** Le cache
-  TanStack Query (`staleTime` 30s) doit être vidé explicitement aux
-  transitions d'auth — déjà fait dans `AuthContext.tsx`
-  (`queryClient.clear()` sur connexion/déconnexion/401) ; si un nouvel
-  écran semble concerné, vérifier qu'il ne contourne pas ce mécanisme.
-- **Le lien de téléchargement d'un fichier (`<a href="...">`) télécharge
-  un fichier vide ou échoue silencieusement.** Une navigation `<a href>`
-  brute ne porte pas le jeton JWT (l'intercepteur Authorization ne
-  s'applique qu'aux appels `apiClient`). Télécharger en `Blob` via
-  `apiClient` puis ouvrir avec `URL.createObjectURL` — voir
-  `voirCvCandidature`/`ouvrirDocument` pour le pattern déjà en place.
