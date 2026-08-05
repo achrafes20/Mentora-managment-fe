@@ -12,6 +12,8 @@ import { Select } from '@/components/ui/Select'
 import { DatePicker } from '@/components/ui/DatePicker'
 import { Alert } from '@/components/ui/Alert'
 import { StatusTag } from '@/components/ui/StatusTag'
+import { SortableTh } from '@/components/ui/SortableTh'
+import { useTriLocal } from '@/components/ui/useTriLocal'
 import { formatStatut } from '@/components/ui/tokens'
 import { toast } from '@/components/ui/toast'
 import { confirm } from '@/components/ui/confirm'
@@ -72,6 +74,15 @@ export function DelegationPage() {
     const u = utilisateurs?.find((u) => u.id === id)
     return u ? `${u.prenom} ${u.nom}` : '—'
   }
+
+  const { trie, tri, handleTri } = useTriLocal(
+    delegations,
+    (d, champ) => {
+      if (champ === 'delegueId') return nomUtilisateur(d.delegueId)
+      return d[champ as keyof typeof d] as string | number | boolean | null | undefined
+    },
+    { champ: 'dateDebut', direction: 'desc' },
+  )
 
   function ouvrirCreation() {
     setErreur(null)
@@ -233,14 +244,9 @@ export function DelegationPage() {
         <table className="w-full">
           <thead>
             <tr className="border-b border-[#D8D4CC] bg-[#F7F7F4]">
-              {['Délégué', 'Période', 'Statut'].map((h) => (
-                <th
-                  key={h}
-                  className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider text-[#9CA3AF] uppercase"
-                >
-                  {h}
-                </th>
-              ))}
+              <SortableTh label="Délégué" champ="delegueId" tri={tri} onChange={handleTri} />
+              <SortableTh label="Période" champ="dateDebut" tri={tri} onChange={handleTri} />
+              <SortableTh label="Statut" champ="statut" tri={tri} onChange={handleTri} />
             </tr>
           </thead>
           <tbody>
@@ -251,7 +257,7 @@ export function DelegationPage() {
                 </td>
               </tr>
             ) : (
-              (delegations ?? []).map((d) => (
+              trie.map((d) => (
                 <tr key={d.id} className="hover:bg-[#F7F7F4]">
                   <td className="px-4 py-3.5 text-[13px] text-[#1B2A41]">
                     {nomUtilisateur(d.delegueId)}

@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../../lib/AuthContext'
 import { apiClient, type ApiError } from '../../lib/apiClient'
+import { basculerTri, SortableTh, type Tri } from '@/components/ui/SortableTh'
 import { EmployeFormModal, type EmployeFormValues, type EmployePrefill } from './EmployeFormModal'
 import { useDepartements } from './useDepartements'
 import { useQueryClient } from '@tanstack/react-query'
@@ -66,7 +67,12 @@ export function EmployesListTab() {
   const estAdmin = role === 'admin'
   const { data: departements } = useDepartements()
   const { data: managers } = useManagers()
-  const [filtres, setFiltres] = useState<FiltresEmployes>({ page: 0, size: 50 })
+  const [tri, setTri] = useState<Tri>({ champ: 'nom', direction: 'asc' })
+  const [filtres, setFiltres] = useState<FiltresEmployes>({
+    page: 0,
+    size: 50,
+    sort: 'nom,asc',
+  })
   const [modaleCreationManuelle, setModaleCreationManuelle] = useState(false)
   const [erreur, setErreur] = useState<string | null>(null)
   const [selectionMode, setSelectionMode] = useState(false)
@@ -113,6 +119,12 @@ export function EmployesListTab() {
     setFiltres((precedent) => ({ ...precedent, ...patch, page: 0 }))
   }
 
+  function handleTri(champ: string) {
+    const suivant = basculerTri(tri, champ)
+    setTri(suivant)
+    majFiltre({ sort: `${suivant.champ},${suivant.direction}` })
+  }
+
   function creerEmploye(valeurs: EmployeFormValues, photo?: File | null) {
     creerMutation
       .mutateAsync({
@@ -133,6 +145,9 @@ export function EmployesListTab() {
           : undefined,
         candidatureOrigineId: depuisCandidatureId,
         cvFichierId: candidaturePrefill?.cvFichierId ?? undefined,
+        sexe: valeurs.sexe || undefined,
+        cin: valeurs.cin || undefined,
+        sujetStage: valeurs.sujetStage || undefined,
       })
       .then(async (employe) => {
         if (photo && employe.id) {
@@ -258,7 +273,7 @@ export function EmployesListTab() {
           <input
             value={filtres.recherche ?? ''}
             onChange={(e) => majFiltre({ recherche: e.target.value || undefined })}
-            placeholder="Rechercher par nom, prénom, e-mail…"
+            placeholder="Rechercher par nom, prénom, e-mail, ID…"
             className="w-full rounded-lg border border-[#D8D4CC] bg-white py-2 pr-4 pl-9 text-[13px] focus:border-[#1B2A41] focus:outline-none"
           />
         </div>
@@ -305,16 +320,21 @@ export function EmployesListTab() {
             <thead>
               <tr className="border-b border-[#D8D4CC] bg-[#F7F7F4]">
                 {selectionMode && <th className="w-8 py-3 pl-4" />}
-                {['Matricule', 'Employé', 'Poste', 'Département', 'Contrat', 'Statut', ''].map(
-                  (h) => (
-                    <th
-                      key={h}
-                      className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider text-[#9CA3AF] uppercase first:pl-5 last:pr-5"
-                    >
-                      {h}
-                    </th>
-                  ),
-                )}
+                <SortableTh
+                  label="ID"
+                  champ="id"
+                  tri={tri}
+                  onChange={handleTri}
+                  className="first:pl-5"
+                />
+                <SortableTh label="Employé" champ="nom" tri={tri} onChange={handleTri} />
+                <SortableTh label="Poste" champ="poste" tri={tri} onChange={handleTri} />
+                <th className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider text-[#9CA3AF] uppercase">
+                  Département
+                </th>
+                <SortableTh label="Contrat" champ="typeContrat" tri={tri} onChange={handleTri} />
+                <SortableTh label="Statut" champ="statut" tri={tri} onChange={handleTri} />
+                <th className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider text-[#9CA3AF] uppercase last:pr-5" />
               </tr>
             </thead>
             <tbody>
@@ -346,8 +366,9 @@ export function EmployesListTab() {
                   <td
                     style={{ fontFamily: 'var(--font-code)' }}
                     className="py-3.5 pr-4 pl-5 text-[11px] text-[#9CA3AF]"
+                    title={emp.id}
                   >
-                    {emp.id?.substring(0, 8)}…
+                    {emp.id ? emp.id.substring(0, 8) : '—'}
                   </td>
                   <td className="px-4 py-3.5">
                     <div className="flex items-center gap-2.5">

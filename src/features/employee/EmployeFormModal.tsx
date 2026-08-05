@@ -17,6 +17,10 @@ import { libelleManager, type Manager } from './useManagers'
 
 const TYPES_CONTRAT = ['CDI', 'CDD', 'STAGIAIRE', 'STAGIAIRE_REMUNERE'] as const
 const AUCUN_MANAGER = '__aucun__'
+// Optionnel (aucune valeur par défaut imposée aux fiches existantes, cf. V16) : accord de genre
+// sur les certificats générés (document.CertificatGenerator) — "" dégrade vers "il/elle".
+const SEXES = ['HOMME', 'FEMME'] as const
+const SEXE_NON_RENSEIGNE = ''
 
 const schema = z
   .object({
@@ -31,6 +35,9 @@ const schema = z
     typeContrat: z.enum(TYPES_CONTRAT),
     dateFinContratPrevue: z.date().nullable(),
     dateFinStagePrevue: z.date().nullable(),
+    sexe: z.union([z.enum(SEXES), z.literal(SEXE_NON_RENSEIGNE)]),
+    cin: z.string(),
+    sujetStage: z.string(),
   })
   .refine((valeurs) => valeurs.typeContrat === 'CDD' || !valeurs.dateFinContratPrevue, {
     message: "La date de fin de contrat prévue n'est applicable qu'aux CDD",
@@ -43,6 +50,21 @@ const schema = z
       !valeurs.dateFinStagePrevue,
     {
       message: "La date de fin de stage prévue n'est applicable qu'aux stagiaires",
+      path: ['dateFinStagePrevue'],
+    },
+  )
+  .refine(
+    (valeurs) =>
+      !valeurs.dateFinContratPrevue || valeurs.dateFinContratPrevue >= valeurs.dateEmbauche,
+    {
+      message: "La date de fin de contrat prévue doit être postérieure à la date d'embauche",
+      path: ['dateFinContratPrevue'],
+    },
+  )
+  .refine(
+    (valeurs) => !valeurs.dateFinStagePrevue || valeurs.dateFinStagePrevue >= valeurs.dateEmbauche,
+    {
+      message: "La date de fin de stage prévue doit être postérieure à la date d'embauche",
       path: ['dateFinStagePrevue'],
     },
   )
@@ -96,6 +118,7 @@ export function EmployeFormModal({
     handleSubmit,
     reset,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<EmployeFormValues>({
     resolver: zodResolver(schema),
@@ -111,6 +134,9 @@ export function EmployeFormModal({
       typeContrat: 'CDI',
       dateFinContratPrevue: null,
       dateFinStagePrevue: null,
+      sexe: SEXE_NON_RENSEIGNE,
+      cin: '',
+      sujetStage: '',
     },
   })
 
@@ -133,6 +159,9 @@ export function EmployeFormModal({
         dateFinStagePrevue: employe?.dateFinStagePrevue
           ? new Date(employe.dateFinStagePrevue)
           : null,
+        sexe: (employe?.sexe as (typeof SEXES)[number]) ?? SEXE_NON_RENSEIGNE,
+        cin: employe?.cin ?? '',
+        sujetStage: employe?.sujetStage ?? '',
       })
       setPhoto(null)
       setPhotoPreview(null)
@@ -140,9 +169,30 @@ export function EmployeFormModal({
   }, [open, employe, prefill, mode, reset])
 
   const typeContratActuel = watch('typeContrat')
+  const departementIdActuel = watch('departementId')
   const prenomActuel = watch('prenom')
   const nomActuel = watch('nom')
   const apercuPhoto = photoPreview ?? photoExistante
+
+  // Un seul manager par département (Departement.managerId) : le champ reste modifiable, mais on
+  // évite le clic redondant en le pré-remplissant dès que le département choisi en a un.
+  useEffect(() => {
+    if (mode !== 'creation') return
+    const managerDuDepartement = departements.find((d) => d.id === departementIdActuel)?.managerId
+    setValue('managerId', managerDuDepartement ?? '')
+  }, [departementIdActuel, departements, mode, setValue])
+
+  // Un seul des deux champs de fin est pertinent selon le type de contrat : on efface l'autre pour
+  // qu'il ne reste pas une valeur fantôme rejetée par le schéma (refine ci-dessus) une fois masqué.
+  useEffect(() => {
+    if (typeContratActuel !== 'CDD') {
+      setValue('dateFinContratPrevue', null)
+    }
+    if (typeContratActuel !== 'STAGIAIRE' && typeContratActuel !== 'STAGIAIRE_REMUNERE') {
+      setValue('dateFinStagePrevue', null)
+      setValue('sujetStage', '')
+    }
+  }, [typeContratActuel, setValue])
 
   function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const fichier = e.target.files?.[0]
@@ -209,6 +259,32 @@ export function EmployeFormModal({
       <FormField label="Poste">
         <Controller name="poste" control={control} render={({ field }) => <Input {...field} />} />
       </FormField>
+      <FormField label="CIN">
+        <Controller name="cin" control={control} render={({ field }) => <Input {...field} />} />
+        <p className="mt-1 text-[11px] text-[#9CA3AF]">Affichée sur l'attestation de travail.</p>
+      </FormField>
+      <FormField label="Sexe">
+        <Controller
+          name="sexe"
+          control={control}
+          render={({ field }) => (
+            <Select
+              value={field.value || SEXE_NON_RENSEIGNE}
+              onChange={field.onChange}
+              onBlur={field.onBlur}
+              placeholder="Non renseigné"
+              options={[
+                { value: SEXE_NON_RENSEIGNE, label: 'Non renseigné' },
+                { value: 'HOMME', label: 'Homme' },
+                { value: 'FEMME', label: 'Femme' },
+              ]}
+            />
+          )}
+        />
+        <p className="mt-1 text-[11px] text-[#9CA3AF]">
+          Utilisé pour l'accord de genre sur les certificats générés.
+        </p>
+      </FormField>
       {mode === 'creation' && (
         <>
           <FormField label="Département" required error={errors.departementId?.message}>
@@ -272,42 +348,48 @@ export function EmployeFormModal({
           )}
         />
       </FormField>
-      <FormField
-        label="Date de fin de contrat prévue (CDD uniquement)"
-        error={errors.dateFinContratPrevue?.message}
-      >
-        <Controller
-          name="dateFinContratPrevue"
-          control={control}
-          render={({ field }) => (
-            <DatePicker
-              value={field.value}
-              onChange={(d) => field.onChange(d)}
-              onBlur={field.onBlur}
-              disabled={typeContratActuel !== 'CDD'}
+      {typeContratActuel === 'CDD' && (
+        <FormField
+          label="Date de fin de contrat prévue"
+          error={errors.dateFinContratPrevue?.message}
+        >
+          <Controller
+            name="dateFinContratPrevue"
+            control={control}
+            render={({ field }) => (
+              <DatePicker
+                value={field.value}
+                onChange={(d) => field.onChange(d)}
+                onBlur={field.onBlur}
+              />
+            )}
+          />
+        </FormField>
+      )}
+      {(typeContratActuel === 'STAGIAIRE' || typeContratActuel === 'STAGIAIRE_REMUNERE') && (
+        <>
+          <FormField label="Date de fin de stage prévue" error={errors.dateFinStagePrevue?.message}>
+            <Controller
+              name="dateFinStagePrevue"
+              control={control}
+              render={({ field }) => (
+                <DatePicker
+                  value={field.value}
+                  onChange={(d) => field.onChange(d)}
+                  onBlur={field.onBlur}
+                />
+              )}
             />
-          )}
-        />
-      </FormField>
-      <FormField
-        label="Date de fin de stage prévue (Stagiaire uniquement)"
-        error={errors.dateFinStagePrevue?.message}
-      >
-        <Controller
-          name="dateFinStagePrevue"
-          control={control}
-          render={({ field }) => (
-            <DatePicker
-              value={field.value}
-              onChange={(d) => field.onChange(d)}
-              onBlur={field.onBlur}
-              disabled={
-                typeContratActuel !== 'STAGIAIRE' && typeContratActuel !== 'STAGIAIRE_REMUNERE'
-              }
+          </FormField>
+          <FormField label="Sujet de stage">
+            <Controller
+              name="sujetStage"
+              control={control}
+              render={({ field }) => <Input {...field} />}
             />
-          )}
-        />
-      </FormField>
+          </FormField>
+        </>
+      )}
     </Dialog>
   )
 }

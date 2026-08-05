@@ -1,8 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   listerEnvoisDocuments,
+  apercuCertificatStage,
+  apercuCertificatTravail,
+  apercuAttestationTravail,
   envoyerCertificatStage,
   envoyerCertificatTravail,
+  envoyerAttestationTravail,
   envoyerDocumentLibre,
   executerSurveillance,
   listerSurveillance,
@@ -17,11 +21,31 @@ export function useEnvoisDocuments(employeId: string | undefined) {
   })
 }
 
+export function useApercuCertificatStage() {
+  return useMutation({
+    mutationFn: ({ employeId, sujetStage }: { employeId: string; sujetStage?: string }) =>
+      apercuCertificatStage(employeId, sujetStage),
+  })
+}
+
+export function useApercuCertificatTravail() {
+  return useMutation({
+    mutationFn: (employeId: string) => apercuCertificatTravail(employeId),
+  })
+}
+
+export function useApercuAttestationTravail() {
+  return useMutation({
+    mutationFn: (employeId: string) => apercuAttestationTravail(employeId),
+  })
+}
+
 export function useEnvoyerCertificatStage() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (employeId: string) => envoyerCertificatStage(employeId),
-    onSuccess: (_, employeId) => {
+    mutationFn: ({ employeId, sujetStage }: { employeId: string; sujetStage?: string }) =>
+      envoyerCertificatStage(employeId, sujetStage),
+    onSuccess: (_, { employeId }) => {
       queryClient.invalidateQueries({ queryKey: ['employes', employeId, 'envois_documents'] })
     },
   })
@@ -31,6 +55,16 @@ export function useEnvoyerCertificatTravail() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (employeId: string) => envoyerCertificatTravail(employeId),
+    onSuccess: (_, employeId) => {
+      queryClient.invalidateQueries({ queryKey: ['employes', employeId, 'envois_documents'] })
+    },
+  })
+}
+
+export function useEnvoyerAttestationTravail() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (employeId: string) => envoyerAttestationTravail(employeId),
     onSuccess: (_, employeId) => {
       queryClient.invalidateQueries({ queryKey: ['employes', employeId, 'envois_documents'] })
     },

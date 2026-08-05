@@ -6,6 +6,7 @@ import {
   ArrowRight,
   BookOpen,
   Download,
+  ExternalLink,
   FileCheck,
   Mail,
   Move,
@@ -23,6 +24,7 @@ import type { ApiError } from '@/lib/apiClient'
 import { EmployeeBadge } from '@/components/ui/EmployeeBadge'
 import { CornerMark } from '@/components/ui/CornerMark'
 import { StatusTag } from '@/components/ui/StatusTag'
+import { Input } from '@/components/ui/Input'
 import { formatStatut } from '@/components/ui/tokens'
 import { EmployeFormModal, type EmployeFormValues } from './EmployeFormModal'
 import { CarteEmailModal } from './CarteEmailModal'
@@ -37,6 +39,7 @@ import {
   useEmploye,
   useHistoriqueTransferts,
   useModifierEmploye,
+  useModifierSujetStage,
   useTransfererEmploye,
   useSupprimerDocument,
   useEnvoyerCarteEmail,
@@ -53,8 +56,12 @@ import {
 } from '../attendance/api'
 import { EmployeTeletravailCard } from '../attendance/EmployeTeletravailCard'
 import {
+  useApercuCertificatTravail,
+  useApercuCertificatStage,
+  useApercuAttestationTravail,
   useEnvoyerCertificatTravail,
   useEnvoyerCertificatStage,
+  useEnvoyerAttestationTravail,
   useEnvoisDocuments,
 } from '../documents/useDocuments'
 
@@ -79,6 +86,10 @@ export function EmployeDetailPage() {
   const desactiverMutation = useDesactiverEmploye(id ?? '')
   const envoyerCertifTravailMutation = useEnvoyerCertificatTravail()
   const envoyerCertifStageMutation = useEnvoyerCertificatStage()
+  const envoyerAttestationMutation = useEnvoyerAttestationTravail()
+  const apercuCertifTravailMutation = useApercuCertificatTravail()
+  const apercuCertifStageMutation = useApercuCertificatStage()
+  const apercuAttestationMutation = useApercuAttestationTravail()
   const attacherMutation = useAttacherDocument(id ?? '')
   const supprimerDocMutation = useSupprimerDocument(id ?? '')
   const envoyerCarteMutation = useEnvoyerCarteEmail(id ?? '')
@@ -94,6 +105,7 @@ export function EmployeDetailPage() {
   const [qr, setQr] = useState<QrCodeReponse | null>(null)
   const [qrLoading, setQrLoading] = useState(false)
   const [certEnvoye, setCertEnvoye] = useState(false)
+  const [attestationEnvoyee, setAttestationEnvoyee] = useState(false)
   const [pointages, setPointages] = useState<PointageReponse[]>([])
   const [pointagesLoading, setPointagesLoading] = useState(false)
 
@@ -166,18 +178,23 @@ export function EmployeDetailPage() {
     estStagiaire ? e.typeDocument === 'certificat_stage' : e.typeDocument === 'certificat_travail',
   )
   const dejaEnvoye = !!envoi
+  const envoiAttestation = envoisDocuments?.find((e) => e.typeDocument === 'attestation_travail')
 
   const joursRestantsCdd =
     employe.dateFinContratPrevue != null
       ? dayjs(employe.dateFinContratPrevue).diff(dayjs(), 'day')
       : null
-  const cddAlert = isCdd && joursRestantsCdd != null && joursRestantsCdd <= 15
+  // isActif : une fois l'employé désactivé (départ effectif, y compris l'auto-désactivation à
+  // échéance), cette alerte "à venir" n'a plus de sens — l'info de départ (date + motif) est déjà
+  // affichée ailleurs sur la fiche.
+  const cddAlert = isActif && isCdd && joursRestantsCdd != null && joursRestantsCdd <= 15
 
   const joursRestantsStage =
     employe.dateFinStagePrevue != null
       ? dayjs(employe.dateFinStagePrevue).diff(dayjs(), 'day')
       : null
-  const stageAlert = estStagiaire && joursRestantsStage != null && joursRestantsStage <= 3
+  const stageAlert =
+    isActif && estStagiaire && joursRestantsStage != null && joursRestantsStage <= 3
 
   async function handleGenererQr() {
     if (!id) return
@@ -198,7 +215,10 @@ export function EmployeDetailPage() {
         if (!employe.id) {
           throw new Error('Employé introuvable')
         }
-        await envoyerCertifStageMutation.mutateAsync(employe.id)
+        await envoyerCertifStageMutation.mutateAsync({
+          employeId: employe.id,
+          sujetStage: employe.sujetStage || undefined,
+        })
       } else {
         if (!employe.id) {
           throw new Error('Employé introuvable')
@@ -207,8 +227,50 @@ export function EmployeDetailPage() {
       }
       setCertEnvoye(true)
       void toast.success('Certificat envoyé avec succès')
-    } catch {
-      void toast.error("Erreur lors de l'envoi du certificat")
+    } catch (err) {
+      const apiError = err as ApiError
+      void toast.error(apiError.message ?? "Erreur lors de l'envoi du certificat")
+    }
+  }
+
+  const handleEnvoyerAttestation = async () => {
+    if (!employe.id) return
+    try {
+      await envoyerAttestationMutation.mutateAsync(employe.id)
+      setAttestationEnvoyee(true)
+      void toast.success('Attestation de travail envoyée avec succès')
+    } catch (err) {
+      const apiError = err as ApiError
+      void toast.error(apiError.message ?? "Erreur lors de l'envoi de l'attestation")
+    }
+  }
+
+  // Aperçu du PDF avant confirmation d'envoi (EF-DOC) — ouvre le même document dans un nouvel
+  // onglet, sans e-mail ni entrée dans l'historique des envois.
+  const handleApercuCertificat = async () => {
+    if (!employe.id) return
+    try {
+      if (estStagiaire) {
+        await apercuCertifStageMutation.mutateAsync({
+          employeId: employe.id,
+          sujetStage: employe.sujetStage || undefined,
+        })
+      } else {
+        await apercuCertifTravailMutation.mutateAsync(employe.id)
+      }
+    } catch (err) {
+      const apiError = err as ApiError
+      void toast.error(apiError.message ?? "Erreur lors de l'aperçu du certificat")
+    }
+  }
+
+  const handleApercuAttestation = async () => {
+    if (!employe.id) return
+    try {
+      await apercuAttestationMutation.mutateAsync(employe.id)
+    } catch (err) {
+      const apiError = err as ApiError
+      void toast.error(apiError.message ?? "Erreur lors de l'aperçu de l'attestation")
     }
   }
 
@@ -262,13 +324,16 @@ export function EmployeDetailPage() {
           employe={employe}
           submitting={desactiverMutation.isPending}
           onClose={() => setModaleDeparture(false)}
-          onConfirm={(v) => {
+          onConfirm={(v, genererCertificat) => {
             desactiverMutation
               .mutateAsync(v)
-              .then(() => {
+              .then(async () => {
                 void toast.success('Employé désactivé')
                 setModaleDeparture(false)
                 setErreur(null)
+                if (genererCertificat) {
+                  await handleEnvoyerCertificat()
+                }
               })
               .catch((err: ApiError) => setErreur(err.message))
           }}
@@ -300,6 +365,9 @@ export function EmployeDetailPage() {
               dateFinStagePrevue: values.dateFinStagePrevue
                 ? format(values.dateFinStagePrevue, 'yyyy-MM-dd')
                 : undefined,
+              sexe: values.sexe || undefined,
+              cin: values.cin || undefined,
+              sujetStage: values.sujetStage || undefined,
             })
             .then(async () => {
               if (photo && id) {
@@ -333,7 +401,7 @@ export function EmployeDetailPage() {
         />
       )}
 
-      <div className="mx-auto max-w-[960px] p-8">
+      <div className="p-8">
         <button
           onClick={() => navigate('/employes')}
           className="mb-6 flex items-center gap-1.5 text-[12px] text-[#9CA3AF] transition-colors hover:text-[#1B2A41]"
@@ -490,9 +558,28 @@ export function EmployeDetailPage() {
                 onClick={() => navigate('/demandes')}
                 className="flex flex-shrink-0 items-center gap-1 text-[11px] text-[#4A7C6B] hover:underline"
               >
-                <BookOpen size={11} /> Voir le registre des mouvements →
+                <BookOpen size={11} /> Voir le registre des mouvements
               </button>
             </div>
+
+            {estStagiaire && employe.id && (
+              <div className="mt-3 rounded-lg border border-[#D8D4CC]/60 bg-[#F7F7F4] px-3.5 py-2.5">
+                <p className="mb-1 text-[9px] tracking-wider text-[#9CA3AF] uppercase">
+                  Sujet de stage
+                </p>
+                {estAdmin || role === 'manager' ? (
+                  <SujetStageInline
+                    key={employe.sujetStage ?? ''}
+                    employeId={employe.id}
+                    valeur={employe.sujetStage}
+                  />
+                ) : (
+                  <p className="text-[12px] font-medium text-[#1B2A41]">
+                    {employe.sujetStage || '—'}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -638,6 +725,51 @@ export function EmployeDetailPage() {
               </div>
             )}
 
+            {isActif && isCdiCdd && (
+              <div className="mt-4 rounded-xl border border-[#D8D4CC] bg-white p-5">
+                <p className="mb-4 text-[10px] font-semibold tracking-wider text-[#9CA3AF] uppercase">
+                  Documents administratifs
+                </p>
+                <div className="relative flex items-center gap-5 rounded-xl border border-[#D8D4CC] bg-[#F7F7F4] p-4">
+                  <CornerMark />
+                  <FileCheck size={18} className="flex-shrink-0 text-[#4A7C6B]" />
+                  <div className="flex-1">
+                    <p className="text-[13px] font-semibold text-[#1B2A41]">
+                      Attestation de travail
+                    </p>
+                    <p className="text-[11px] text-[#9CA3AF]">
+                      {employe.prenom} {employe.nom} · {formatStatut(employe.typeContrat ?? '')} ·
+                      toujours en poste
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {(envoiAttestation || attestationEnvoyee) && (
+                      <span className="flex items-center gap-1.5 text-[11px] text-[#4A7C6B]">
+                        ✓ Envoyée
+                      </span>
+                    )}
+                    <button
+                      onClick={() => void handleApercuAttestation()}
+                      disabled={apercuAttestationMutation.isPending}
+                      className="flex items-center gap-1.5 rounded-lg border border-[#D8D4CC] px-3 py-1.5 text-[11px] text-[#6B7280] transition-colors hover:border-[#1B2A41] hover:text-[#1B2A41] disabled:opacity-50"
+                    >
+                      <ExternalLink size={11} /> Aperçu
+                    </button>
+                    {estAdmin && (
+                      <button
+                        onClick={() => void handleEnvoyerAttestation()}
+                        disabled={envoyerAttestationMutation.isPending}
+                        className="flex items-center gap-1.5 rounded-lg bg-[#1B2A41] px-3 py-1.5 text-[11px] font-medium text-white hover:bg-[#243650] disabled:opacity-50"
+                      >
+                        <Send size={11} />{' '}
+                        {envoiAttestation || attestationEnvoyee ? 'Renvoyer' : "Confirmer l'envoi"}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {!isActif && (isCdiCdd || estStagiaire) && (
               <div className="mt-4 rounded-xl border border-[#D8D4CC] bg-white p-5">
                 <p className="mb-4 text-[10px] font-semibold tracking-wider text-[#9CA3AF] uppercase">
@@ -654,24 +786,22 @@ export function EmployeDetailPage() {
                       {employe.prenom} {employe.nom} · {formatStatut(employe.typeContrat ?? '')}
                     </p>
                   </div>
-                  {dejaEnvoye || certEnvoye ? (
-                    <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    {(dejaEnvoye || certEnvoye) && (
                       <span className="flex items-center gap-1.5 text-[11px] text-[#4A7C6B]">
                         ✓ Envoyé
                       </span>
-                      {envoi?.fichierId && (
-                        <a
-                          href={`${import.meta.env.VITE_API_BASE_URL}/api/fichiers/${envoi.fichierId}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="flex items-center gap-1.5 rounded-lg border border-[#D8D4CC] px-3 py-1.5 text-[11px] text-[#4A7C6B] hover:border-[#4A7C6B]"
-                        >
-                          <Download size={11} /> Ouvrir PDF
-                        </a>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
+                    )}
+                    <button
+                      onClick={() => void handleApercuCertificat()}
+                      disabled={
+                        apercuCertifTravailMutation.isPending || apercuCertifStageMutation.isPending
+                      }
+                      className="flex items-center gap-1.5 rounded-lg border border-[#D8D4CC] px-3 py-1.5 text-[11px] text-[#6B7280] transition-colors hover:border-[#1B2A41] hover:text-[#1B2A41] disabled:opacity-50"
+                    >
+                      <ExternalLink size={11} /> Aperçu
+                    </button>
+                    {estAdmin && (
                       <button
                         onClick={() => void handleEnvoyerCertificat()}
                         disabled={
@@ -680,10 +810,11 @@ export function EmployeDetailPage() {
                         }
                         className="flex items-center gap-1.5 rounded-lg bg-[#1B2A41] px-3 py-1.5 text-[11px] font-medium text-white hover:bg-[#243650] disabled:opacity-50"
                       >
-                        <Send size={11} /> Confirmer l'envoi
+                        <Send size={11} />{' '}
+                        {dejaEnvoye || certEnvoye ? 'Renvoyer' : "Confirmer l'envoi"}
                       </button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -719,10 +850,7 @@ export function EmployeDetailPage() {
                       className="border-b border-[#D8D4CC]/50 transition-colors last:border-0 hover:bg-[#F7F7F4]"
                     >
                       <td className="px-5 py-3.5">
-                        <StatusTag statut={p.typeScan === 'entree' ? 'Actif' : 'En attente'} />
-                        <span className="ml-2 text-[12px] text-[#6B7280]">
-                          {p.typeScan === 'entree' ? 'Entrée' : 'Sortie'}
-                        </span>
+                        <StatusTag statut={p.typeScan === 'entree' ? 'Entrée' : 'Sortie'} />
                       </td>
                       <td
                         style={{ fontFamily: 'var(--font-code)' }}
@@ -732,7 +860,7 @@ export function EmployeDetailPage() {
                       </td>
                       <td className="px-5 py-3.5">
                         {p.corrigeManuellement ? (
-                          <StatusTag statut="En attente" />
+                          <StatusTag statut="Corrigé" />
                         ) : (
                           <span className="text-[12px] text-[#9CA3AF]">Original</span>
                         )}
@@ -827,6 +955,66 @@ export function EmployeDetailPage() {
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+// EF-EMP-01 : seul champ de la fiche qu'un Manager (dans son propre département) est autorisé à
+// modifier, contrairement au reste du formulaire réservé à l'Admin — cf. EmployeController.
+function SujetStageInline({ employeId, valeur }: { employeId: string; valeur?: string | null }) {
+  const [editing, setEditing] = useState(false)
+  const [texte, setTexte] = useState(valeur ?? '')
+  const mutation = useModifierSujetStage(employeId)
+
+  async function enregistrer() {
+    try {
+      await mutation.mutateAsync(texte.trim())
+      setEditing(false)
+      void toast.success('Sujet de stage enregistré')
+    } catch (err) {
+      const apiError = err as ApiError
+      void toast.error(apiError.message ?? "Erreur lors de l'enregistrement")
+    }
+  }
+
+  if (!editing) {
+    return (
+      <div className="flex items-center justify-between gap-2">
+        {valeur && <span className="text-[12px] font-medium text-[#1B2A41]">{valeur}</span>}
+        <button
+          onClick={() => setEditing(true)}
+          className="flex flex-shrink-0 items-center gap-1 text-[11px] text-[#4A7C6B] hover:underline"
+        >
+          <Pencil size={11} /> {valeur ? 'Modifier' : 'Ajouter le sujet'}
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <Input
+        value={texte}
+        onChange={(e) => setTexte(e.target.value)}
+        placeholder="Sujet de stage"
+        className="w-56"
+      />
+      <button
+        onClick={() => void enregistrer()}
+        disabled={mutation.isPending}
+        className="rounded-lg bg-[#1B2A41] px-2.5 py-1.5 text-[11px] font-medium text-white disabled:opacity-50"
+      >
+        Enregistrer
+      </button>
+      <button
+        onClick={() => {
+          setEditing(false)
+          setTexte(valeur ?? '')
+        }}
+        className="text-[11px] text-[#6B7280] hover:text-[#1B2A41]"
+      >
+        Annuler
+      </button>
     </div>
   )
 }

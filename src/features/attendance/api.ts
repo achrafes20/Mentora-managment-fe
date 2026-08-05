@@ -38,7 +38,7 @@ export interface AnomaliePointageReponse {
   id: string
   employeId: string
   datePointage: string
-  typeAnomalie: 'retard' | 'depart_anticipe' | 'absence_checkout' | 'presence_incomplete'
+  typeAnomalie: 'retard' | 'depart_anticipe' | 'absence_checkout'
   resolue: boolean
   creeLe: string
 }
@@ -156,15 +156,57 @@ export async function qrCodeActif(employeId: string): Promise<QrCodeReponse | nu
 
 // ---- Pointages ----
 
+export interface FiltresPointages {
+  employeId?: string
+  typeScan?: 'entree' | 'sortie'
+  debut?: string
+  fin?: string
+}
+
 export async function listerPointages(
+  filtres: FiltresPointages = {},
   page = 0,
   size = 20,
+  sort?: string,
 ): Promise<PagedResponse<PointageReponse>> {
+  const params: Record<string, unknown> = { page, size }
+  if (filtres.employeId) params.employeId = filtres.employeId
+  if (filtres.typeScan) params.typeScan = filtres.typeScan
+  if (filtres.debut) params.debut = filtres.debut
+  if (filtres.fin) params.fin = filtres.fin
+  if (sort) params.sort = sort
   const { data } = await apiClient.get<ApiResponse<PagedResponse<PointageReponse>>>(
     '/api/pointages',
-    { params: { page, size } },
+    { params },
   )
   return data.data as PagedResponse<PointageReponse>
+}
+
+// ---- Tableau de bord ----
+
+export interface AnomalieEmployeReponse {
+  employeId: string
+  nomComplet: string
+  nombreAnomalies: number
+}
+
+export interface RepartitionTypeAnomalieReponse {
+  type: 'retard' | 'depart_anticipe' | 'absence_checkout'
+  nombre: number
+}
+
+export interface PresenceDashboardReponse {
+  tauxPresence30Jours: number
+  joursOuvresPeriode: number
+  topAnomaliesRecurrentes: AnomalieEmployeReponse[]
+  repartitionParType: RepartitionTypeAnomalieReponse[]
+}
+
+export async function obtenirTableauDeBordPresence(): Promise<PresenceDashboardReponse> {
+  const { data } = await apiClient.get<ApiResponse<PresenceDashboardReponse>>(
+    '/api/pointages/dashboard',
+  )
+  return data.data as PresenceDashboardReponse
 }
 
 export async function listerPointagesEmploye(
@@ -206,13 +248,27 @@ export async function corrigerPointage(
 
 // ---- Anomalies ----
 
+export interface FiltresAnomalies {
+  employeId?: string
+  type?: RepartitionTypeAnomalieReponse['type']
+  resolue?: boolean
+  debut?: string
+  fin?: string
+}
+
 export async function listerAnomalies(
-  resolue?: boolean,
+  filtres: FiltresAnomalies = {},
   page = 0,
   size = 20,
+  sort?: string,
 ): Promise<PagedResponse<AnomaliePointageReponse>> {
   const params: Record<string, unknown> = { page, size }
-  if (resolue !== undefined) params.resolue = resolue
+  if (filtres.employeId) params.employeId = filtres.employeId
+  if (filtres.type) params.type = filtres.type
+  if (filtres.resolue !== undefined) params.resolue = filtres.resolue
+  if (filtres.debut) params.debut = filtres.debut
+  if (filtres.fin) params.fin = filtres.fin
+  if (sort) params.sort = sort
   const { data } = await apiClient.get<ApiResponse<PagedResponse<AnomaliePointageReponse>>>(
     '/api/anomalies',
     { params },

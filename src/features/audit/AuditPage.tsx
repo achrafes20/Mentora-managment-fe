@@ -10,6 +10,8 @@ import { Select, type SelectOption } from '@/components/ui/Select'
 import { DatePicker } from '@/components/ui/DatePicker'
 import { Spinner } from '@/components/ui/Spinner'
 import { toast } from '@/components/ui/toast'
+import { SortableTh } from '@/components/ui/SortableTh'
+import { useTriLocal } from '@/components/ui/useTriLocal'
 import { listUsers } from '@/lib/authApi'
 import { exporterAudit, rechercherAudit, type ModuleAudit } from './auditApi'
 
@@ -113,6 +115,20 @@ export function AuditPage() {
     queryKey: ['audit', filtres],
     queryFn: () => rechercherAudit(filtres),
   })
+
+  // Tri client sur la page affichée : le backend ne prend pas de paramètre `sort` pour ce
+  // endpoint (page/size fixes côté AuditController), donc pas de tri serveur possible ici.
+  const { trie, tri, handleTri } = useTriLocal(
+    data?.content,
+    (entree, champ) => {
+      if (champ === 'utilisateur') {
+        const u = utilisateurs?.find((x) => x.id === entree.utilisateurId)
+        return u ? `${u.prenom} ${u.nom}` : ''
+      }
+      return entree[champ as keyof typeof entree] as string | number | boolean | null | undefined
+    },
+    { champ: 'horodatage', direction: 'desc' },
+  )
 
   const utilisateurOptions: SelectOption[] =
     utilisateurs?.map((u) => ({ value: u.id, label: `${u.prenom} ${u.nom} (${u.email})` })) ?? []
@@ -253,18 +269,25 @@ export function AuditPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-[#D8D4CC] bg-[#F7F7F4]">
-                {['Date/Heure', 'Utilisateur', 'Action', 'Module', 'Délégation'].map((h) => (
-                  <th
-                    key={h}
-                    className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider text-[#9CA3AF] uppercase"
-                  >
-                    {h}
-                  </th>
-                ))}
+                <SortableTh label="Date/Heure" champ="horodatage" tri={tri} onChange={handleTri} />
+                <SortableTh
+                  label="Utilisateur"
+                  champ="utilisateur"
+                  tri={tri}
+                  onChange={handleTri}
+                />
+                <SortableTh label="Action" champ="action" tri={tri} onChange={handleTri} />
+                <SortableTh label="Module" champ="module" tri={tri} onChange={handleTri} />
+                <SortableTh
+                  label="Délégation"
+                  champ="enDelegation"
+                  tri={tri}
+                  onChange={handleTri}
+                />
               </tr>
             </thead>
             <tbody>
-              {data.content.map((entree) => {
+              {trie.map((entree) => {
                 const utilisateur = utilisateurs?.find((u) => u.id === entree.utilisateurId)
                 return (
                   <tr

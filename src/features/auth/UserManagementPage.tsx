@@ -6,6 +6,8 @@ import { Plus } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { PageHeader } from '@/components/ui/StatCard'
 import { StatusTag } from '@/components/ui/StatusTag'
+import { SortableTh } from '@/components/ui/SortableTh'
+import { useTriLocal } from '@/components/ui/useTriLocal'
 import { Dialog } from '@/components/ui/Dialog'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
@@ -319,6 +321,15 @@ export function UserManagementPage() {
     queryFn: listUsers,
   })
 
+  const { trie, tri, handleTri } = useTriLocal(
+    users,
+    (u, champ) => {
+      if (champ === 'nom') return `${u.prenom} ${u.nom}`
+      return u[champ as keyof typeof u] as string | number | boolean | null | undefined
+    },
+    { champ: 'nom', direction: 'asc' },
+  )
+
   const deactivateMutation = useMutation({
     mutationFn: deactivateUser,
     onSuccess: () => {
@@ -372,26 +383,32 @@ export function UserManagementPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-[#D8D4CC] bg-[#F7F7F4]">
-                {[
-                  'Nom',
-                  'E-mail',
-                  'Rôle',
-                  'Mattermost',
-                  'Statut',
-                  'Dernière connexion',
-                  'Actions',
-                ].map((h) => (
-                  <th
-                    key={h}
-                    className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider text-[#9CA3AF] uppercase first:pl-5 last:pr-5"
-                  >
-                    {h}
-                  </th>
-                ))}
+                <SortableTh
+                  label="Nom"
+                  champ="nom"
+                  tri={tri}
+                  onChange={handleTri}
+                  className="first:pl-5"
+                />
+                <SortableTh label="E-mail" champ="email" tri={tri} onChange={handleTri} />
+                <SortableTh label="Rôle" champ="role" tri={tri} onChange={handleTri} />
+                <th className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider text-[#9CA3AF] uppercase">
+                  Mattermost
+                </th>
+                <SortableTh label="Statut" champ="statut" tri={tri} onChange={handleTri} />
+                <SortableTh
+                  label="Dernière connexion"
+                  champ="modifieLe"
+                  tri={tri}
+                  onChange={handleTri}
+                />
+                <th className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider text-[#9CA3AF] uppercase last:pr-5">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody>
-              {users.map((u) => (
+              {trie.map((u) => (
                 <tr
                   key={u.id}
                   className="border-b border-[#D8D4CC]/50 transition-colors last:border-0 hover:bg-[#F7F7F4]"

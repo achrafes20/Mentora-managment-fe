@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { apiClient } from '@/lib/apiClient'
 import {
+  envoyerAttestationTravail,
+  envoyerCertificatStage,
   envoyerDocumentLibre,
   executerSurveillance,
   listerEnvoisDocuments,
@@ -48,6 +50,35 @@ describe('documentsApi', () => {
     expect(url).toBe('/api/documents/employes/emp-1/document-libre')
     expect((body as FormData).get('file')).toBe(fichier)
     expect(config).toEqual({ headers: { 'Content-Type': 'multipart/form-data' } })
+  })
+
+  it('envoie le sujet de stage dans le corps de la requete quand renseigne', async () => {
+    postMock.mockResolvedValueOnce({ data: { data: { id: 'envoi-1' } } })
+
+    await envoyerCertificatStage('emp-1', "Développement d'une plateforme de gestion RH")
+
+    expect(postMock).toHaveBeenCalledWith('/api/documents/employes/emp-1/certificat-stage', {
+      sujetStage: "Développement d'une plateforme de gestion RH",
+    })
+  })
+
+  it("n'envoie aucun corps de requete quand le sujet de stage est absent", async () => {
+    postMock.mockResolvedValueOnce({ data: { data: { id: 'envoi-1' } } })
+
+    await envoyerCertificatStage('emp-1')
+
+    expect(postMock).toHaveBeenCalledWith(
+      '/api/documents/employes/emp-1/certificat-stage',
+      undefined,
+    )
+  })
+
+  it("envoie l'attestation de travail sur le bon endpoint", async () => {
+    postMock.mockResolvedValueOnce({ data: { data: { id: 'envoi-1' } } })
+
+    await envoyerAttestationTravail('emp-1')
+
+    expect(postMock).toHaveBeenCalledWith('/api/documents/employes/emp-1/attestation-travail')
   })
 
   // Le bouton "Forcer execution Cron" doit passer par cet endpoint Bearer-authentifie normal,

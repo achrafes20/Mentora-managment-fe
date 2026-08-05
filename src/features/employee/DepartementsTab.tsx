@@ -1,6 +1,8 @@
 import { Plus } from 'lucide-react'
 import { useState } from 'react'
 import { StatusTag } from '@/components/ui/StatusTag'
+import { SortableTh } from '@/components/ui/SortableTh'
+import { useTriLocal } from '@/components/ui/useTriLocal'
 import { toast } from '@/components/ui/toast'
 import { confirm } from '@/components/ui/confirm'
 import { useAuth } from '../../lib/AuthContext'
@@ -25,6 +27,18 @@ export function DepartementsTab() {
   const modifierMutation = useModifierDepartement()
   const desactiverMutation = useDesactiverDepartement()
   const activerMutation = useActiverDepartement()
+
+  const { trie, tri, handleTri } = useTriLocal(
+    departements,
+    (depart, champ) => {
+      if (champ === 'managerId') {
+        const manager = managers?.find((m) => m.id === depart.managerId)
+        return manager ? libelleManager(manager) : ''
+      }
+      return depart[champ as keyof typeof depart] as string | number | boolean | null | undefined
+    },
+    { champ: 'nom', direction: 'asc' },
+  )
 
   const [modalOuvert, setModalOuvert] = useState(false)
   const [departementEnEdition, setDepartementEnEdition] = useState<Departement | null>(null)
@@ -95,18 +109,24 @@ export function DepartementsTab() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-[#D8D4CC] bg-[#F7F7F4]">
-                {['Nom', 'Manager', 'Statut', ...(estAdmin ? ['Actions'] : [])].map((h) => (
-                  <th
-                    key={h}
-                    className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider text-[#9CA3AF] uppercase first:pl-5 last:pr-5"
-                  >
-                    {h}
+                <SortableTh
+                  label="Nom"
+                  champ="nom"
+                  tri={tri}
+                  onChange={handleTri}
+                  className="first:pl-5"
+                />
+                <SortableTh label="Manager" champ="managerId" tri={tri} onChange={handleTri} />
+                <SortableTh label="Statut" champ="statut" tri={tri} onChange={handleTri} />
+                {estAdmin && (
+                  <th className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider text-[#9CA3AF] uppercase last:pr-5">
+                    Actions
                   </th>
-                ))}
+                )}
               </tr>
             </thead>
             <tbody>
-              {departements!.map((depart) => {
+              {trie.map((depart) => {
                 const manager = managers?.find((m) => m.id === depart.managerId)
                 return (
                   <tr

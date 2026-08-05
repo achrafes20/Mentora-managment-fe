@@ -70,6 +70,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/employes/{id}/sujet-stage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["modifierSujetStage"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/employes/{id}/documents/{documentId}": {
         parameters: {
             query?: never;
@@ -506,6 +522,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/employes/desactivation-automatique/executer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["executerDesactivationAutomatique"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/documents/surveillance/{notifId}/renvoyer": {
         parameters: {
             query?: never;
@@ -580,6 +612,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["envoyerCertificatStage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/employes/{employeId}/attestation-travail": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["envoyerAttestationTravail"];
         delete?: never;
         options?: never;
         head?: never;
@@ -695,6 +743,24 @@ export interface paths {
         put?: never;
         /** Révocation manuelle d'une délégation active */
         post: operations["revoquer_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/config/identite-entreprise/signature": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Télécharger la signature/cachet de l'entreprise */
+        get: operations["recupererSignature"];
+        put?: never;
+        /** Téléverser (ou remplacer) la signature/cachet de l'entreprise */
+        post: operations["televerserSignature"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1130,6 +1196,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/pointages/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["tableauDeBord"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/notifications": {
         parameters: {
             query?: never;
@@ -1300,6 +1382,54 @@ export interface paths {
             cookie?: never;
         };
         get: operations["listerEnvois"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/employes/{employeId}/certificat-travail/apercu": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["apercuCertificatTravail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/employes/{employeId}/certificat-stage/apercu": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["apercuCertificatStage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/employes/{employeId}/attestation-travail/apercu": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["apercuAttestationTravail"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1706,6 +1836,10 @@ export interface components {
             dateFinContratPrevue?: string;
             /** Format: date */
             dateFinStagePrevue?: string;
+            /** @enum {string} */
+            sexe?: "HOMME" | "FEMME";
+            cin?: string;
+            sujetStage?: string;
         };
         ApiResponseEmployeReponse: {
             success?: boolean;
@@ -1742,10 +1876,16 @@ export interface components {
             photoFichierId?: string;
             /** Format: uuid */
             candidatureOrigineId?: string;
+            sexe?: string;
+            cin?: string;
+            sujetStage?: string;
             /** Format: date-time */
             creeLe?: string;
             /** Format: date-time */
             modifieLe?: string;
+        };
+        SujetStageRequete: {
+            sujetStage?: string;
         };
         ApiResponseEmployeDocumentReponse: {
             success?: boolean;
@@ -1812,6 +1952,13 @@ export interface components {
             adresse?: string;
             telephone?: string;
             email?: string;
+            ice?: string;
+            rc?: string;
+            ville?: string;
+            signataireNom?: string;
+            signataireFonction?: string;
+            /** @enum {string} */
+            signataireSexe?: "HOMME" | "FEMME";
         };
         ApiResponseIdentiteEntrepriseReponse: {
             success?: boolean;
@@ -1827,8 +1974,16 @@ export interface components {
             adresse?: string;
             telephone?: string;
             email?: string;
+            ice?: string;
+            rc?: string;
+            ville?: string;
             /** Format: uuid */
             logoFichierId?: string;
+            /** Format: uuid */
+            signatureFichierId?: string;
+            signataireNom?: string;
+            signataireFonction?: string;
+            signataireSexe?: string;
             /** Format: uuid */
             modifiePar?: string;
             /** Format: date-time */
@@ -2073,6 +2228,10 @@ export interface components {
             candidatureOrigineId?: string;
             /** Format: uuid */
             cvFichierId?: string;
+            /** @enum {string} */
+            sexe?: "HOMME" | "FEMME";
+            cin?: string;
+            sujetStage?: string;
         };
         TransfertRequete: {
             /** Format: uuid */
@@ -2084,7 +2243,7 @@ export interface components {
         };
         DesactivationRequete: {
             /** @enum {string} */
-            motif: "demission" | "licenciement" | "fin_cdd" | "rupture" | "autre";
+            motif: "demission" | "licenciement" | "fin_cdd" | "fin_stage" | "rupture" | "autre";
             /** Format: date */
             dateDepart: string;
         };
@@ -2133,7 +2292,7 @@ export interface components {
             /** Format: uuid */
             employeId?: string;
             /** @enum {string} */
-            typeDocument?: "certificat_stage" | "certificat_travail" | "document_libre" | "email_rejet_candidature";
+            typeDocument?: "certificat_stage" | "certificat_travail" | "attestation_travail" | "document_libre" | "email_rejet_candidature";
             /** Format: uuid */
             fichierId?: string;
             destinataireEmail?: string;
@@ -2141,6 +2300,9 @@ export interface components {
             dateEnvoi?: string;
             /** Format: uuid */
             envoyePar?: string;
+        };
+        CertificatStageRequete: {
+            sujetStage?: string;
         };
         DemandeAdministrativeRequete: {
             /** Format: uuid */
@@ -2367,7 +2529,7 @@ export interface components {
             /** Format: date */
             datePointage?: string;
             /** @enum {string} */
-            typeAnomalie?: "retard" | "depart_anticipe" | "absence_checkout" | "presence_incomplete";
+            typeAnomalie?: "retard" | "depart_anticipe" | "absence_checkout";
             resolue?: boolean;
             /** Format: date-time */
             creeLe?: string;
@@ -2453,6 +2615,34 @@ export interface components {
             /** Format: int32 */
             totalPages?: number;
             last?: boolean;
+        };
+        AnomalieEmployeReponse: {
+            /** Format: uuid */
+            employeId?: string;
+            nomComplet?: string;
+            /** Format: int64 */
+            nombreAnomalies?: number;
+        };
+        ApiResponsePresenceDashboardReponse: {
+            success?: boolean;
+            data?: components["schemas"]["PresenceDashboardReponse"];
+            error?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
+        PresenceDashboardReponse: {
+            /** Format: double */
+            tauxPresence30Jours?: number;
+            /** Format: int64 */
+            joursOuvresPeriode?: number;
+            topAnomaliesRecurrentes?: components["schemas"]["AnomalieEmployeReponse"][];
+            repartitionParType?: components["schemas"]["RepartitionTypeAnomalieReponse"][];
+        };
+        RepartitionTypeAnomalieReponse: {
+            /** @enum {string} */
+            type?: "retard" | "depart_anticipe" | "absence_checkout";
+            /** Format: int64 */
+            nombre?: number;
         };
         ApiResponseListOffreEmploiReponse: {
             success?: boolean;
@@ -3030,6 +3220,32 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["EmployeModificationRequete"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseEmployeReponse"];
+                };
+            };
+        };
+    };
+    modifierSujetStage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SujetStageRequete"];
             };
         };
         responses: {
@@ -3983,6 +4199,26 @@ export interface operations {
             };
         };
     };
+    executerDesactivationAutomatique: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
     renvoyerDocumentSurveillance: {
         parameters: {
             query?: never;
@@ -4077,6 +4313,32 @@ export interface operations {
         };
     };
     envoyerCertificatStage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                employeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CertificatStageRequete"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseEnvoiDocumentResponse"];
+                };
+            };
+        };
+    };
+    envoyerAttestationTravail: {
         parameters: {
             query?: never;
             header?: never;
@@ -4365,6 +4627,53 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseDelegationReponse"];
+                };
+            };
+        };
+    };
+    recupererSignature: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
+    televerserSignature: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** Format: binary */
+                    signature: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseIdentiteEntrepriseReponse"];
                 };
             };
         };
@@ -4897,6 +5206,10 @@ export interface operations {
     lister_8: {
         parameters: {
             query: {
+                employeId?: string;
+                typeScan?: "entree" | "sortie";
+                debut?: string;
+                fin?: string;
                 pageable: components["schemas"]["Pageable"];
             };
             header?: never;
@@ -4983,6 +5296,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponsePagedResponsePointageReponse"];
+                };
+            };
+        };
+    };
+    tableauDeBord: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePresenceDashboardReponse"];
                 };
             };
         };
@@ -5228,6 +5561,74 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseListEnvoiDocumentResponse"];
+                };
+            };
+        };
+    };
+    apercuCertificatTravail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                employeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
+                };
+            };
+        };
+    };
+    apercuCertificatStage: {
+        parameters: {
+            query?: {
+                sujetStage?: string;
+            };
+            header?: never;
+            path: {
+                employeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
+                };
+            };
+        };
+    };
+    apercuAttestationTravail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                employeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
                 };
             };
         };
@@ -5553,7 +5954,11 @@ export interface operations {
     lister_11: {
         parameters: {
             query: {
+                employeId?: string;
+                type?: "retard" | "depart_anticipe" | "absence_checkout";
                 resolue?: boolean;
+                debut?: string;
+                fin?: string;
                 pageable: components["schemas"]["Pageable"];
             };
             header?: never;

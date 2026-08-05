@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { PageHeader } from '@/components/ui/StatCard'
 import { StatusTag } from '@/components/ui/StatusTag'
+import { SortableTh } from '@/components/ui/SortableTh'
+import { useTriLocal } from '@/components/ui/useTriLocal'
 import { formatStatut } from '@/components/ui/tokens'
 import { toast } from '@/components/ui/toast'
 import { confirm } from '@/components/ui/confirm'
@@ -41,6 +43,16 @@ export function OffresPage() {
   function nombreCandidatures(offreId?: string) {
     return candidaturesPage?.content?.filter((c) => c.offreId === offreId).length ?? 0
   }
+
+  const { trie, tri, handleTri } = useTriLocal(
+    offres,
+    (o, champ) => {
+      if (champ === 'departementId') return departementNom(o.departementId)
+      if (champ === 'candidatures') return nombreCandidatures(o.id)
+      return o[champ as keyof typeof o] as string | number | boolean | null | undefined
+    },
+    { champ: 'intitule', direction: 'asc' },
+  )
 
   function ouvrirCreation() {
     setOffreEditee(null)
@@ -142,18 +154,25 @@ export function OffresPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-[#D8D4CC] bg-[#F7F7F4]">
-                {['Intitulé', 'Département', 'Statut', 'Candidatures', ''].map((h) => (
-                  <th
-                    key={h}
-                    className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider text-[#9CA3AF] uppercase"
-                  >
-                    {h}
-                  </th>
-                ))}
+                <SortableTh label="Intitulé" champ="intitule" tri={tri} onChange={handleTri} />
+                <SortableTh
+                  label="Département"
+                  champ="departementId"
+                  tri={tri}
+                  onChange={handleTri}
+                />
+                <SortableTh label="Statut" champ="statut" tri={tri} onChange={handleTri} />
+                <SortableTh
+                  label="Candidatures"
+                  champ="candidatures"
+                  tri={tri}
+                  onChange={handleTri}
+                />
+                <th className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider text-[#9CA3AF] uppercase" />
               </tr>
             </thead>
             <tbody>
-              {(offres ?? []).map((o) => (
+              {trie.map((o) => (
                 <tr
                   key={o.id}
                   onClick={() => navigate(`/recrutement/offres/${o.id}`)}

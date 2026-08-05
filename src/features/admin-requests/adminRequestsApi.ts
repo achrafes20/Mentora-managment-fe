@@ -92,6 +92,7 @@ export interface FiltresDemandes {
   fin?: string
   page?: number
   size?: number
+  sort?: string
 }
 
 export async function listerDemandes(
