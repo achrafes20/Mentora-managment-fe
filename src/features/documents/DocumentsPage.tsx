@@ -4,7 +4,7 @@ import {
   useSurveillance,
   useRenvoyerDocumentSurveillance,
 } from './useDocuments'
-import { useEmployes } from '../employee/useEmployes'
+import { useEmployes, useExecuterDesactivationAutomatique } from '../employee/useEmployes'
 import dayjs from 'dayjs'
 import { toast } from '@/components/ui/toast'
 import type { ApiError } from '@/lib/apiClient'
@@ -14,6 +14,7 @@ export function DocumentsPage() {
   const { data: employesData } = useEmployes({})
   const renvoyerMutation = useRenvoyerDocumentSurveillance()
   const executerSurveillanceMutation = useExecuterSurveillance()
+  const executerDesactivationMutation = useExecuterDesactivationAutomatique()
 
   const pendingNotifs = surveillance ?? []
   const employes = employesData?.content ?? []
@@ -45,21 +46,38 @@ export function DocumentsPage() {
         <h2 className="text-[13px] font-semibold text-[#1B2A41]">
           Documents de fin de contrat à surveiller
         </h2>
-        <button
-          onClick={async () => {
-            try {
-              await executerSurveillanceMutation.mutateAsync()
-              toast.success('File de surveillance exécutée avec succès')
-            } catch (error) {
-              const apiError = error as ApiError
-              toast.error(apiError.message ?? "Erreur lors de l'exécution du cron")
-            }
-          }}
-          disabled={executerSurveillanceMutation.isPending}
-          className="rounded-lg bg-[#C87F3A] px-3 py-1.5 text-[12px] text-white hover:bg-[#a66a31] disabled:opacity-50"
-        >
-          Forcer exécution Cron
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={async () => {
+              try {
+                await executerSurveillanceMutation.mutateAsync()
+                toast.success('File de surveillance exécutée avec succès')
+              } catch (error) {
+                const apiError = error as ApiError
+                toast.error(apiError.message ?? "Erreur lors de l'exécution du cron")
+              }
+            }}
+            disabled={executerSurveillanceMutation.isPending}
+            className="rounded-lg bg-[#C87F3A] px-3 py-1.5 text-[12px] text-white hover:bg-[#a66a31] disabled:opacity-50"
+          >
+            Forcer exécution Cron
+          </button>
+          <button
+            onClick={async () => {
+              try {
+                await executerDesactivationMutation.mutateAsync()
+                toast.success('Désactivation automatique exécutée avec succès')
+              } catch (error) {
+                const apiError = error as ApiError
+                toast.error(apiError.message ?? "Erreur lors de l'exécution")
+              }
+            }}
+            disabled={executerDesactivationMutation.isPending}
+            className="rounded-lg border border-[#C87F3A] px-3 py-1.5 text-[12px] text-[#C87F3A] hover:bg-[#C87F3A]/8 disabled:opacity-50"
+          >
+            Forcer désactivation auto.
+          </button>
+        </div>
       </div>
 
       <div className="mb-8 space-y-3">

@@ -25,6 +25,8 @@ const SUCCESS_SET = new Set([
   'Mise à jour',
   'Réel',
   'Active',
+  'Entrée',
+  'Résolue',
 ])
 const WARNING_SET = new Set([
   'En attente',
@@ -32,7 +34,6 @@ const WARNING_SET = new Set([
   'Retard',
   'Départ anticipé',
   'Absence',
-  'Présence incomplète',
   'Absence de check-out',
   'Présélectionné',
   'Entretien',
@@ -42,6 +43,8 @@ const WARNING_SET = new Set([
   'Aucun changement',
   'Simulation',
   'Suggestion de réactivation',
+  'Sortie',
+  'Non résolue',
 ])
 const DANGER_SET = new Set(['Rejeté', 'Inactif', 'inactif', 'Erreur', 'Révoquée'])
 

@@ -37,6 +37,7 @@ const schema = z
     dateFinStagePrevue: z.date().nullable(),
     sexe: z.union([z.enum(SEXES), z.literal(SEXE_NON_RENSEIGNE)]),
     cin: z.string(),
+    sujetStage: z.string(),
   })
   .refine((valeurs) => valeurs.typeContrat === 'CDD' || !valeurs.dateFinContratPrevue, {
     message: "La date de fin de contrat prévue n'est applicable qu'aux CDD",
@@ -135,6 +136,7 @@ export function EmployeFormModal({
       dateFinStagePrevue: null,
       sexe: SEXE_NON_RENSEIGNE,
       cin: '',
+      sujetStage: '',
     },
   })
 
@@ -159,6 +161,7 @@ export function EmployeFormModal({
           : null,
         sexe: (employe?.sexe as (typeof SEXES)[number]) ?? SEXE_NON_RENSEIGNE,
         cin: employe?.cin ?? '',
+        sujetStage: employe?.sujetStage ?? '',
       })
       setPhoto(null)
       setPhotoPreview(null)
@@ -187,6 +190,7 @@ export function EmployeFormModal({
     }
     if (typeContratActuel !== 'STAGIAIRE' && typeContratActuel !== 'STAGIAIRE_REMUNERE') {
       setValue('dateFinStagePrevue', null)
+      setValue('sujetStage', '')
     }
   }, [typeContratActuel, setValue])
 
@@ -363,19 +367,28 @@ export function EmployeFormModal({
         </FormField>
       )}
       {(typeContratActuel === 'STAGIAIRE' || typeContratActuel === 'STAGIAIRE_REMUNERE') && (
-        <FormField label="Date de fin de stage prévue" error={errors.dateFinStagePrevue?.message}>
-          <Controller
-            name="dateFinStagePrevue"
-            control={control}
-            render={({ field }) => (
-              <DatePicker
-                value={field.value}
-                onChange={(d) => field.onChange(d)}
-                onBlur={field.onBlur}
-              />
-            )}
-          />
-        </FormField>
+        <>
+          <FormField label="Date de fin de stage prévue" error={errors.dateFinStagePrevue?.message}>
+            <Controller
+              name="dateFinStagePrevue"
+              control={control}
+              render={({ field }) => (
+                <DatePicker
+                  value={field.value}
+                  onChange={(d) => field.onChange(d)}
+                  onBlur={field.onBlur}
+                />
+              )}
+            />
+          </FormField>
+          <FormField label="Sujet de stage">
+            <Controller
+              name="sujetStage"
+              control={control}
+              render={({ field }) => <Input {...field} />}
+            />
+          </FormField>
+        </>
       )}
     </Dialog>
   )

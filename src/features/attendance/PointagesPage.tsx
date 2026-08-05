@@ -3,9 +3,11 @@ import dayjs from 'dayjs'
 import { format as formatDate } from 'date-fns'
 import { ChevronLeft, ChevronRight, Download, Info, Pencil, RotateCcw } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { DatePicker } from '@/components/ui/DatePicker'
 import { toast } from '@/components/ui/toast'
 import { StatusTag } from '@/components/ui/StatusTag'
+import { basculerTri, SortableTh, type Tri } from '@/components/ui/SortableTh'
 import { useAuth } from '@/lib/AuthContext'
 import { corrigerPointage, exporterPresence, listerPointages, type PointageReponse } from './api'
 import { listerEmployes } from '../employee/employesApi'
@@ -44,6 +46,7 @@ function MotifCorrectionBadge({ motif }: { motif: string | null }) {
 }
 
 export function PointagesPage() {
+  const navigate = useNavigate()
   const { role } = useAuth()
   const estAdmin = role === 'admin'
   const [data, setData] = useState<PointageReponse[]>([])
@@ -64,6 +67,8 @@ export function PointagesPage() {
   const [filtreDebut, setFiltreDebut] = useState<Date | null>(null)
   const [filtreFin, setFiltreFin] = useState<Date | null>(null)
   const filtresActifs = Boolean(filtreEmployeId || filtreType || filtreDebut || filtreFin)
+  // Trié par la date (horodatage) décroissante par défaut, comme un historique.
+  const [tri, setTri] = useState<Tri>({ champ: 'horodatage', direction: 'desc' })
 
   const charger = useCallback(async () => {
     setLoading(true)
@@ -77,6 +82,7 @@ export function PointagesPage() {
         },
         page,
         pageSize,
+        `${tri.champ},${tri.direction}`,
       )
       setData(res.content)
       setTotal(res.totalElements)
@@ -85,7 +91,12 @@ export function PointagesPage() {
     } finally {
       setLoading(false)
     }
-  }, [page, filtreEmployeId, filtreType, filtreDebut, filtreFin])
+  }, [page, filtreEmployeId, filtreType, filtreDebut, filtreFin, tri])
+
+  function handleTri(champ: string) {
+    setTri((t) => basculerTri(t, champ))
+    setPage(0)
+  }
 
   function reinitialiserFiltres() {
     setFiltreEmployeId('')
@@ -258,15 +269,23 @@ export function PointagesPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-[#D8D4CC] bg-[#F7F7F4]">
-                {['Employé', 'Type', 'Horodatage', 'Correction', ...(estAdmin ? [''] : [])].map(
-                  (h, i) => (
-                    <th
-                      key={h || `action-${i}`}
-                      className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider text-[#9CA3AF] uppercase first:pl-5 last:pr-5"
-                    >
-                      {h}
-                    </th>
-                  ),
+                <SortableTh
+                  label="Employé"
+                  champ="employeId"
+                  tri={tri}
+                  onChange={handleTri}
+                  className="first:pl-5"
+                />
+                <SortableTh label="Type" champ="typeScan" tri={tri} onChange={handleTri} />
+                <SortableTh label="Horodatage" champ="horodatage" tri={tri} onChange={handleTri} />
+                <SortableTh
+                  label="Correction"
+                  champ="corrigeManuellement"
+                  tri={tri}
+                  onChange={handleTri}
+                />
+                {estAdmin && (
+                  <th className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider text-[#9CA3AF] uppercase last:pr-5" />
                 )}
               </tr>
             </thead>
@@ -276,14 +295,17 @@ export function PointagesPage() {
                   key={p.id}
                   className="border-b border-[#D8D4CC]/50 transition-colors last:border-0 hover:bg-[#F7F7F4]"
                 >
-                  <td className="py-3.5 pr-4 pl-5 text-[13px] text-[#1B2A41]">
-                    {employes[p.employeId] ?? `${p.employeId.substring(0, 8)}…`}
+                  <td className="py-3.5 pr-4 pl-5 text-[13px]">
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/employes/${p.employeId}`)}
+                      className="text-[#1B2A41] hover:underline"
+                    >
+                      {employes[p.employeId] ?? `${p.employeId.substring(0, 8)}…`}
+                    </button>
                   </td>
                   <td className="px-4 py-3.5">
-                    <StatusTag statut={p.typeScan === 'entree' ? 'Actif' : 'En attente'} />
-                    <span className="ml-2 text-[12px] text-[#6B7280]">
-                      {p.typeScan === 'entree' ? 'Entrée' : 'Sortie'}
-                    </span>
+                    <StatusTag statut={p.typeScan === 'entree' ? 'Entrée' : 'Sortie'} />
                   </td>
                   <td
                     style={{ fontFamily: 'var(--font-code)' }}

@@ -6,6 +6,8 @@ import { Dialog } from '@/components/ui/Dialog'
 import { StatusTag } from '@/components/ui/StatusTag'
 import { formatStatut } from '@/components/ui/tokens'
 import { Spinner } from '@/components/ui/Spinner'
+import { SortableTh } from '@/components/ui/SortableTh'
+import { useTriLocal } from '@/components/ui/useTriLocal'
 import { RapportTable } from './RapportTable'
 import { useDetailLotImport, useHistoriqueImports } from './useImport'
 
@@ -19,6 +21,11 @@ export function ImportHistoriqueTab() {
   const [page, setPage] = useState(0)
   const [lotSelectionne, setLotSelectionne] = useState<string | null>(null)
   const { data, isLoading } = useHistoriqueImports({ page, size: 20 })
+  const { trie, tri, handleTri } = useTriLocal(
+    data?.content,
+    (lot, champ) => lot[champ as keyof typeof lot] as string | number | boolean | null | undefined,
+    { champ: 'creeLe', direction: 'desc' },
+  )
 
   return (
     <div>
@@ -35,18 +42,22 @@ export function ImportHistoriqueTab() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-[#D8D4CC] bg-[#F7F7F4]">
-                {['Date', 'Cible', 'Mode', 'Fichier', 'Valides', 'Erreurs', ''].map((h) => (
-                  <th
-                    key={h}
-                    className="px-4 py-3 text-left text-[10px] font-semibold text-[#9CA3AF] uppercase"
-                  >
-                    {h}
-                  </th>
-                ))}
+                <SortableTh label="Date" champ="creeLe" tri={tri} onChange={handleTri} />
+                <SortableTh label="Cible" champ="cible" tri={tri} onChange={handleTri} />
+                <SortableTh label="Mode" champ="mode" tri={tri} onChange={handleTri} />
+                <SortableTh label="Fichier" champ="nomFichier" tri={tri} onChange={handleTri} />
+                <SortableTh
+                  label="Valides"
+                  champ="nbLignesValides"
+                  tri={tri}
+                  onChange={handleTri}
+                />
+                <SortableTh label="Erreurs" champ="nbLignesErreur" tri={tri} onChange={handleTri} />
+                <th className="px-4 py-3 text-left text-[10px] font-semibold text-[#9CA3AF] uppercase" />
               </tr>
             </thead>
             <tbody>
-              {data.content?.map((lot) => (
+              {trie.map((lot) => (
                 <tr key={lot.id} className="border-b border-[#D8D4CC]/50">
                   <td className="px-4 py-3 text-[13px] text-[#1B2A41]">
                     {lot.creeLe

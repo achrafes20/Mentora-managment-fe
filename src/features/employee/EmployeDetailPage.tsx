@@ -39,6 +39,7 @@ import {
   useEmploye,
   useHistoriqueTransferts,
   useModifierEmploye,
+  useModifierSujetStage,
   useTransfererEmploye,
   useSupprimerDocument,
   useEnvoyerCarteEmail,
@@ -105,7 +106,6 @@ export function EmployeDetailPage() {
   const [qrLoading, setQrLoading] = useState(false)
   const [certEnvoye, setCertEnvoye] = useState(false)
   const [attestationEnvoyee, setAttestationEnvoyee] = useState(false)
-  const [sujetStage, setSujetStage] = useState('')
   const [pointages, setPointages] = useState<PointageReponse[]>([])
   const [pointagesLoading, setPointagesLoading] = useState(false)
 
@@ -184,13 +184,17 @@ export function EmployeDetailPage() {
     employe.dateFinContratPrevue != null
       ? dayjs(employe.dateFinContratPrevue).diff(dayjs(), 'day')
       : null
-  const cddAlert = isCdd && joursRestantsCdd != null && joursRestantsCdd <= 15
+  // isActif : une fois l'employé désactivé (départ effectif, y compris l'auto-désactivation à
+  // échéance), cette alerte "à venir" n'a plus de sens — l'info de départ (date + motif) est déjà
+  // affichée ailleurs sur la fiche.
+  const cddAlert = isActif && isCdd && joursRestantsCdd != null && joursRestantsCdd <= 15
 
   const joursRestantsStage =
     employe.dateFinStagePrevue != null
       ? dayjs(employe.dateFinStagePrevue).diff(dayjs(), 'day')
       : null
-  const stageAlert = estStagiaire && joursRestantsStage != null && joursRestantsStage <= 3
+  const stageAlert =
+    isActif && estStagiaire && joursRestantsStage != null && joursRestantsStage <= 3
 
   async function handleGenererQr() {
     if (!id) return
@@ -213,7 +217,7 @@ export function EmployeDetailPage() {
         }
         await envoyerCertifStageMutation.mutateAsync({
           employeId: employe.id,
-          sujetStage: sujetStage.trim() || undefined,
+          sujetStage: employe.sujetStage || undefined,
         })
       } else {
         if (!employe.id) {
@@ -249,7 +253,7 @@ export function EmployeDetailPage() {
       if (estStagiaire) {
         await apercuCertifStageMutation.mutateAsync({
           employeId: employe.id,
-          sujetStage: sujetStage.trim() || undefined,
+          sujetStage: employe.sujetStage || undefined,
         })
       } else {
         await apercuCertifTravailMutation.mutateAsync(employe.id)
@@ -363,6 +367,7 @@ export function EmployeDetailPage() {
                 : undefined,
               sexe: values.sexe || undefined,
               cin: values.cin || undefined,
+              sujetStage: values.sujetStage || undefined,
             })
             .then(async () => {
               if (photo && id) {
@@ -396,7 +401,7 @@ export function EmployeDetailPage() {
         />
       )}
 
-      <div className="mx-auto max-w-[960px] p-8">
+      <div className="p-8">
         <button
           onClick={() => navigate('/employes')}
           className="mb-6 flex items-center gap-1.5 text-[12px] text-[#9CA3AF] transition-colors hover:text-[#1B2A41]"
@@ -553,9 +558,28 @@ export function EmployeDetailPage() {
                 onClick={() => navigate('/demandes')}
                 className="flex flex-shrink-0 items-center gap-1 text-[11px] text-[#4A7C6B] hover:underline"
               >
-                <BookOpen size={11} /> Voir le registre des mouvements →
+                <BookOpen size={11} /> Voir le registre des mouvements
               </button>
             </div>
+
+            {estStagiaire && employe.id && (
+              <div className="mt-3 rounded-lg border border-[#D8D4CC]/60 bg-[#F7F7F4] px-3.5 py-2.5">
+                <p className="mb-1 text-[9px] tracking-wider text-[#9CA3AF] uppercase">
+                  Sujet de stage
+                </p>
+                {estAdmin || role === 'manager' ? (
+                  <SujetStageInline
+                    key={employe.sujetStage ?? ''}
+                    employeId={employe.id}
+                    valeur={employe.sujetStage}
+                  />
+                ) : (
+                  <p className="text-[12px] font-medium text-[#1B2A41]">
+                    {employe.sujetStage || '—'}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -731,14 +755,16 @@ export function EmployeDetailPage() {
                     >
                       <ExternalLink size={11} /> Aperçu
                     </button>
-                    <button
-                      onClick={() => void handleEnvoyerAttestation()}
-                      disabled={envoyerAttestationMutation.isPending}
-                      className="flex items-center gap-1.5 rounded-lg bg-[#1B2A41] px-3 py-1.5 text-[11px] font-medium text-white hover:bg-[#243650] disabled:opacity-50"
-                    >
-                      <Send size={11} />{' '}
-                      {envoiAttestation || attestationEnvoyee ? 'Renvoyer' : "Confirmer l'envoi"}
-                    </button>
+                    {estAdmin && (
+                      <button
+                        onClick={() => void handleEnvoyerAttestation()}
+                        disabled={envoyerAttestationMutation.isPending}
+                        className="flex items-center gap-1.5 rounded-lg bg-[#1B2A41] px-3 py-1.5 text-[11px] font-medium text-white hover:bg-[#243650] disabled:opacity-50"
+                      >
+                        <Send size={11} />{' '}
+                        {envoiAttestation || attestationEnvoyee ? 'Renvoyer' : "Confirmer l'envoi"}
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -766,14 +792,6 @@ export function EmployeDetailPage() {
                         ✓ Envoyé
                       </span>
                     )}
-                    {estStagiaire && (
-                      <Input
-                        value={sujetStage}
-                        onChange={(e) => setSujetStage(e.target.value)}
-                        placeholder="Sujet de stage (optionnel)"
-                        className="w-56"
-                      />
-                    )}
                     <button
                       onClick={() => void handleApercuCertificat()}
                       disabled={
@@ -783,17 +801,19 @@ export function EmployeDetailPage() {
                     >
                       <ExternalLink size={11} /> Aperçu
                     </button>
-                    <button
-                      onClick={() => void handleEnvoyerCertificat()}
-                      disabled={
-                        envoyerCertifTravailMutation.isPending ||
-                        envoyerCertifStageMutation.isPending
-                      }
-                      className="flex items-center gap-1.5 rounded-lg bg-[#1B2A41] px-3 py-1.5 text-[11px] font-medium text-white hover:bg-[#243650] disabled:opacity-50"
-                    >
-                      <Send size={11} />{' '}
-                      {dejaEnvoye || certEnvoye ? 'Renvoyer' : "Confirmer l'envoi"}
-                    </button>
+                    {estAdmin && (
+                      <button
+                        onClick={() => void handleEnvoyerCertificat()}
+                        disabled={
+                          envoyerCertifTravailMutation.isPending ||
+                          envoyerCertifStageMutation.isPending
+                        }
+                        className="flex items-center gap-1.5 rounded-lg bg-[#1B2A41] px-3 py-1.5 text-[11px] font-medium text-white hover:bg-[#243650] disabled:opacity-50"
+                      >
+                        <Send size={11} />{' '}
+                        {dejaEnvoye || certEnvoye ? 'Renvoyer' : "Confirmer l'envoi"}
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -830,10 +850,7 @@ export function EmployeDetailPage() {
                       className="border-b border-[#D8D4CC]/50 transition-colors last:border-0 hover:bg-[#F7F7F4]"
                     >
                       <td className="px-5 py-3.5">
-                        <StatusTag statut={p.typeScan === 'entree' ? 'Actif' : 'En attente'} />
-                        <span className="ml-2 text-[12px] text-[#6B7280]">
-                          {p.typeScan === 'entree' ? 'Entrée' : 'Sortie'}
-                        </span>
+                        <StatusTag statut={p.typeScan === 'entree' ? 'Entrée' : 'Sortie'} />
                       </td>
                       <td
                         style={{ fontFamily: 'var(--font-code)' }}
@@ -843,7 +860,7 @@ export function EmployeDetailPage() {
                       </td>
                       <td className="px-5 py-3.5">
                         {p.corrigeManuellement ? (
-                          <StatusTag statut="En attente" />
+                          <StatusTag statut="Corrigé" />
                         ) : (
                           <span className="text-[12px] text-[#9CA3AF]">Original</span>
                         )}
@@ -938,6 +955,66 @@ export function EmployeDetailPage() {
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+// EF-EMP-01 : seul champ de la fiche qu'un Manager (dans son propre département) est autorisé à
+// modifier, contrairement au reste du formulaire réservé à l'Admin — cf. EmployeController.
+function SujetStageInline({ employeId, valeur }: { employeId: string; valeur?: string | null }) {
+  const [editing, setEditing] = useState(false)
+  const [texte, setTexte] = useState(valeur ?? '')
+  const mutation = useModifierSujetStage(employeId)
+
+  async function enregistrer() {
+    try {
+      await mutation.mutateAsync(texte.trim())
+      setEditing(false)
+      void toast.success('Sujet de stage enregistré')
+    } catch (err) {
+      const apiError = err as ApiError
+      void toast.error(apiError.message ?? "Erreur lors de l'enregistrement")
+    }
+  }
+
+  if (!editing) {
+    return (
+      <div className="flex items-center justify-between gap-2">
+        {valeur && <span className="text-[12px] font-medium text-[#1B2A41]">{valeur}</span>}
+        <button
+          onClick={() => setEditing(true)}
+          className="flex flex-shrink-0 items-center gap-1 text-[11px] text-[#4A7C6B] hover:underline"
+        >
+          <Pencil size={11} /> {valeur ? 'Modifier' : 'Ajouter le sujet'}
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <Input
+        value={texte}
+        onChange={(e) => setTexte(e.target.value)}
+        placeholder="Sujet de stage"
+        className="w-56"
+      />
+      <button
+        onClick={() => void enregistrer()}
+        disabled={mutation.isPending}
+        className="rounded-lg bg-[#1B2A41] px-2.5 py-1.5 text-[11px] font-medium text-white disabled:opacity-50"
+      >
+        Enregistrer
+      </button>
+      <button
+        onClick={() => {
+          setEditing(false)
+          setTexte(valeur ?? '')
+        }}
+        className="text-[11px] text-[#6B7280] hover:text-[#1B2A41]"
+      >
+        Annuler
+      </button>
     </div>
   )
 }

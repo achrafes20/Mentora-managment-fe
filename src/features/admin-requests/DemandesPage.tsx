@@ -1,10 +1,11 @@
 import { FormEvent, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { CalendarDays, Check, Download, Plus, X } from 'lucide-react'
 import { DatePicker } from '@/components/ui/DatePicker'
 import { PageHeader } from '@/components/ui/StatCard'
+import { basculerTri, SortableTh, type Tri } from '@/components/ui/SortableTh'
 import { StatusTag } from '@/components/ui/StatusTag'
 import { toast } from '@/components/ui/toast'
 import { useAuth } from '@/lib/AuthContext'
@@ -75,6 +76,7 @@ function formatNombre(valeur?: number) {
 }
 
 export function DemandesPage() {
+  const navigate = useNavigate()
   const { role } = useAuth()
   const estDelegueActif = useEstDelegueActifMaintenant()
   // EF-AUTH-11/12 : un délégué actif peut approuver/rejeter/annuler comme l'Admin — jours fériés
@@ -120,9 +122,17 @@ export function DemandesPage() {
 
   const debutParam = dateVersParam(debutFiltre)
   const finParam = dateVersParam(finFiltre)
+  const [triDemandes, setTriDemandes] = useState<Tri>({ champ: 'dateDebut', direction: 'desc' })
 
   const demandesQuery = useQuery({
-    queryKey: ['demandes-administratives', typeFiltre, statutFiltre, debutParam, finParam],
+    queryKey: [
+      'demandes-administratives',
+      typeFiltre,
+      statutFiltre,
+      debutParam,
+      finParam,
+      triDemandes,
+    ],
     queryFn: () =>
       listerDemandes({
         type: typeFiltre,
@@ -131,8 +141,13 @@ export function DemandesPage() {
         fin: finParam,
         page: 0,
         size: 50,
+        sort: `${triDemandes.champ},${triDemandes.direction}`,
       }),
   })
+
+  function handleTriDemandes(champ: string) {
+    setTriDemandes((t) => basculerTri(t, champ))
+  }
 
   async function lancerExportDemandes(fmt: 'xlsx' | 'pdf') {
     setShowExport(false)
@@ -382,16 +397,36 @@ export function DemandesPage() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-[#D8D4CC] bg-[#F7F7F4]">
-                  {['Employé', 'Type', 'Période / détail', 'Durée', 'Statut', 'Actions'].map(
-                    (h) => (
-                      <th
-                        key={h}
-                        className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider text-[#9CA3AF] uppercase"
-                      >
-                        {h}
-                      </th>
-                    ),
-                  )}
+                  <SortableTh
+                    label="Employé"
+                    champ="employeId"
+                    tri={triDemandes}
+                    onChange={handleTriDemandes}
+                  />
+                  <SortableTh
+                    label="Type"
+                    champ="typeDemande"
+                    tri={triDemandes}
+                    onChange={handleTriDemandes}
+                  />
+                  <SortableTh
+                    label="Période / détail"
+                    champ="dateDebut"
+                    tri={triDemandes}
+                    onChange={handleTriDemandes}
+                  />
+                  <th className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider text-[#9CA3AF] uppercase">
+                    Durée
+                  </th>
+                  <SortableTh
+                    label="Statut"
+                    champ="statut"
+                    tri={triDemandes}
+                    onChange={handleTriDemandes}
+                  />
+                  <th className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider text-[#9CA3AF] uppercase">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -400,8 +435,14 @@ export function DemandesPage() {
                     key={d.id}
                     className="border-b border-[#D8D4CC]/50 transition-colors last:border-0 hover:bg-[#F7F7F4]"
                   >
-                    <td className="px-4 py-3.5 text-[13px] font-medium text-[#1B2A41]">
-                      {d.employeNomComplet}
+                    <td className="px-4 py-3.5 text-[13px] font-medium">
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/employes/${d.employeId}`)}
+                        className="text-[#1B2A41] hover:underline"
+                      >
+                        {d.employeNomComplet}
+                      </button>
                     </td>
                     <td className="px-4 py-3.5 text-[13px] text-[#6B7280]">
                       {TYPES.find((t) => t.value === d.typeDemande)?.label ?? d.typeDemande}

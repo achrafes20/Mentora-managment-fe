@@ -1,7 +1,16 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { PointagesPage } from './PointagesPage'
 import type { PointageReponse } from './api'
+
+function renderPage() {
+  return render(
+    <MemoryRouter>
+      <PointagesPage />
+    </MemoryRouter>,
+  )
+}
 
 const { listerPointagesMock, corrigerPointageMock, exporterPresenceMock } = vi.hoisted(() => ({
   listerPointagesMock: vi.fn(),
@@ -42,7 +51,7 @@ describe('PointagesPage', () => {
 
   it("un Manager voit l'historique sans pouvoir corriger un pointage", async () => {
     useAuthMock.mockReturnValue({ role: 'manager' })
-    render(<PointagesPage />)
+    renderPage()
 
     await waitFor(() => expect(screen.getByText('Entrée')).toBeInTheDocument())
 
@@ -52,7 +61,7 @@ describe('PointagesPage', () => {
   it('un Admin peut corriger un pointage, ce qui recharge la liste', async () => {
     useAuthMock.mockReturnValue({ role: 'admin' })
     corrigerPointageMock.mockResolvedValue({ ...pointage, corrigeManuellement: true })
-    render(<PointagesPage />)
+    renderPage()
 
     await waitFor(() => expect(screen.getByText('Entrée')).toBeInTheDocument())
     fireEvent.click(screen.getByRole('button', { name: /Corriger/i }))
@@ -73,7 +82,7 @@ describe('PointagesPage', () => {
 
   it("l'export lance l'appel avec la période et le format choisis", async () => {
     useAuthMock.mockReturnValue({ role: 'manager' })
-    render(<PointagesPage />)
+    renderPage()
 
     await waitFor(() => expect(screen.getByText('Entrée')).toBeInTheDocument())
     fireEvent.click(screen.getByRole('button', { name: /Exporter la feuille de présence/i }))
@@ -90,7 +99,7 @@ describe('PointagesPage', () => {
   it("affiche un message quand il n'y a aucun pointage", async () => {
     useAuthMock.mockReturnValue({ role: 'manager' })
     listerPointagesMock.mockResolvedValue({ content: [], totalElements: 0 })
-    render(<PointagesPage />)
+    renderPage()
 
     await waitFor(() => expect(screen.getByText('Aucun pointage')).toBeInTheDocument())
   })

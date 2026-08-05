@@ -23,6 +23,7 @@ export interface FiltresEmployes {
   recherche?: string
   page?: number
   size?: number
+  sort?: string
 }
 
 export async function listerEmployes(filtres: FiltresEmployes): Promise<PageEmployes> {
@@ -63,6 +64,15 @@ export async function modifierEmploye(
   return data.data as Employe
 }
 
+// EF-EMP-01 : seul champ modifiable par un Manager (dans son département) — ouvert à ADMIN et
+// MANAGER côté backend, contrairement à modifierEmploye ci-dessus, réservé à l'Admin.
+export async function modifierSujetStageEmploye(id: string, sujetStage: string): Promise<Employe> {
+  const { data } = await apiClient.put<ApiResponse<Employe>>(`/api/employes/${id}/sujet-stage`, {
+    sujetStage,
+  })
+  return data.data as Employe
+}
+
 export async function transfererEmploye(id: string, requete: TransfertRequete): Promise<Employe> {
   const { data } = await apiClient.post<ApiResponse<Employe>>(
     `/api/employes/${id}/transferer`,
@@ -73,6 +83,12 @@ export async function transfererEmploye(id: string, requete: TransfertRequete): 
 
 export async function desactiverEmploye(id: string, requete: DesactivationRequete): Promise<void> {
   await apiClient.post(`/api/employes/${id}/desactiver`, requete)
+}
+
+// Déclenchement manuel du balayage de désactivation automatique des CDD/stages arrivés à
+// échéance (bouton "Forcer l'exécution") — tourne normalement tout seul chaque nuit.
+export async function executerDesactivationAutomatique(): Promise<void> {
+  await apiClient.post('/api/employes/desactivation-automatique/executer')
 }
 
 export async function listerDocumentsEmploye(id: string): Promise<EmployeDocument[]> {

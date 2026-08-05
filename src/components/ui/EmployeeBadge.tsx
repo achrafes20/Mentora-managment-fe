@@ -39,7 +39,9 @@ const ZONES = {
   matricule: { left: '15.30%', top: '70.51%', width: '14.97%', height: '5.96%' },
   departement: { left: '42.90%', top: '70.51%', width: '15.04%', height: '5.96%' },
   photo: { left: '73.2%', top: '6.97%', width: '21%', height: '41.30%' },
-  qr: { left: '73.70%', top: '51.86%', width: '20.25%', height: '29.10%' },
+  // Hauteur étendue jusqu'à ~92% pour que le carton blanc recouvre la légende "Scannez pour
+  // vérifier" imprimée sur le template — cachée plutôt que rognée (cf. EmployeeBadge).
+  qr: { left: '72.80%', top: '49.41%', width: '22.00%', height: '37.00%' },
 } as const
 
 /**
@@ -109,7 +111,7 @@ export const EmployeeBadge = forwardRef<
   const nameFontSize = BADGE_HEIGHT * 0.075 * 0.68
   const posteFontSize = BADGE_HEIGHT * 0.085 * 0.46
   const valueFontSize = BADGE_HEIGHT * 0.042 * 0.78
-  const qrSize = Math.min(BADGE_WIDTH * 0.197, BADGE_HEIGHT * 0.264) * 0.78
+  const qrSize = BADGE_WIDTH * parseFloat(ZONES.qr.width) * 0.01 * 0.86
   const photoRadius = BADGE_WIDTH * 0.212 * 0.108
 
   const matriculeBoxHeightPx = BADGE_HEIGHT * (parseFloat(ZONES.matricule.height) / 100)
@@ -237,13 +239,13 @@ export const EmployeeBadge = forwardRef<
         </OverlayBox>
 
         <OverlayBox zone={ZONES.qr}>
-          <div className="flex h-full w-full items-center justify-center p-[6%]">
+          <div className="flex h-full w-full items-center justify-center p-[2%]">
             {qrValue ? (
               <div
-                className="flex items-center justify-center bg-white transition-shadow duration-300 ease-out group-hover:shadow-[0_0_16px_rgba(212,166,74,0.28)]"
+                className="flex h-full w-full items-center justify-center bg-white transition-shadow duration-300 ease-out group-hover:shadow-[0_0_16px_rgba(212,166,74,0.28)]"
                 style={{
-                  padding: qrSize * 0.06,
-                  borderRadius: qrSize * 0.08,
+                  borderRadius: qrSize * 0.06,
+                  border: `${Math.max(3, qrSize * 0.022)}px solid ${GOLD}`,
                 }}
               >
                 <QRCode value={qrValue} size={qrSize} level="M" />

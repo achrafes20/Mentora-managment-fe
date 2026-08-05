@@ -1,6 +1,7 @@
 import dayjs from 'dayjs'
 import { ChevronLeft, ChevronRight, RotateCcw, SlidersHorizontal } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/components/ui/toast'
 import { Button } from '@/components/ui/Button'
@@ -8,6 +9,7 @@ import { DatePicker } from '@/components/ui/DatePicker'
 import type { ApiError } from '@/lib/apiClient'
 import { useAuth } from '@/lib/AuthContext'
 import { StatusTag } from '@/components/ui/StatusTag'
+import { basculerTri, SortableTh, type Tri } from '@/components/ui/SortableTh'
 import {
   listerAnomalies,
   modifierPolitiqueAnomalies,
@@ -23,7 +25,6 @@ const TYPES_LABELS: Record<string, string> = {
   retard: 'Retard',
   depart_anticipe: 'Départ anticipé',
   absence_checkout: 'Absence de check-out',
-  presence_incomplete: 'Présence incomplète',
 }
 
 type TypeAnomalie = RepartitionTypeAnomalieReponse['type']
@@ -123,6 +124,7 @@ function PolitiqueAnomaliesSection() {
 }
 
 export function AnomaliesPage() {
+  const navigate = useNavigate()
   const { role } = useAuth()
   const estAdmin = role === 'admin'
   const [data, setData] = useState<AnomaliePointageReponse[]>([])
@@ -137,6 +139,8 @@ export function AnomaliesPage() {
   const [filtreDebut, setFiltreDebut] = useState<Date | null>(null)
   const [filtreFin, setFiltreFin] = useState<Date | null>(null)
   const pageSize = 20
+  // Trié par la date (datePointage) décroissante par défaut, comme un historique.
+  const [tri, setTri] = useState<Tri>({ champ: 'datePointage', direction: 'desc' })
 
   const charger = useCallback(async () => {
     setLoading(true)
@@ -151,6 +155,7 @@ export function AnomaliesPage() {
         },
         page,
         pageSize,
+        `${tri.champ},${tri.direction}`,
       )
       setData(res.content)
       setTotal(res.totalElements)
@@ -159,7 +164,12 @@ export function AnomaliesPage() {
     } finally {
       setLoading(false)
     }
-  }, [page, filtreResolue, filtreEmployeId, filtreType, filtreDebut, filtreFin])
+  }, [page, filtreResolue, filtreEmployeId, filtreType, filtreDebut, filtreFin, tri])
+
+  function handleTri(champ: string) {
+    setTri((t) => basculerTri(t, champ))
+    setPage(0)
+  }
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -307,21 +317,22 @@ export function AnomaliesPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-[#D8D4CC] bg-[#F7F7F4]">
-                {[
-                  'Employé',
-                  'Date',
-                  'Type',
-                  'Statut',
-                  'Créé le',
-                  ...(estAdmin ? ['Action'] : []),
-                ].map((h) => (
-                  <th
-                    key={h}
-                    className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider text-[#9CA3AF] uppercase first:pl-5 last:pr-5"
-                  >
-                    {h}
+                <SortableTh
+                  label="Employé"
+                  champ="employeId"
+                  tri={tri}
+                  onChange={handleTri}
+                  className="first:pl-5"
+                />
+                <SortableTh label="Date" champ="datePointage" tri={tri} onChange={handleTri} />
+                <SortableTh label="Type" champ="typeAnomalie" tri={tri} onChange={handleTri} />
+                <SortableTh label="Statut" champ="resolue" tri={tri} onChange={handleTri} />
+                <SortableTh label="Créé le" champ="creeLe" tri={tri} onChange={handleTri} />
+                {estAdmin && (
+                  <th className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider text-[#9CA3AF] uppercase last:pr-5">
+                    Action
                   </th>
-                ))}
+                )}
               </tr>
             </thead>
             <tbody>
@@ -330,8 +341,14 @@ export function AnomaliesPage() {
                   key={a.id}
                   className="border-b border-[#D8D4CC]/50 transition-colors last:border-0 hover:bg-[#F7F7F4]"
                 >
-                  <td className="py-3.5 pr-4 pl-5 text-[13px] text-[#1B2A41]">
-                    {employes[a.employeId] ?? `${a.employeId.substring(0, 8)}…`}
+                  <td className="py-3.5 pr-4 pl-5 text-[13px]">
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/employes/${a.employeId}`)}
+                      className="text-[#1B2A41] hover:underline"
+                    >
+                      {employes[a.employeId] ?? `${a.employeId.substring(0, 8)}…`}
+                    </button>
                   </td>
                   <td
                     style={{ fontFamily: 'var(--font-code)' }}
@@ -343,10 +360,7 @@ export function AnomaliesPage() {
                     <StatusTag statut={TYPES_LABELS[a.typeAnomalie] ?? a.typeAnomalie} />
                   </td>
                   <td className="px-4 py-3.5">
-                    <StatusTag statut={a.resolue ? 'Actif' : 'En attente'} />
-                    <span className="ml-1 text-[11px] text-[#6B7280]">
-                      {a.resolue ? 'Résolue' : 'Non résolue'}
-                    </span>
+                    <StatusTag statut={a.resolue ? 'Résolue' : 'Non résolue'} />
                   </td>
                   <td
                     style={{ fontFamily: 'var(--font-code)' }}

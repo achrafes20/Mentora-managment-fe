@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AnomaliesPage } from './AnomaliesPage'
 import type { AnomaliePointageReponse } from './api'
@@ -38,9 +39,11 @@ const anomalie: AnomaliePointageReponse = {
 function renderPage() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
-    <QueryClientProvider client={queryClient}>
-      <AnomaliesPage />
-    </QueryClientProvider>,
+    <MemoryRouter>
+      <QueryClientProvider client={queryClient}>
+        <AnomaliesPage />
+      </QueryClientProvider>
+    </MemoryRouter>,
   )
 }
 
@@ -88,11 +91,25 @@ describe('AnomaliesPage', () => {
     useAuthMock.mockReturnValue({ role: 'manager' })
     renderPage()
 
-    await waitFor(() => expect(listerAnomaliesMock).toHaveBeenCalledWith({ resolue: false }, 0, 20))
+    await waitFor(() =>
+      expect(listerAnomaliesMock).toHaveBeenCalledWith(
+        { resolue: false },
+        0,
+        20,
+        'datePointage,desc',
+      ),
+    )
 
     fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: 'true' } })
 
-    await waitFor(() => expect(listerAnomaliesMock).toHaveBeenCalledWith({ resolue: true }, 0, 20))
+    await waitFor(() =>
+      expect(listerAnomaliesMock).toHaveBeenCalledWith(
+        { resolue: true },
+        0,
+        20,
+        'datePointage,desc',
+      ),
+    )
   })
 
   it('affiche un message quand la liste est vide', async () => {

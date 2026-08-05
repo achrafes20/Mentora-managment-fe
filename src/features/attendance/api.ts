@@ -38,7 +38,7 @@ export interface AnomaliePointageReponse {
   id: string
   employeId: string
   datePointage: string
-  typeAnomalie: 'retard' | 'depart_anticipe' | 'absence_checkout' | 'presence_incomplete'
+  typeAnomalie: 'retard' | 'depart_anticipe' | 'absence_checkout'
   resolue: boolean
   creeLe: string
 }
@@ -112,12 +112,14 @@ export async function listerPointages(
   filtres: FiltresPointages = {},
   page = 0,
   size = 20,
+  sort?: string,
 ): Promise<PagedResponse<PointageReponse>> {
   const params: Record<string, unknown> = { page, size }
   if (filtres.employeId) params.employeId = filtres.employeId
   if (filtres.typeScan) params.typeScan = filtres.typeScan
   if (filtres.debut) params.debut = filtres.debut
   if (filtres.fin) params.fin = filtres.fin
+  if (sort) params.sort = sort
   const { data } = await apiClient.get<ApiResponse<PagedResponse<PointageReponse>>>(
     '/api/pointages',
     { params },
@@ -134,7 +136,7 @@ export interface AnomalieEmployeReponse {
 }
 
 export interface RepartitionTypeAnomalieReponse {
-  type: 'retard' | 'depart_anticipe' | 'absence_checkout' | 'presence_incomplete'
+  type: 'retard' | 'depart_anticipe' | 'absence_checkout'
   nombre: number
 }
 
@@ -203,6 +205,7 @@ export async function listerAnomalies(
   filtres: FiltresAnomalies = {},
   page = 0,
   size = 20,
+  sort?: string,
 ): Promise<PagedResponse<AnomaliePointageReponse>> {
   const params: Record<string, unknown> = { page, size }
   if (filtres.employeId) params.employeId = filtres.employeId
@@ -210,6 +213,7 @@ export async function listerAnomalies(
   if (filtres.resolue !== undefined) params.resolue = filtres.resolue
   if (filtres.debut) params.debut = filtres.debut
   if (filtres.fin) params.fin = filtres.fin
+  if (sort) params.sort = sort
   const { data } = await apiClient.get<ApiResponse<PagedResponse<AnomaliePointageReponse>>>(
     '/api/anomalies',
     { params },
