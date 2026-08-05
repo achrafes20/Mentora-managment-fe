@@ -10,6 +10,9 @@ jobs:
   build-and-scan:
     name: Build et scan de l'image frontend
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - name: Récupération du code
@@ -41,13 +44,28 @@ jobs:
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
 
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tag et push de l'image vers GHCR
+        run: |
+          SHORT_SHA="${GITHUB_SHA::7}"
+          docker tag mentora-frontend:${{ github.sha }} ghcr.io/mentora-ma/mentora-management-fe:latest
+          docker tag mentora-frontend:${{ github.sha }} ghcr.io/mentora-ma/mentora-management-fe:sha-${SHORT_SHA}
+          docker push ghcr.io/mentora-ma/mentora-management-fe:latest
+          docker push ghcr.io/mentora-ma/mentora-management-fe:sha-${SHORT_SHA}
+
       - name: Publication du résultat dans le récapitulatif du run
         if: always()
         run: |
           {
             echo "## Scan de vulnérabilités — image frontend"
             echo
-            echo "Image : \`mentora-frontend:${{ github.sha }}\` (construite localement, non publiée)."
+            echo "Image : \`ghcr.io/mentora-ma/mentora-management-fe:${{ github.sha }}\` (scannée et publiée sur GHCR)."
             echo
             echo "Politique : \`CRITICAL,HIGH\`, \`ignore-unfixed: true\`, types \`os,library\`."
             echo
