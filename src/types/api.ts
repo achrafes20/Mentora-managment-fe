@@ -1694,6 +1694,7 @@ export interface components {
         EmployeModificationRequete: {
             nom: string;
             prenom: string;
+            /** Format: email */
             email?: string;
             telephone?: string;
             poste?: string;
@@ -2052,6 +2053,7 @@ export interface components {
         EmployeRequete: {
             nom: string;
             prenom: string;
+            /** Format: email */
             email?: string;
             telephone?: string;
             poste?: string;
