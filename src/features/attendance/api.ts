@@ -72,15 +72,70 @@ export interface PlanningTeletravailReponse {
 
 // ---- Kiosque (public) ----
 
+const EN_TETE_JETON_APPAREIL = 'X-Kiosque-Device-Token'
+
 export async function scannerKiosque(
   valeurQr: string,
   typeScan: 'entree' | 'sortie',
+  jetonAppareil: string,
 ): Promise<PointageReponse> {
-  const { data } = await apiClient.post<ApiResponse<PointageReponse>>('/api/kiosque/scan', {
-    valeurQr,
-    typeScan,
-  })
+  const { data } = await apiClient.post<ApiResponse<PointageReponse>>(
+    '/api/kiosque/scan',
+    { valeurQr, typeScan },
+    { headers: { [EN_TETE_JETON_APPAREIL]: jetonAppareil } },
+  )
   return data.data as PointageReponse
+}
+
+/** NFR-UX-02 : cet appareil a-t-il déjà une activation valide ? (sans jeton -> false, pas d'appel). */
+export async function statutActivationAppareil(jetonAppareil: string | null): Promise<boolean> {
+  if (!jetonAppareil) return false
+  const { data } = await apiClient.get<ApiResponse<{ actif: boolean }>>(
+    '/api/kiosque/activation/statut',
+    { headers: { [EN_TETE_JETON_APPAREIL]: jetonAppareil } },
+  )
+  return data.data?.actif ?? false
+}
+
+/** Échange un code d'activation contre un jeton d'appareil (à stocker côté client). */
+export async function verifierCodeActivation(code: string): Promise<string> {
+  const { data } = await apiClient.post<ApiResponse<{ jetonAppareil: string }>>(
+    '/api/kiosque/activation/verifier',
+    { code },
+  )
+  return (data.data as { jetonAppareil: string }).jetonAppareil
+}
+
+// ---- Kiosque — gestion des activations (Admin, ou délégué actif) ----
+
+export interface KiosqueActivationReponse {
+  id: string
+  emisPar: string
+  delegationId: string | null
+  emisLe: string
+  statut: 'en_attente' | 'active' | 'revoquee'
+  activeeLe: string | null
+  revoqueeLe: string | null
+  revoqueePar: string | null
+}
+
+/** Code en clair — affiché une seule fois, jamais renvoyé par un autre appel. */
+export async function genererCodeActivationKiosque(): Promise<{ id: string; code: string }> {
+  const { data } = await apiClient.post<ApiResponse<{ id: string; code: string }>>(
+    '/api/kiosque/activations',
+  )
+  return data.data as { id: string; code: string }
+}
+
+export async function listerActivationsKiosque(): Promise<KiosqueActivationReponse[]> {
+  const { data } = await apiClient.get<ApiResponse<KiosqueActivationReponse[]>>(
+    '/api/kiosque/activations',
+  )
+  return data.data ?? []
+}
+
+export async function revoquerActivationKiosque(id: string): Promise<void> {
+  await apiClient.post(`/api/kiosque/activations/${id}/revoquer`)
 }
 
 // ---- QR Code ----

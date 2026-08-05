@@ -1,19 +1,53 @@
 import { toast } from '@/components/ui/toast'
 import { Camera, CheckCircle2, Keyboard, LogIn, LogOut, XCircle } from 'lucide-react'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import dayjs from 'dayjs'
 import { HBLogo } from '@/components/ui/HBLogo'
 import { ROSE_MARQUE } from '@/components/ui/tokens'
 import { QrScanner } from './QrScanner'
-import { scannerKiosque, type PointageReponse } from './api'
+import { scannerKiosque, statutActivationAppareil, type PointageReponse } from './api'
+import { KiosqueActivationPrompt } from './KiosqueActivationPrompt'
+import { effacerJetonAppareil, lireJetonAppareil } from './kiosqueDevice'
 
 type ModeSaisie = 'camera' | 'manuel'
+type EtatActivation = 'verification' | 'requise' | 'active'
 
 /**
  * Page Kiosque publique — accessible sans authentification (EF-ATT-02).
  * Scan caméra ou saisie manuelle du QR code.
+ *
+ * <p>NFR-UX-02 : tant que cet appareil n'a pas de jeton d'activation valide, affiche
+ * {@link KiosqueActivationPrompt} plutôt que l'écran de scan — /api/kiosque/scan refuse désormais
+ * tout appel sans jeton.
  */
 export function KiosquePage() {
+  const [etatActivation, setEtatActivation] = useState<EtatActivation>('verification')
+
+  useEffect(() => {
+    let annule = false
+    async function verifier() {
+      const jeton = lireJetonAppareil()
+      const actif = await statutActivationAppareil(jeton).catch(() => false)
+      if (annule) return
+      if (!actif) effacerJetonAppareil()
+      setEtatActivation(actif ? 'active' : 'requise')
+    }
+    void verifier()
+    return () => {
+      annule = true
+    }
+  }, [])
+
+  if (etatActivation === 'verification') {
+    return <div className="min-h-screen bg-[#F7F7F4]" />
+  }
+  if (etatActivation === 'requise') {
+    return <KiosqueActivationPrompt onActive={() => setEtatActivation('active')} />
+  }
+  return <EcranScanKiosque />
+}
+
+function EcranScanKiosque() {
   const [mode, setMode] = useState<ModeSaisie>('camera')
   const [valeurQr, setValeurQr] = useState('')
   const [loading, setLoading] = useState(false)
@@ -26,15 +60,26 @@ export function KiosquePage() {
       void toast.warning('Veuillez scanner ou saisir un QR code')
       return
     }
+    const jetonAppareil = lireJetonAppareil()
+    if (!jetonAppareil) {
+      // Révoqué entre-temps (autre onglet, ou par l'Admin) -> retour au prompt d'activation.
+      window.location.reload()
+      return
+    }
     setLoading(true)
     setResultat(null)
     setErreur(null)
     try {
-      const pointage = await scannerKiosque(valeur.trim(), typeScan)
+      const pointage = await scannerKiosque(valeur.trim(), typeScan, jetonAppareil)
       setResultat(pointage)
       setValeurQr('')
     } catch (err: unknown) {
-      const apiErr = err as { message?: string }
+      const apiErr = err as { status?: number; message?: string }
+      if (apiErr?.status === 401) {
+        effacerJetonAppareil()
+        window.location.reload()
+        return
+      }
       setErreur(apiErr?.message ?? 'Erreur inconnue')
     } finally {
       setLoading(false)

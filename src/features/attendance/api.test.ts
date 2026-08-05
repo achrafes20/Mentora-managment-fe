@@ -1,6 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { apiClient } from '@/lib/apiClient'
-import { creerPlanningTeletravail, listerAnomalies, listerPointages, qrCodeActif } from './api'
+import {
+  creerPlanningTeletravail,
+  listerAnomalies,
+  listerPointages,
+  qrCodeActif,
+  scannerKiosque,
+  statutActivationAppareil,
+  verifierCodeActivation,
+} from './api'
 
 vi.mock('@/lib/apiClient', () => ({
   apiClient: {
@@ -92,5 +100,41 @@ describe('attendance api', () => {
       dateDebut: '2026-01-01',
       jours: ['lundi', 'mardi'],
     })
+  })
+
+  // NFR-UX-02 : jeton d'activation par appareil.
+  it("joint le jeton d'appareil en en-tete lors du scan kiosque", async () => {
+    postMock.mockResolvedValueOnce({
+      data: { data: { id: 'p1', typeScan: 'entree' } },
+    })
+
+    await scannerKiosque('qr-123', 'entree', 'jeton-abc')
+
+    expect(postMock).toHaveBeenCalledWith(
+      '/api/kiosque/scan',
+      { valeurQr: 'qr-123', typeScan: 'entree' },
+      { headers: { 'X-Kiosque-Device-Token': 'jeton-abc' } },
+    )
+  })
+
+  it("ne fait aucun appel et renvoie false si aucun jeton n'est stocke localement", async () => {
+    await expect(statutActivationAppareil(null)).resolves.toBe(false)
+    expect(getMock).not.toHaveBeenCalled()
+  })
+
+  it('interroge le statut avec le jeton en en-tete si present', async () => {
+    getMock.mockResolvedValueOnce({ data: { data: { actif: true } } })
+
+    await expect(statutActivationAppareil('jeton-abc')).resolves.toBe(true)
+    expect(getMock).toHaveBeenCalledWith('/api/kiosque/activation/statut', {
+      headers: { 'X-Kiosque-Device-Token': 'jeton-abc' },
+    })
+  })
+
+  it("echange un code contre un jeton d'appareil", async () => {
+    postMock.mockResolvedValueOnce({ data: { data: { jetonAppareil: 'jeton-xyz' } } })
+
+    await expect(verifierCodeActivation('AB12CD')).resolves.toBe('jeton-xyz')
+    expect(postMock).toHaveBeenCalledWith('/api/kiosque/activation/verifier', { code: 'AB12CD' })
   })
 })

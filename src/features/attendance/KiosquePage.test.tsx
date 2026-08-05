@@ -3,8 +3,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { KiosquePage } from './KiosquePage'
 import type { PointageReponse } from './api'
 
-const { scannerKiosqueMock } = vi.hoisted(() => ({ scannerKiosqueMock: vi.fn() }))
-vi.mock('./api', () => ({ scannerKiosque: scannerKiosqueMock }))
+const { scannerKiosqueMock, statutActivationAppareilMock } = vi.hoisted(() => ({
+  scannerKiosqueMock: vi.fn(),
+  statutActivationAppareilMock: vi.fn(),
+}))
+vi.mock('./api', () => ({
+  scannerKiosque: scannerKiosqueMock,
+  statutActivationAppareil: statutActivationAppareilMock,
+}))
 
 // La caméra réelle (getUserMedia) n'existe pas en jsdom — on isole KiosquePage de QrScanner et on
 // expose juste ses props pour simuler un scan détecté ou une erreur caméra.
@@ -39,22 +45,29 @@ describe('KiosquePage', () => {
   beforeEach(() => {
     onScanRef.current = null
     onErreurRef.current = null
+    // NFR-UX-02 : appareil déjà activé — l'écran de scan s'affiche directement, sans passer par
+    // KiosqueActivationPrompt (couvert séparément, pas l'objet de cette suite).
+    localStorage.setItem('hb_kiosque_device_token', 'jeton-test')
+    statutActivationAppareilMock.mockResolvedValue(true)
   })
 
   afterEach(() => {
     vi.clearAllMocks()
+    localStorage.clear()
   })
 
   it('en saisie manuelle, la touche Entrée déclenche un scan "entree" et affiche le résultat', async () => {
     scannerKiosqueMock.mockResolvedValue(pointage)
     render(<KiosquePage />)
 
-    fireEvent.click(screen.getByRole('button', { name: /Saisie manuelle/i }))
+    fireEvent.click(await screen.findByRole('button', { name: /Saisie manuelle/i }))
     const champ = screen.getByPlaceholderText('Valeur du QR code…')
     fireEvent.change(champ, { target: { value: 'QR-42' } })
     fireEvent.keyDown(champ, { key: 'Enter' })
 
-    await waitFor(() => expect(scannerKiosqueMock).toHaveBeenCalledWith('QR-42', 'entree'))
+    await waitFor(() =>
+      expect(scannerKiosqueMock).toHaveBeenCalledWith('QR-42', 'entree', 'jeton-test'),
+    )
     expect(await screen.findByText('Entrée enregistrée')).toBeInTheDocument()
   })
 
@@ -62,7 +75,7 @@ describe('KiosquePage', () => {
     scannerKiosqueMock.mockRejectedValue({ message: 'QR code invalide ou inactif' })
     render(<KiosquePage />)
 
-    fireEvent.click(screen.getByRole('button', { name: /Saisie manuelle/i }))
+    fireEvent.click(await screen.findByRole('button', { name: /Saisie manuelle/i }))
     const champ = screen.getByPlaceholderText('Valeur du QR code…')
     fireEvent.change(champ, { target: { value: 'QR-INVALIDE' } })
     fireEvent.keyDown(champ, { key: 'Enter' })
@@ -74,20 +87,22 @@ describe('KiosquePage', () => {
     scannerKiosqueMock.mockResolvedValue({ ...pointage, typeScan: 'sortie' })
     render(<KiosquePage />)
 
-    fireEvent.click(screen.getByRole('button', { name: /^Sortie$/i }))
+    fireEvent.click(await screen.findByRole('button', { name: /^Sortie$/i }))
     expect(await screen.findByTestId('qr-scanner-stub')).toBeInTheDocument()
 
     expect(onScanRef.current).not.toBeNull()
     onScanRef.current?.('QR-99')
 
-    await waitFor(() => expect(scannerKiosqueMock).toHaveBeenCalledWith('QR-99', 'sortie'))
+    await waitFor(() =>
+      expect(scannerKiosqueMock).toHaveBeenCalledWith('QR-99', 'sortie', 'jeton-test'),
+    )
     expect(await screen.findByText('Sortie enregistrée')).toBeInTheDocument()
   })
 
   it('une erreur caméra masque le scanner et affiche le message', async () => {
     render(<KiosquePage />)
 
-    fireEvent.click(screen.getByRole('button', { name: /^Entrée$/i }))
+    fireEvent.click(await screen.findByRole('button', { name: /^Entrée$/i }))
     expect(await screen.findByTestId('qr-scanner-stub')).toBeInTheDocument()
 
     onErreurRef.current?.('Accès à la caméra refusé')
