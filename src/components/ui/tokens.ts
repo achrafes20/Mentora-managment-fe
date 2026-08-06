@@ -45,8 +45,9 @@ const WARNING_SET = new Set([
   'Suggestion de réactivation',
   'Sortie',
   'Non résolue',
+  'Expiré',
 ])
-const DANGER_SET = new Set(['Rejeté', 'Inactif', 'inactif', 'Erreur', 'Révoquée'])
+const DANGER_SET = new Set(['Rejeté', 'Inactif', 'inactif', 'Erreur', 'Révoquée', 'Absence totale'])
 
 export function tagVariant(statut: string): TagVariant {
   if (SUCCESS_SET.has(statut)) return 'success'

@@ -16,6 +16,19 @@ import {
 
 const CLE_ACTIVATIONS_KIOSQUE = ['kiosque-activations'] as const
 
+// NFR-UX-02 : le statut en base reste "en_attente" indéfiniment même après expiration (vérifiée
+// seulement à la saisie côté backend, jamais réécrite en base) — dérivé ici à l'affichage plutôt
+// que stocké, pour ne jamais diverger. Miroir du défaut backend (app.security.kiosque
+// .expiration-code-heures) ; purement informatif, l'application réelle reste côté serveur.
+const EXPIRATION_CODE_HEURES = 24
+
+function estCodeExpire(a: { statut: string; emisLe: string }): boolean {
+  return (
+    a.statut === 'en_attente' &&
+    dayjs(a.emisLe).add(EXPIRATION_CODE_HEURES, 'hour').isBefore(dayjs())
+  )
+}
+
 /**
  * NFR-UX-02 : écran de gestion des activations kiosque — génération d'un code (affiché une seule
  * fois, jamais récupérable ensuite) et révocation. Réservé à l'Admin/délégué actif côté backend ;
@@ -69,7 +82,8 @@ export function KiosqueActivationsPanel() {
         <div>
           <h3 className="text-[13px] font-semibold text-[#1B2A41]">Activations kiosque</h3>
           <p className="text-[12px] text-[#6B7280]">
-            Un code à usage unique par appareil — reste valide jusqu'à révocation manuelle.
+            Le code expire après 24h s'il n'est pas saisi ; une fois l'appareil activé, il reste
+            valide jusqu'à révocation manuelle.
           </p>
         </div>
         <Button
@@ -131,7 +145,7 @@ export function KiosqueActivationsPanel() {
                     {dayjs(a.emisLe).format('DD/MM/YYYY HH:mm')}
                   </td>
                   <td className="px-4 py-3.5">
-                    <StatusTag statut={formatStatut(a.statut)} />
+                    <StatusTag statut={estCodeExpire(a) ? 'Expiré' : formatStatut(a.statut)} />
                   </td>
                   <td
                     style={{ fontFamily: 'var(--font-code)' }}
