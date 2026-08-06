@@ -25,6 +25,7 @@ const TYPES_LABELS: Record<string, string> = {
   retard: 'Retard',
   depart_anticipe: 'Départ anticipé',
   absence_checkout: 'Absence de check-out',
+  absence_totale: 'Absence totale',
 }
 
 type TypeAnomalie = RepartitionTypeAnomalieReponse['type']

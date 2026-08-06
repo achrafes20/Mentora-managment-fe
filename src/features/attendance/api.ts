@@ -38,7 +38,7 @@ export interface AnomaliePointageReponse {
   id: string
   employeId: string
   datePointage: string
-  typeAnomalie: 'retard' | 'depart_anticipe' | 'absence_checkout'
+  typeAnomalie: 'retard' | 'depart_anticipe' | 'absence_checkout' | 'absence_totale'
   resolue: boolean
   creeLe: string
 }
@@ -191,7 +191,7 @@ export interface AnomalieEmployeReponse {
 }
 
 export interface RepartitionTypeAnomalieReponse {
-  type: 'retard' | 'depart_anticipe' | 'absence_checkout'
+  type: 'retard' | 'depart_anticipe' | 'absence_checkout' | 'absence_totale'
   nombre: number
 }
 
