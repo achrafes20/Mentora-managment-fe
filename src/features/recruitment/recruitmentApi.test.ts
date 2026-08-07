@@ -20,7 +20,9 @@ describe('recruitmentApi', () => {
 
     await listerOffres()
 
-    expect(getMock).toHaveBeenCalledWith('/api/offres', { params: undefined })
+    expect(getMock).toHaveBeenCalledWith('/api/offres', {
+      params: { statut: undefined, categorie: undefined },
+    })
   })
 
   it('transmet le statut fourni en query param', async () => {
@@ -28,7 +30,9 @@ describe('recruitmentApi', () => {
 
     await listerOffres('ouverte')
 
-    expect(getMock).toHaveBeenCalledWith('/api/offres', { params: { statut: 'ouverte' } })
+    expect(getMock).toHaveBeenCalledWith('/api/offres', {
+      params: { statut: 'ouverte', categorie: undefined },
+    })
   })
 
   it('retourne un tableau vide si aucun entretien (jamais undefined)', async () => {

@@ -46,6 +46,15 @@ export async function exporterEmployes(
   declencherTelechargement(data, `employes.${format}`)
 }
 
+// EF-DOC-15 : export mensuel paie — mois au format "yyyy-MM", Admin uniquement côté backend.
+export async function exporterPaie(mois: string, format: 'xlsx' | 'pdf'): Promise<void> {
+  const { data } = await apiClient.get<Blob>('/api/employes/export-paie', {
+    params: { mois, format },
+    responseType: 'blob',
+  })
+  declencherTelechargement(data, `paie_${mois}.${format}`)
+}
+
 export async function obtenirEmploye(id: string): Promise<Employe> {
   const { data } = await apiClient.get<ApiResponse<Employe>>(`/api/employes/${id}`)
   return data.data as Employe
@@ -69,6 +78,17 @@ export async function modifierEmploye(
 export async function modifierSujetStageEmploye(id: string, sujetStage: string): Promise<Employe> {
   const { data } = await apiClient.put<ApiResponse<Employe>>(`/api/employes/${id}/sujet-stage`, {
     sujetStage,
+  })
+  return data.data as Employe
+}
+
+// EF-DOC-14 : donnée sensible, Admin uniquement, à part du formulaire fiche standard.
+export async function modifierSalaireEmploye(
+  id: string,
+  salaireBrutMensuel: number | null,
+): Promise<Employe> {
+  const { data } = await apiClient.put<ApiResponse<Employe>>(`/api/employes/${id}/salaire`, {
+    salaireBrutMensuel,
   })
   return data.data as Employe
 }

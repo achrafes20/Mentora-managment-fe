@@ -23,9 +23,9 @@ export interface FiltresCandidatures {
   size?: number
 }
 
-export async function listerOffres(statut?: string): Promise<OffreEmploi[]> {
+export async function listerOffres(statut?: string, categorie?: string): Promise<OffreEmploi[]> {
   const { data } = await apiClient.get<ApiResponse<OffreEmploi[]>>('/api/offres', {
-    params: statut ? { statut } : undefined,
+    params: { statut: statut || undefined, categorie: categorie || undefined },
   })
   return data.data ?? []
 }

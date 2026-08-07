@@ -4,9 +4,11 @@ import {
   apercuCertificatStage,
   apercuCertificatTravail,
   apercuAttestationTravail,
+  apercuAttestationSalaire,
   envoyerCertificatStage,
   envoyerCertificatTravail,
   envoyerAttestationTravail,
+  envoyerAttestationSalaire,
   envoyerDocumentLibre,
   executerSurveillance,
   listerSurveillance,
@@ -65,6 +67,22 @@ export function useEnvoyerAttestationTravail() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (employeId: string) => envoyerAttestationTravail(employeId),
+    onSuccess: (_, employeId) => {
+      queryClient.invalidateQueries({ queryKey: ['employes', employeId, 'envois_documents'] })
+    },
+  })
+}
+
+export function useApercuAttestationSalaire() {
+  return useMutation({
+    mutationFn: (employeId: string) => apercuAttestationSalaire(employeId),
+  })
+}
+
+export function useEnvoyerAttestationSalaire() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (employeId: string) => envoyerAttestationSalaire(employeId),
     onSuccess: (_, employeId) => {
       queryClient.invalidateQueries({ queryKey: ['employes', employeId, 'envois_documents'] })
     },

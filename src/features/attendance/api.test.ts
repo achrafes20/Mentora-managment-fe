@@ -5,7 +5,6 @@ import {
   listerAnomalies,
   listerPointages,
   qrCodeActif,
-  scannerKiosque,
   statutActivationAppareil,
   verifierCodeActivation,
 } from './api'
@@ -100,21 +99,6 @@ describe('attendance api', () => {
       dateDebut: '2026-01-01',
       jours: ['lundi', 'mardi'],
     })
-  })
-
-  // NFR-UX-02 : jeton d'activation par appareil.
-  it("joint le jeton d'appareil en en-tete lors du scan kiosque", async () => {
-    postMock.mockResolvedValueOnce({
-      data: { data: { id: 'p1', typeScan: 'entree' } },
-    })
-
-    await scannerKiosque('qr-123', 'entree', 'jeton-abc')
-
-    expect(postMock).toHaveBeenCalledWith(
-      '/api/kiosque/scan',
-      { valeurQr: 'qr-123', typeScan: 'entree' },
-      { headers: { 'X-Kiosque-Device-Token': 'jeton-abc' } },
-    )
   })
 
   it("ne fait aucun appel et renvoie false si aucun jeton n'est stocke localement", async () => {

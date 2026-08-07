@@ -38,6 +38,11 @@ const schema = z
     sexe: z.union([z.enum(SEXES), z.literal(SEXE_NON_RENSEIGNE)]),
     cin: z.string(),
     sujetStage: z.string(),
+    numeroCnss: z.string(),
+    numeroAmo: z.string(),
+    numeroCimr: z.string(),
+    rib: z.string(),
+    periodeEssaiFinLe: z.date().nullable(),
   })
   .refine((valeurs) => valeurs.typeContrat === 'CDD' || !valeurs.dateFinContratPrevue, {
     message: "La date de fin de contrat prévue n'est applicable qu'aux CDD",
@@ -137,6 +142,11 @@ export function EmployeFormModal({
       sexe: SEXE_NON_RENSEIGNE,
       cin: '',
       sujetStage: '',
+      numeroCnss: '',
+      numeroAmo: '',
+      numeroCimr: '',
+      rib: '',
+      periodeEssaiFinLe: null,
     },
   })
 
@@ -162,6 +172,11 @@ export function EmployeFormModal({
         sexe: (employe?.sexe as (typeof SEXES)[number]) ?? SEXE_NON_RENSEIGNE,
         cin: employe?.cin ?? '',
         sujetStage: employe?.sujetStage ?? '',
+        numeroCnss: employe?.numeroCnss ?? '',
+        numeroAmo: employe?.numeroAmo ?? '',
+        numeroCimr: employe?.numeroCimr ?? '',
+        rib: employe?.rib ?? '',
+        periodeEssaiFinLe: employe?.periodeEssaiFinLe ? new Date(employe.periodeEssaiFinLe) : null,
       })
       setPhoto(null)
       setPhotoPreview(null)
@@ -284,6 +299,43 @@ export function EmployeFormModal({
         <p className="mt-1 text-[11px] text-[#9CA3AF]">
           Utilisé pour l'accord de genre sur les certificats générés.
         </p>
+      </FormField>
+      <FormField label="N° CNSS">
+        <Controller
+          name="numeroCnss"
+          control={control}
+          render={({ field }) => <Input {...field} />}
+        />
+      </FormField>
+      <FormField label="N° AMO">
+        <Controller
+          name="numeroAmo"
+          control={control}
+          render={({ field }) => <Input {...field} />}
+        />
+      </FormField>
+      <FormField label="N° CIMR">
+        <Controller
+          name="numeroCimr"
+          control={control}
+          render={({ field }) => <Input {...field} />}
+        />
+      </FormField>
+      <FormField label="RIB">
+        <Controller name="rib" control={control} render={({ field }) => <Input {...field} />} />
+      </FormField>
+      <FormField label="Fin de période d'essai">
+        <Controller
+          name="periodeEssaiFinLe"
+          control={control}
+          render={({ field }) => (
+            <DatePicker
+              value={field.value}
+              onChange={(d) => field.onChange(d)}
+              onBlur={field.onBlur}
+            />
+          )}
+        />
       </FormField>
       {mode === 'creation' && (
         <>

@@ -26,7 +26,7 @@ import { PageHeader } from '@/components/ui/StatCard'
 import { StatusTag } from '@/components/ui/StatusTag'
 import { formatStatut } from '@/components/ui/tokens'
 import { toast } from '@/components/ui/toast'
-import { exporterEmployes, televerserPhotoEmploye } from './employesApi'
+import { exporterEmployes, exporterPaie, televerserPhotoEmploye } from './employesApi'
 import { useEmployePhotoUrl } from './useEmployePhoto'
 
 // Lecture minimale de la candidature source (EF-EMP-05/EF-REC-13) — appel direct à l'endpoint
@@ -78,6 +78,8 @@ export function EmployesListTab() {
   const [selectionMode, setSelectionMode] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [showExport, setShowExport] = useState(false)
+  const [showExportPaie, setShowExportPaie] = useState(false)
+  const [moisPaie, setMoisPaie] = useState(() => format(new Date(), 'yyyy-MM'))
   const [searchParams, setSearchParams] = useSearchParams()
 
   const queryClient = useQueryClient()
@@ -148,6 +150,13 @@ export function EmployesListTab() {
         sexe: valeurs.sexe || undefined,
         cin: valeurs.cin || undefined,
         sujetStage: valeurs.sujetStage || undefined,
+        numeroCnss: valeurs.numeroCnss || undefined,
+        numeroAmo: valeurs.numeroAmo || undefined,
+        numeroCimr: valeurs.numeroCimr || undefined,
+        rib: valeurs.rib || undefined,
+        periodeEssaiFinLe: valeurs.periodeEssaiFinLe
+          ? format(valeurs.periodeEssaiFinLe, 'yyyy-MM-dd')
+          : undefined,
       })
       .then(async (employe) => {
         if (photo && employe.id) {
@@ -176,6 +185,15 @@ export function EmployesListTab() {
       )
     } catch {
       void toast.error("Échec de l'export")
+    }
+  }
+
+  async function lancerExportPaie(fmt: 'xlsx' | 'pdf') {
+    setShowExportPaie(false)
+    try {
+      await exporterPaie(moisPaie, fmt)
+    } catch {
+      void toast.error("Échec de l'export paie")
     }
   }
 
@@ -240,6 +258,40 @@ export function EmployesListTab() {
                 </div>
               )}
             </div>
+            {estAdmin && (
+              <div className="relative">
+                <button
+                  onClick={() => setShowExportPaie((v) => !v)}
+                  className="flex items-center gap-1.5 rounded-lg border border-[#D8D4CC] px-3 py-2 text-[12px] text-[#6B7280] transition-colors hover:border-[#1B2A41] hover:text-[#1B2A41]"
+                >
+                  <Download size={13} /> Export paie
+                </button>
+                {showExportPaie && (
+                  <div className="absolute top-full right-0 z-10 mt-1 w-52 overflow-hidden rounded-lg border border-[#D8D4CC] bg-white p-3 shadow-lg">
+                    <label className="mb-1 block text-[11px] font-medium text-[#6B7280]">
+                      Mois
+                    </label>
+                    <input
+                      type="month"
+                      value={moisPaie}
+                      onChange={(e) => setMoisPaie(e.target.value)}
+                      className="mb-2 w-full rounded-lg border border-[#D8D4CC] px-2 py-1.5 text-[12px] text-[#1B2A41] outline-none focus:border-[#1B2A41]"
+                    />
+                    <div className="flex gap-2">
+                      {(['xlsx', 'pdf'] as const).map((fmt) => (
+                        <button
+                          key={fmt}
+                          onClick={() => void lancerExportPaie(fmt)}
+                          className="flex-1 rounded-lg border border-[#D8D4CC] px-2 py-1.5 text-[12px] text-[#1B2A41] transition-colors hover:bg-[#F7F7F4]"
+                        >
+                          {fmt === 'xlsx' ? 'Excel' : 'PDF'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
             {estAdmin && (
               <>
                 <button

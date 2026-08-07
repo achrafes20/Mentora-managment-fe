@@ -5,7 +5,15 @@ interface ApiResponse<T> {
   data?: T
 }
 
-export type TypeDemandeAdministrative = 'conge' | 'bon_sortie' | 'document_libre'
+export type TypeDemandeAdministrative =
+  | 'conge'
+  | 'bon_sortie'
+  | 'document_libre'
+  | 'autre'
+  | 'conge_mariage'
+  | 'conge_naissance'
+  | 'conge_deces'
+  | 'conge_maladie'
 export type GranulariteConge = 'journee' | 'demi_matin' | 'demi_apres_midi'
 export type StatutDemandeAdministrative = 'en_attente' | 'approuvee' | 'rejetee' | 'annulee'
 export type TypeMouvementConge = 'initialisation' | 'consommation' | 'recredit' | 'ajustement'
@@ -25,6 +33,7 @@ export interface DemandeAdministrative {
   dureeJours?: number
   creeLe?: string
   dateDecision?: string
+  fichierDocumentLibreId?: string
 }
 
 export interface DemandeAdministrativeRequete {
@@ -36,6 +45,7 @@ export interface DemandeAdministrativeRequete {
   heureDepart?: string
   heureRetourPrevue?: string
   motif?: string
+  fichierDocumentLibreId?: string
 }
 
 export interface SoldeConge {
@@ -125,6 +135,19 @@ export async function creerDemande(
     requete,
   )
   return data.data as DemandeAdministrative
+}
+
+// EF-ADM-14 : justificatif (arrêt de travail...) téléversé avant la création de la demande —
+// l'UUID retourné est ensuite passé en fichierDocumentLibreId dans creerDemande().
+export async function televerserJustificatif(fichier: File): Promise<string> {
+  const formData = new FormData()
+  formData.append('fichier', fichier)
+  const { data } = await apiClient.post<ApiResponse<string>>(
+    '/api/demandes-administratives/justificatif',
+    formData,
+    { headers: { 'Content-Type': 'multipart/form-data' } },
+  )
+  return data.data as string
 }
 
 export async function approuverDemande(id: string): Promise<DemandeAdministrative> {
