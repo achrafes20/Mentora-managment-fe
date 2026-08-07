@@ -10,6 +10,7 @@ import {
   listerDocumentsEmploye,
   listerEmployes,
   modifierEmploye,
+  modifierSalaireEmploye,
   modifierSujetStageEmploye,
   obtenirEmploye,
   televerserPhotoEmploye,
@@ -79,6 +80,18 @@ export function useModifierSujetStage(id: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (sujetStage: string) => modifierSujetStageEmploye(id, sujetStage),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: CLE_EMPLOYES })
+      queryClient.invalidateQueries({ queryKey: cleDetail(id) })
+    },
+  })
+}
+
+export function useModifierSalaire(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (salaireBrutMensuel: number | null) =>
+      modifierSalaireEmploye(id, salaireBrutMensuel),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: CLE_EMPLOYES })
       queryClient.invalidateQueries({ queryKey: cleDetail(id) })

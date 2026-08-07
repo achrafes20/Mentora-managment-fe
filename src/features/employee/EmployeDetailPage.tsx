@@ -39,6 +39,7 @@ import {
   useEmploye,
   useHistoriqueTransferts,
   useModifierEmploye,
+  useModifierSalaire,
   useModifierSujetStage,
   useTransfererEmploye,
   useSupprimerDocument,
@@ -59,9 +60,11 @@ import {
   useApercuCertificatTravail,
   useApercuCertificatStage,
   useApercuAttestationTravail,
+  useApercuAttestationSalaire,
   useEnvoyerCertificatTravail,
   useEnvoyerCertificatStage,
   useEnvoyerAttestationTravail,
+  useEnvoyerAttestationSalaire,
   useEnvoisDocuments,
 } from '../documents/useDocuments'
 
@@ -87,9 +90,11 @@ export function EmployeDetailPage() {
   const envoyerCertifTravailMutation = useEnvoyerCertificatTravail()
   const envoyerCertifStageMutation = useEnvoyerCertificatStage()
   const envoyerAttestationMutation = useEnvoyerAttestationTravail()
+  const envoyerAttestationSalaireMutation = useEnvoyerAttestationSalaire()
   const apercuCertifTravailMutation = useApercuCertificatTravail()
   const apercuCertifStageMutation = useApercuCertificatStage()
   const apercuAttestationMutation = useApercuAttestationTravail()
+  const apercuAttestationSalaireMutation = useApercuAttestationSalaire()
   const attacherMutation = useAttacherDocument(id ?? '')
   const supprimerDocMutation = useSupprimerDocument(id ?? '')
   const envoyerCarteMutation = useEnvoyerCarteEmail(id ?? '')
@@ -106,6 +111,7 @@ export function EmployeDetailPage() {
   const [qrLoading, setQrLoading] = useState(false)
   const [certEnvoye, setCertEnvoye] = useState(false)
   const [attestationEnvoyee, setAttestationEnvoyee] = useState(false)
+  const [attestationSalaireEnvoyee, setAttestationSalaireEnvoyee] = useState(false)
   const [pointages, setPointages] = useState<PointageReponse[]>([])
   const [pointagesLoading, setPointagesLoading] = useState(false)
 
@@ -179,6 +185,9 @@ export function EmployeDetailPage() {
   )
   const dejaEnvoye = !!envoi
   const envoiAttestation = envoisDocuments?.find((e) => e.typeDocument === 'attestation_travail')
+  const envoiAttestationSalaire = envoisDocuments?.find(
+    (e) => e.typeDocument === 'attestation_salaire',
+  )
 
   const joursRestantsCdd =
     employe.dateFinContratPrevue != null
@@ -271,6 +280,28 @@ export function EmployeDetailPage() {
     } catch (err) {
       const apiError = err as ApiError
       void toast.error(apiError.message ?? "Erreur lors de l'aperçu de l'attestation")
+    }
+  }
+
+  const handleEnvoyerAttestationSalaire = async () => {
+    if (!employe.id) return
+    try {
+      await envoyerAttestationSalaireMutation.mutateAsync(employe.id)
+      setAttestationSalaireEnvoyee(true)
+      void toast.success('Attestation de salaire envoyée avec succès')
+    } catch (err) {
+      const apiError = err as ApiError
+      void toast.error(apiError.message ?? "Erreur lors de l'envoi de l'attestation de salaire")
+    }
+  }
+
+  const handleApercuAttestationSalaire = async () => {
+    if (!employe.id) return
+    try {
+      await apercuAttestationSalaireMutation.mutateAsync(employe.id)
+    } catch (err) {
+      const apiError = err as ApiError
+      void toast.error(apiError.message ?? "Erreur lors de l'aperçu de l'attestation de salaire")
     }
   }
 
@@ -368,6 +399,13 @@ export function EmployeDetailPage() {
               sexe: values.sexe || undefined,
               cin: values.cin || undefined,
               sujetStage: values.sujetStage || undefined,
+              numeroCnss: values.numeroCnss || undefined,
+              numeroAmo: values.numeroAmo || undefined,
+              numeroCimr: values.numeroCimr || undefined,
+              rib: values.rib || undefined,
+              periodeEssaiFinLe: values.periodeEssaiFinLe
+                ? format(values.periodeEssaiFinLe, 'yyyy-MM-dd')
+                : undefined,
             })
             .then(async () => {
               if (photo && id) {
@@ -692,6 +730,47 @@ export function EmployeDetailPage() {
               </div>
             </div>
 
+            {estAdmin && (
+              <div className="mt-4 rounded-xl border border-[#D8D4CC] bg-white p-6">
+                <p className="mb-4 text-[10px] font-semibold tracking-wider text-[#9CA3AF] uppercase">
+                  Conformité RH
+                </p>
+                <div className="grid grid-cols-2 gap-x-10 gap-y-4">
+                  {[
+                    ['N° CNSS', employe.numeroCnss ?? '—'],
+                    ['N° AMO', employe.numeroAmo ?? '—'],
+                    ['N° CIMR', employe.numeroCimr ?? '—'],
+                    ['RIB', employe.rib ?? '—'],
+                    [
+                      "Fin de période d'essai",
+                      employe.periodeEssaiFinLe
+                        ? dayjs(employe.periodeEssaiFinLe).format('DD/MM/YYYY')
+                        : '—',
+                    ],
+                  ].map(([label, value]) => (
+                    <div key={label} className="border-b border-[#D8D4CC]/50 pb-3">
+                      <p className="text-[10px] tracking-wider text-[#9CA3AF] uppercase">{label}</p>
+                      <p className="mt-0.5 text-[13px] text-[#1B2A41]">{value}</p>
+                    </div>
+                  ))}
+                  {employe.id && (
+                    <div className="border-b border-[#D8D4CC]/50 pb-3">
+                      <p className="text-[10px] tracking-wider text-[#9CA3AF] uppercase">
+                        Salaire brut mensuel
+                      </p>
+                      <div className="mt-0.5">
+                        <SalaireInline
+                          key={employe.salaireBrutMensuel ?? 'none'}
+                          employeId={employe.id}
+                          valeur={employe.salaireBrutMensuel}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {employe.id && (
               <div className="mt-4">
                 <EmployeTeletravailCard employeId={employe.id} estAdmin={estAdmin} />
@@ -765,6 +844,56 @@ export function EmployeDetailPage() {
                         {envoiAttestation || attestationEnvoyee ? 'Renvoyer' : "Confirmer l'envoi"}
                       </button>
                     )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {isActif && isCdiCdd && estAdmin && (
+              <div className="mt-4 rounded-xl border border-[#D8D4CC] bg-white p-5">
+                <p className="mb-4 text-[10px] font-semibold tracking-wider text-[#9CA3AF] uppercase">
+                  Attestation de salaire
+                </p>
+                <div className="relative flex items-center gap-5 rounded-xl border border-[#D8D4CC] bg-[#F7F7F4] p-4">
+                  <CornerMark />
+                  <FileCheck size={18} className="flex-shrink-0 text-[#4A7C6B]" />
+                  <div className="flex-1">
+                    <p className="text-[13px] font-semibold text-[#1B2A41]">
+                      Attestation de salaire
+                    </p>
+                    <p className="text-[11px] text-[#9CA3AF]">
+                      {employe.salaireBrutMensuel
+                        ? `${employe.salaireBrutMensuel} MAD brut/mois`
+                        : 'Salaire non renseigné — requis avant génération'}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {(envoiAttestationSalaire || attestationSalaireEnvoyee) && (
+                      <span className="flex items-center gap-1.5 text-[11px] text-[#4A7C6B]">
+                        ✓ Envoyée
+                      </span>
+                    )}
+                    <button
+                      onClick={() => void handleApercuAttestationSalaire()}
+                      disabled={
+                        apercuAttestationSalaireMutation.isPending || !employe.salaireBrutMensuel
+                      }
+                      className="flex items-center gap-1.5 rounded-lg border border-[#D8D4CC] px-3 py-1.5 text-[11px] text-[#6B7280] transition-colors hover:border-[#1B2A41] hover:text-[#1B2A41] disabled:opacity-50"
+                    >
+                      <ExternalLink size={11} /> Aperçu
+                    </button>
+                    <button
+                      onClick={() => void handleEnvoyerAttestationSalaire()}
+                      disabled={
+                        envoyerAttestationSalaireMutation.isPending || !employe.salaireBrutMensuel
+                      }
+                      className="flex items-center gap-1.5 rounded-lg bg-[#1B2A41] px-3 py-1.5 text-[11px] font-medium text-white hover:bg-[#243650] disabled:opacity-50"
+                    >
+                      <Send size={11} />{' '}
+                      {envoiAttestationSalaire || attestationSalaireEnvoyee
+                        ? 'Renvoyer'
+                        : "Confirmer l'envoi"}
+                    </button>
                   </div>
                 </div>
               </div>
@@ -1010,6 +1139,71 @@ function SujetStageInline({ employeId, valeur }: { employeId: string; valeur?: s
         onClick={() => {
           setEditing(false)
           setTexte(valeur ?? '')
+        }}
+        className="text-[11px] text-[#6B7280] hover:text-[#1B2A41]"
+      >
+        Annuler
+      </button>
+    </div>
+  )
+}
+
+// EF-DOC-14 : édition ciblée du salaire brut mensuel — Admin uniquement, même patron que
+// SujetStageInline ci-dessus.
+function SalaireInline({ employeId, valeur }: { employeId: string; valeur?: number | null }) {
+  const [editing, setEditing] = useState(false)
+  const [texte, setTexte] = useState(valeur != null ? String(valeur) : '')
+  const mutation = useModifierSalaire(employeId)
+
+  async function enregistrer() {
+    const nombre = texte.trim() === '' ? null : Number(texte)
+    if (nombre !== null && (Number.isNaN(nombre) || nombre < 0)) {
+      void toast.error('Montant invalide')
+      return
+    }
+    try {
+      await mutation.mutateAsync(nombre)
+      setEditing(false)
+      void toast.success('Salaire enregistré')
+    } catch (err) {
+      const apiError = err as ApiError
+      void toast.error(apiError.message ?? "Erreur lors de l'enregistrement")
+    }
+  }
+
+  if (!editing) {
+    return (
+      <div className="flex items-center justify-between gap-2">
+        {valeur != null && <span className="text-[13px] text-[#1B2A41]">{valeur} MAD</span>}
+        <button
+          onClick={() => setEditing(true)}
+          className="flex flex-shrink-0 items-center gap-1 text-[11px] text-[#4A7C6B] hover:underline"
+        >
+          <Pencil size={11} /> {valeur != null ? 'Modifier' : 'Renseigner'}
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <Input
+        value={texte}
+        onChange={(e) => setTexte(e.target.value)}
+        placeholder="Salaire brut mensuel (MAD)"
+        className="w-40"
+      />
+      <button
+        onClick={() => void enregistrer()}
+        disabled={mutation.isPending}
+        className="rounded-lg bg-[#1B2A41] px-2.5 py-1.5 text-[11px] font-medium text-white disabled:opacity-50"
+      >
+        Enregistrer
+      </button>
+      <button
+        onClick={() => {
+          setEditing(false)
+          setTexte(valeur != null ? String(valeur) : '')
         }}
         className="text-[11px] text-[#6B7280] hover:text-[#1B2A41]"
       >

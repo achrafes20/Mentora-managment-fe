@@ -11,11 +11,21 @@ import { Alert } from '@/components/ui/Alert'
 import type { Departement } from '@/features/employee/api'
 import type { OffreEmploi } from './recruitmentApi'
 
+// EF-REC-14 : vivier/famille de poste — liste métier ouverte (varchar libre côté backend), pas un
+// enum figé ; centralisée ici pour rester la même dans le formulaire et le filtre de OffresPage.
+export const CATEGORIES_OFFRE = [
+  'Enseignants / Pédagogues',
+  'Ingénieurs IA',
+  'Designers',
+  'Stagiaires',
+] as const
+
 const schema = z.object({
   intitule: z.string().min(1, "L'intitulé est requis").max(200, '200 caractères maximum'),
   description: z.string(),
   departementId: z.string().min(1, 'Le département est requis'),
   motsClesRequis: z.string(),
+  categorie: z.string(),
 })
 
 export type OffreFormValues = z.infer<typeof schema>
@@ -46,7 +56,13 @@ export function OffreFormModal({
     formState: { errors },
   } = useForm<OffreFormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { intitule: '', description: '', departementId: '', motsClesRequis: '' },
+    defaultValues: {
+      intitule: '',
+      description: '',
+      departementId: '',
+      motsClesRequis: '',
+      categorie: '',
+    },
   })
 
   useEffect(() => {
@@ -56,6 +72,7 @@ export function OffreFormModal({
         description: offre?.description ?? '',
         departementId: offre?.departementId ?? '',
         motsClesRequis: (offre?.motsClesRequis ?? []).join(', '),
+        categorie: offre?.categorie ?? '',
       })
     }
   }, [open, offre, reset])
@@ -95,6 +112,24 @@ export function OffreFormModal({
               onChange={field.onChange}
               onBlur={field.onBlur}
               options={departements.map((d) => ({ label: d.nom ?? '', value: d.id ?? '' }))}
+            />
+          )}
+        />
+      </FormField>
+      <FormField label="Catégorie / vivier">
+        <Controller
+          name="categorie"
+          control={control}
+          render={({ field }) => (
+            <Select
+              value={field.value}
+              onChange={field.onChange}
+              onBlur={field.onBlur}
+              placeholder="Non catégorisée"
+              options={[
+                { value: '', label: 'Non catégorisée' },
+                ...CATEGORIES_OFFRE.map((c) => ({ value: c, label: c })),
+              ]}
             />
           )}
         />

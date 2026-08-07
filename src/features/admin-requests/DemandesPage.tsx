@@ -29,6 +29,7 @@ import {
   rejeterDemande,
   supprimerJourFerie,
   supprimerPeriodeBlocageConges,
+  televerserJustificatif,
   type DemandeAdministrativeRequete,
   type GranulariteConge,
   type StatutDemandeAdministrative,
@@ -54,6 +55,18 @@ const TYPES: { value: TypeDemandeAdministrative; label: string }[] = [
   { value: 'conge', label: 'Congé' },
   { value: 'bon_sortie', label: 'Bon de sortie' },
   { value: 'document_libre', label: 'Document libre' },
+  { value: 'conge_mariage', label: 'Congé mariage' },
+  { value: 'conge_naissance', label: 'Congé naissance' },
+  { value: 'conge_deces', label: 'Congé décès' },
+  { value: 'conge_maladie', label: 'Congé maladie' },
+]
+
+// EF-ADM-14 : congés légaux — période valide requise, pas de solde/quota (cf. TYPES ci-dessus).
+const TYPES_CONGE_SPECIAL: TypeDemandeAdministrative[] = [
+  'conge_mariage',
+  'conge_naissance',
+  'conge_deces',
+  'conge_maladie',
 ]
 
 const STATUTS: { value: StatutDemandeAdministrative; label: string }[] = [
@@ -105,6 +118,7 @@ export function DemandesPage() {
     dateFin: dateJour(),
     motif: '',
   })
+  const [justificatif, setJustificatif] = useState<File | null>(null)
   const [ferie, setFerie] = useState({ dateFerie: dateJour(), libelle: '' })
   const [blocage, setBlocage] = useState({
     dateDebut: dateJour(),
@@ -202,6 +216,7 @@ export function DemandesPage() {
     onSuccess: async () => {
       setMessage('Demande enregistrée.')
       setErreur(null)
+      setJustificatif(null)
       await invalider()
     },
     onError: (e: ApiError) => setErreur(e.message),
@@ -291,15 +306,39 @@ export function DemandesPage() {
     setForm((f) => ({ ...f, [champ]: valeur || undefined }))
   }
 
-  function soumettreDemande(e: FormEvent) {
+  async function soumettreDemande(e: FormEvent) {
     e.preventDefault()
     setMessage(null)
+    setErreur(null)
+
+    let fichierDocumentLibreId = form.fichierDocumentLibreId
+    if (form.typeDemande === 'conge_maladie') {
+      if (!justificatif && !fichierDocumentLibreId) {
+        setErreur('Un justificatif est requis pour un congé maladie.')
+        return
+      }
+      if (justificatif) {
+        try {
+          fichierDocumentLibreId = await televerserJustificatif(justificatif)
+        } catch {
+          setErreur('Échec du téléversement du justificatif.')
+          return
+        }
+      }
+    }
+
+    const congeSpecial = TYPES_CONGE_SPECIAL.includes(form.typeDemande)
     mutationDemande.mutate({
       ...form,
-      dateFin: form.typeDemande === 'conge' ? (form.dateFin ?? form.dateDebut) : form.dateDebut,
+      dateFin:
+        form.typeDemande === 'conge' || congeSpecial
+          ? (form.dateFin ?? form.dateDebut)
+          : form.dateDebut,
       granularite: form.typeDemande === 'conge' ? form.granularite : undefined,
       heureDepart: form.typeDemande === 'bon_sortie' ? form.heureDepart : undefined,
       heureRetourPrevue: form.typeDemande === 'bon_sortie' ? form.heureRetourPrevue : undefined,
+      fichierDocumentLibreId:
+        form.typeDemande === 'conge_maladie' ? fichierDocumentLibreId : undefined,
     })
   }
 
@@ -572,6 +611,42 @@ export function DemandesPage() {
                   onChange={(v) => majForm('heureRetourPrevue', v)}
                 />
               </div>
+            )}
+
+            {TYPES_CONGE_SPECIAL.includes(form.typeDemande) && (
+              <div className="grid gap-4 md:grid-cols-2">
+                <Input
+                  label="Début"
+                  type="date"
+                  value={form.dateDebut ?? ''}
+                  onChange={(v) => majForm('dateDebut', v)}
+                />
+                <Input
+                  label="Fin"
+                  type="date"
+                  value={form.dateFin ?? ''}
+                  onChange={(v) => majForm('dateFin', v)}
+                />
+              </div>
+            )}
+
+            {form.typeDemande === 'conge_maladie' && (
+              <label className="block">
+                <span className="text-[12px] font-medium text-[#1B2A41]">
+                  Justificatif (arrêt de travail) — requis
+                </span>
+                <input
+                  type="file"
+                  accept="application/pdf,image/jpeg,image/png"
+                  onChange={(e) => setJustificatif(e.target.files?.[0] ?? null)}
+                  className="mt-1.5 block w-full text-[12px] text-[#6B7280]"
+                />
+                {form.fichierDocumentLibreId && (
+                  <span className="mt-1 block text-[11px] text-[#4A7C6B]">
+                    Justificatif téléversé.
+                  </span>
+                )}
+              </label>
             )}
 
             <label className="block">

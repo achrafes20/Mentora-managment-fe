@@ -27,6 +27,7 @@ const SUCCESS_SET = new Set([
   'Active',
   'Entrée',
   'Résolue',
+  'Présent',
 ])
 const WARNING_SET = new Set([
   'En attente',
@@ -46,8 +47,19 @@ const WARNING_SET = new Set([
   'Sortie',
   'Non résolue',
   'Expiré',
+  'Télétravail',
+  'Congé',
+  'Sorti',
 ])
-const DANGER_SET = new Set(['Rejeté', 'Inactif', 'inactif', 'Erreur', 'Révoquée', 'Absence totale'])
+const DANGER_SET = new Set([
+  'Rejeté',
+  'Inactif',
+  'inactif',
+  'Erreur',
+  'Révoquée',
+  'Absence totale',
+  'Absent',
+])
 
 export function tagVariant(statut: string): TagVariant {
   if (SUCCESS_SET.has(statut)) return 'success'

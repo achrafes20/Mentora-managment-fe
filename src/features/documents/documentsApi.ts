@@ -7,6 +7,7 @@ export interface EnvoiDocumentResponse {
     | 'certificat_stage'
     | 'certificat_travail'
     | 'attestation_travail'
+    | 'attestation_salaire'
     | 'document_libre'
     | 'email_rejet_candidature'
   fichierId: string
@@ -50,6 +51,10 @@ export async function apercuAttestationTravail(employeId: string): Promise<void>
   await ouvrirApercu(`/api/documents/employes/${employeId}/attestation-travail/apercu`)
 }
 
+export async function apercuAttestationSalaire(employeId: string): Promise<void> {
+  await ouvrirApercu(`/api/documents/employes/${employeId}/attestation-salaire/apercu`)
+}
+
 export async function envoyerCertificatStage(
   employeId: string,
   sujetStage?: string,
@@ -71,6 +76,13 @@ export async function envoyerCertificatTravail(employeId: string): Promise<Envoi
 export async function envoyerAttestationTravail(employeId: string): Promise<EnvoiDocumentResponse> {
   const { data } = await apiClient.post<ApiResponse<EnvoiDocumentResponse>>(
     `/api/documents/employes/${employeId}/attestation-travail`,
+  )
+  return data.data!
+}
+
+export async function envoyerAttestationSalaire(employeId: string): Promise<EnvoiDocumentResponse> {
+  const { data } = await apiClient.post<ApiResponse<EnvoiDocumentResponse>>(
+    `/api/documents/employes/${employeId}/attestation-salaire`,
   )
   return data.data!
 }

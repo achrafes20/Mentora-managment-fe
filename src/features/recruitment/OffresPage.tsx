@@ -9,7 +9,7 @@ import { toast } from '@/components/ui/toast'
 import { confirm } from '@/components/ui/confirm'
 import type { ApiError } from '@/lib/apiClient'
 import { useDepartements } from '@/features/employee/useDepartements'
-import { OffreFormModal, type OffreFormValues } from './OffreFormModal'
+import { CATEGORIES_OFFRE, OffreFormModal, type OffreFormValues } from './OffreFormModal'
 import {
   useCandidatures,
   useCreerOffre,
@@ -23,7 +23,8 @@ import type { OffreEmploi } from './recruitmentApi'
 export function OffresPage() {
   const navigate = useNavigate()
   const { data: departements } = useDepartements()
-  const { data: offres, isLoading } = useOffres()
+  const [categorieFiltre, setCategorieFiltre] = useState('')
+  const { data: offres, isLoading } = useOffres(undefined, categorieFiltre || undefined)
   // Comptage des candidatures par offre — un seul appel plutôt qu'une requête par ligne.
   const { data: candidaturesPage } = useCandidatures({ size: 500 })
 
@@ -77,6 +78,7 @@ export function OffresPage() {
             .map((m) => m.trim())
             .filter(Boolean)
         : undefined,
+      categorie: valeurs.categorie || undefined,
     }
     const mutation = offreEditee ? modifierMutation : creerMutation
     mutation
@@ -147,6 +149,22 @@ export function OffresPage() {
         }
       />
 
+      <div className="mb-4 flex items-center gap-2">
+        <label className="text-[12px] font-medium text-[#6B7280]">Catégorie</label>
+        <select
+          value={categorieFiltre}
+          onChange={(e) => setCategorieFiltre(e.target.value)}
+          className="rounded-lg border border-[#D8D4CC] bg-white px-3 py-1.5 text-[12px] text-[#1B2A41] outline-none focus:border-[#1B2A41]"
+        >
+          <option value="">Toutes</option>
+          {CATEGORIES_OFFRE.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </select>
+      </div>
+
       <div className="overflow-hidden rounded-xl border border-[#D8D4CC] bg-white">
         {isLoading ? (
           <p className="p-8 text-center text-[13px] text-[#9CA3AF]">Chargement…</p>
@@ -161,6 +179,7 @@ export function OffresPage() {
                   tri={tri}
                   onChange={handleTri}
                 />
+                <SortableTh label="Catégorie" champ="categorie" tri={tri} onChange={handleTri} />
                 <SortableTh label="Statut" champ="statut" tri={tri} onChange={handleTri} />
                 <SortableTh
                   label="Candidatures"
@@ -184,6 +203,7 @@ export function OffresPage() {
                   <td className="px-4 py-3.5 text-[13px] text-[#6B7280]">
                     {departementNom(o.departementId)}
                   </td>
+                  <td className="px-4 py-3.5 text-[13px] text-[#6B7280]">{o.categorie ?? '—'}</td>
                   <td className="px-4 py-3.5">
                     <StatusTag statut={formatStatut(o.statut ?? '')} />
                   </td>
@@ -222,7 +242,7 @@ export function OffresPage() {
               ))}
               {(offres ?? []).length === 0 && (
                 <tr>
-                  <td colSpan={5} className="p-8 text-center text-[13px] text-[#9CA3AF]">
+                  <td colSpan={6} className="p-8 text-center text-[13px] text-[#9CA3AF]">
                     Aucune offre pour le moment.
                   </td>
                 </tr>
