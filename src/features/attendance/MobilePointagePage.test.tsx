@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import dayjs from 'dayjs'
 import { MobilePointagePage } from './MobilePointagePage'
 
 const {
@@ -71,12 +72,13 @@ describe('MobilePointagePage', () => {
   })
 
   it('affiche les 5 derniers pointages au chargement', async () => {
+    const horodatage = '2026-01-14T17:00:00Z'
     mesPointagesRecentsMock.mockResolvedValue([
       {
         id: 'p1',
         employeId: 'emp-1',
         typeScan: 'sortie',
-        horodatage: '2026-01-14T17:00:00Z',
+        horodatage,
         corrigeManuellement: false,
         motifCorrection: null,
       },
@@ -84,7 +86,7 @@ describe('MobilePointagePage', () => {
     render(<MobilePointagePage />)
 
     expect(await screen.findByText('Mes derniers pointages')).toBeInTheDocument()
-    expect(screen.getByText('14/01 18:00')).toBeInTheDocument()
+    expect(screen.getByText(dayjs(horodatage).format('DD/MM HH:mm'))).toBeInTheDocument()
   })
 
   it('désactive les boutons de pointage hors connexion', async () => {
