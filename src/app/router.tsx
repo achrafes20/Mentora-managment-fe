@@ -8,7 +8,8 @@ import { LoginPage } from '@/features/auth/LoginPage'
 import { ForgotPasswordPage } from '@/features/auth/ForgotPasswordPage'
 import { ResetPasswordPage } from '@/features/auth/ResetPasswordPage'
 import { UserManagementPage } from '@/features/auth/UserManagementPage'
-import { KiosquePage } from '../features/attendance/KiosquePage'
+import { MobilePointagePage } from '../features/attendance/MobilePointagePage'
+import { RevoquerAppareilPage } from '../features/attendance/RevoquerAppareilPage'
 import { PresencePage } from '../features/attendance/PresencePage'
 import { DashboardPage } from '@/features/dashboard/DashboardPage'
 import { RecruitmentPage } from '@/features/recruitment/RecruitmentPage'
@@ -45,8 +46,12 @@ export const router = createBrowserRouter([
     element: <ResetPasswordPage />,
   },
   {
-    path: '/kiosque',
-    element: <KiosquePage />,
+    path: '/pointage-mobile',
+    element: <MobilePointagePage />,
+  },
+  {
+    path: '/pointage-mobile/revoquer',
+    element: <RevoquerAppareilPage />,
   },
   {
     path: '/',

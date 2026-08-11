@@ -2,12 +2,14 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { PageHeader } from '@/components/ui/StatCard'
 import { StatusTag } from '@/components/ui/StatusTag'
+import { SortableTh } from '@/components/ui/SortableTh'
+import { useTriLocal } from '@/components/ui/useTriLocal'
 import { formatStatut } from '@/components/ui/tokens'
 import { toast } from '@/components/ui/toast'
 import { confirm } from '@/components/ui/confirm'
 import type { ApiError } from '@/lib/apiClient'
 import { useDepartements } from '@/features/employee/useDepartements'
-import { OffreFormModal, type OffreFormValues } from './OffreFormModal'
+import { CATEGORIES_OFFRE, OffreFormModal, type OffreFormValues } from './OffreFormModal'
 import {
   useCandidatures,
   useCreerOffre,
@@ -21,7 +23,8 @@ import type { OffreEmploi } from './recruitmentApi'
 export function OffresPage() {
   const navigate = useNavigate()
   const { data: departements } = useDepartements()
-  const { data: offres, isLoading } = useOffres()
+  const [categorieFiltre, setCategorieFiltre] = useState('')
+  const { data: offres, isLoading } = useOffres(undefined, categorieFiltre || undefined)
   // Comptage des candidatures par offre — un seul appel plutôt qu'une requête par ligne.
   const { data: candidaturesPage } = useCandidatures({ size: 500 })
 
@@ -41,6 +44,16 @@ export function OffresPage() {
   function nombreCandidatures(offreId?: string) {
     return candidaturesPage?.content?.filter((c) => c.offreId === offreId).length ?? 0
   }
+
+  const { trie, tri, handleTri } = useTriLocal(
+    offres,
+    (o, champ) => {
+      if (champ === 'departementId') return departementNom(o.departementId)
+      if (champ === 'candidatures') return nombreCandidatures(o.id)
+      return o[champ as keyof typeof o] as string | number | boolean | null | undefined
+    },
+    { champ: 'intitule', direction: 'asc' },
+  )
 
   function ouvrirCreation() {
     setOffreEditee(null)
@@ -65,6 +78,7 @@ export function OffresPage() {
             .map((m) => m.trim())
             .filter(Boolean)
         : undefined,
+      categorie: valeurs.categorie || undefined,
     }
     const mutation = offreEditee ? modifierMutation : creerMutation
     mutation
@@ -135,6 +149,22 @@ export function OffresPage() {
         }
       />
 
+      <div className="mb-4 flex items-center gap-2">
+        <label className="text-[12px] font-medium text-[#6B7280]">Catégorie</label>
+        <select
+          value={categorieFiltre}
+          onChange={(e) => setCategorieFiltre(e.target.value)}
+          className="rounded-lg border border-[#D8D4CC] bg-white px-3 py-1.5 text-[12px] text-[#1B2A41] outline-none focus:border-[#1B2A41]"
+        >
+          <option value="">Toutes</option>
+          {CATEGORIES_OFFRE.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </select>
+      </div>
+
       <div className="overflow-hidden rounded-xl border border-[#D8D4CC] bg-white">
         {isLoading ? (
           <p className="p-8 text-center text-[13px] text-[#9CA3AF]">Chargement…</p>
@@ -142,18 +172,26 @@ export function OffresPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-[#D8D4CC] bg-[#F7F7F4]">
-                {['Intitulé', 'Département', 'Statut', 'Candidatures', ''].map((h) => (
-                  <th
-                    key={h}
-                    className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider text-[#9CA3AF] uppercase"
-                  >
-                    {h}
-                  </th>
-                ))}
+                <SortableTh label="Intitulé" champ="intitule" tri={tri} onChange={handleTri} />
+                <SortableTh
+                  label="Département"
+                  champ="departementId"
+                  tri={tri}
+                  onChange={handleTri}
+                />
+                <SortableTh label="Catégorie" champ="categorie" tri={tri} onChange={handleTri} />
+                <SortableTh label="Statut" champ="statut" tri={tri} onChange={handleTri} />
+                <SortableTh
+                  label="Candidatures"
+                  champ="candidatures"
+                  tri={tri}
+                  onChange={handleTri}
+                />
+                <th className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider text-[#9CA3AF] uppercase" />
               </tr>
             </thead>
             <tbody>
-              {(offres ?? []).map((o) => (
+              {trie.map((o) => (
                 <tr
                   key={o.id}
                   onClick={() => navigate(`/recrutement/offres/${o.id}`)}
@@ -165,6 +203,7 @@ export function OffresPage() {
                   <td className="px-4 py-3.5 text-[13px] text-[#6B7280]">
                     {departementNom(o.departementId)}
                   </td>
+                  <td className="px-4 py-3.5 text-[13px] text-[#6B7280]">{o.categorie ?? '—'}</td>
                   <td className="px-4 py-3.5">
                     <StatusTag statut={formatStatut(o.statut ?? '')} />
                   </td>
@@ -203,7 +242,7 @@ export function OffresPage() {
               ))}
               {(offres ?? []).length === 0 && (
                 <tr>
-                  <td colSpan={5} className="p-8 text-center text-[13px] text-[#9CA3AF]">
+                  <td colSpan={6} className="p-8 text-center text-[13px] text-[#9CA3AF]">
                     Aucune offre pour le moment.
                   </td>
                 </tr>

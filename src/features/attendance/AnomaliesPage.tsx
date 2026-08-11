@@ -1,12 +1,15 @@
 import dayjs from 'dayjs'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, RotateCcw, SlidersHorizontal } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/components/ui/toast'
 import { Button } from '@/components/ui/Button'
+import { DatePicker } from '@/components/ui/DatePicker'
 import type { ApiError } from '@/lib/apiClient'
 import { useAuth } from '@/lib/AuthContext'
 import { StatusTag } from '@/components/ui/StatusTag'
+import { basculerTri, SortableTh, type Tri } from '@/components/ui/SortableTh'
 import {
   listerAnomalies,
   modifierPolitiqueAnomalies,
@@ -14,6 +17,7 @@ import {
   resoudreAnomalie,
   type AnomaliePointageReponse,
   type PolitiqueAnomaliesReponse,
+  type RepartitionTypeAnomalieReponse,
 } from './api'
 import { listerEmployes } from '../employee/employesApi'
 
@@ -21,13 +25,16 @@ const TYPES_LABELS: Record<string, string> = {
   retard: 'Retard',
   depart_anticipe: 'Départ anticipé',
   absence_checkout: 'Absence de check-out',
-  presence_incomplete: 'Présence incomplète',
+  absence_totale: 'Absence totale',
 }
+
+type TypeAnomalie = RepartitionTypeAnomalieReponse['type']
 
 const CLE_POLITIQUE_ANOMALIES = ['politique-anomalies'] as const
 
 function PolitiqueAnomaliesForm({ politique }: { politique: PolitiqueAnomaliesReponse }) {
   const queryClient = useQueryClient()
+  const [ouvert, setOuvert] = useState(false)
   const [seuil, setSeuil] = useState(String(politique.seuilAnomalies))
   const [periode, setPeriode] = useState(String(politique.periodeJours))
 
@@ -40,6 +47,7 @@ function PolitiqueAnomaliesForm({ politique }: { politique: PolitiqueAnomaliesRe
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: CLE_POLITIQUE_ANOMALIES })
       toast.success("Seuil d'alerte mis à jour.")
+      setOuvert(false)
     },
     onError: (err: ApiError) => toast.error(err.message),
   })
@@ -48,42 +56,55 @@ function PolitiqueAnomaliesForm({ politique }: { politique: PolitiqueAnomaliesRe
     Number(seuil) !== politique.seuilAnomalies || Number(periode) !== politique.periodeJours
 
   return (
-    <div className="mb-4 flex flex-wrap items-end gap-4 rounded-xl border border-[#D8D4CC] bg-white p-4">
-      <label className="block">
-        <span className="mb-1 block text-[12px] font-medium text-[#1B2A41]">
-          Seuil d'anomalies non résolues
-        </span>
-        <input
-          type="number"
-          min="1"
-          value={seuil}
-          onChange={(e) => setSeuil(e.target.value)}
-          className="w-24 rounded-lg border border-[#D8D4CC] bg-[#F7F7F4] px-3 py-1.5 text-[13px]"
-        />
-      </label>
-      <label className="block">
-        <span className="mb-1 block text-[12px] font-medium text-[#1B2A41]">
-          Sur une période de (jours)
-        </span>
-        <input
-          type="number"
-          min="1"
-          value={periode}
-          onChange={(e) => setPeriode(e.target.value)}
-          className="w-24 rounded-lg border border-[#D8D4CC] bg-[#F7F7F4] px-3 py-1.5 text-[13px]"
-        />
-      </label>
-      <Button
-        variant="primary"
-        disabled={!modifie}
-        loading={mutation.isPending}
-        onClick={() => mutation.mutate()}
+    <div className="relative ml-auto">
+      <button
+        type="button"
+        onClick={() => setOuvert((v) => !v)}
+        className="flex h-9 items-center gap-1.5 rounded-lg border border-[#D8D4CC] bg-white px-3 text-[12px] text-[#6B7280] transition-colors hover:border-[#1B2A41] hover:text-[#1B2A41]"
       >
-        Enregistrer
-      </Button>
-      <p className="basis-full text-[11px] text-[#6B7280]">
-        Au-delà de ce seuil, le Manager du département de l'employé est notifié automatiquement.
-      </p>
+        <SlidersHorizontal size={13} /> Seuil d'anomalies non résolues ({politique.seuilAnomalies} /{' '}
+        {politique.periodeJours} j)
+      </button>
+      {ouvert && (
+        <div className="absolute top-full right-0 z-10 mt-1 w-[280px] rounded-xl border border-[#D8D4CC] bg-white p-4 shadow-lg">
+          <label className="mb-3 block">
+            <span className="mb-1 block text-[12px] font-medium text-[#1B2A41]">
+              Seuil d'anomalies non résolues
+            </span>
+            <input
+              type="number"
+              min="1"
+              value={seuil}
+              onChange={(e) => setSeuil(e.target.value)}
+              className="h-9 w-full rounded-lg border border-[#D8D4CC] bg-[#F7F7F4] px-3 text-[13px]"
+            />
+          </label>
+          <label className="mb-3 block">
+            <span className="mb-1 block text-[12px] font-medium text-[#1B2A41]">
+              Sur une période de (jours)
+            </span>
+            <input
+              type="number"
+              min="1"
+              value={periode}
+              onChange={(e) => setPeriode(e.target.value)}
+              className="h-9 w-full rounded-lg border border-[#D8D4CC] bg-[#F7F7F4] px-3 text-[13px]"
+            />
+          </label>
+          <p className="mb-3 text-[11px] text-[#6B7280]">
+            Au-delà de ce seuil, le Manager du département de l'employé est notifié automatiquement.
+          </p>
+          <Button
+            variant="primary"
+            disabled={!modifie}
+            loading={mutation.isPending}
+            onClick={() => mutation.mutate()}
+            className="w-full"
+          >
+            Enregistrer
+          </Button>
+        </div>
+      )}
     </div>
   )
 }
@@ -104,6 +125,7 @@ function PolitiqueAnomaliesSection() {
 }
 
 export function AnomaliesPage() {
+  const navigate = useNavigate()
   const { role } = useAuth()
   const estAdmin = role === 'admin'
   const [data, setData] = useState<AnomaliePointageReponse[]>([])
@@ -111,13 +133,31 @@ export function AnomaliesPage() {
   const [page, setPage] = useState(0)
   const [total, setTotal] = useState(0)
   const [employes, setEmployes] = useState<Record<string, string>>({})
+  const [optionsEmployes, setOptionsEmployes] = useState<{ id: string; nom: string }[]>([])
   const [filtreResolue, setFiltreResolue] = useState<boolean | undefined>(false)
+  const [filtreEmployeId, setFiltreEmployeId] = useState('')
+  const [filtreType, setFiltreType] = useState<'' | TypeAnomalie>('')
+  const [filtreDebut, setFiltreDebut] = useState<Date | null>(null)
+  const [filtreFin, setFiltreFin] = useState<Date | null>(null)
   const pageSize = 20
+  // Trié par la date (datePointage) décroissante par défaut, comme un historique.
+  const [tri, setTri] = useState<Tri>({ champ: 'datePointage', direction: 'desc' })
 
   const charger = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await listerAnomalies(filtreResolue, page, pageSize)
+      const res = await listerAnomalies(
+        {
+          resolue: filtreResolue,
+          employeId: filtreEmployeId || undefined,
+          type: filtreType || undefined,
+          debut: filtreDebut ? dayjs(filtreDebut).format('YYYY-MM-DD') : undefined,
+          fin: filtreFin ? dayjs(filtreFin).format('YYYY-MM-DD') : undefined,
+        },
+        page,
+        pageSize,
+        `${tri.champ},${tri.direction}`,
+      )
       setData(res.content)
       setTotal(res.totalElements)
     } catch {
@@ -125,7 +165,12 @@ export function AnomaliesPage() {
     } finally {
       setLoading(false)
     }
-  }, [page, filtreResolue])
+  }, [page, filtreResolue, filtreEmployeId, filtreType, filtreDebut, filtreFin, tri])
+
+  function handleTri(champ: string) {
+    setTri((t) => basculerTri(t, champ))
+    setPage(0)
+  }
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -134,17 +179,31 @@ export function AnomaliesPage() {
       try {
         const res = await listerEmployes({ size: 1000 })
         const map: Record<string, string> = {}
+        const options: { id: string; nom: string }[] = []
         for (const e of res.content ?? []) {
           if (!e.id) continue
-          map[e.id] = `${e.nom} ${e.prenom}`
+          const nom = `${e.nom} ${e.prenom}`
+          map[e.id] = nom
+          options.push({ id: e.id, nom })
         }
         setEmployes(map)
+        setOptionsEmployes(options)
       } catch {
         // ignore
       }
     }
     void chargerEmployes()
   }, [charger])
+
+  function reinitialiserFiltres() {
+    setFiltreEmployeId('')
+    setFiltreType('')
+    setFiltreDebut(null)
+    setFiltreFin(null)
+    setPage(0)
+  }
+
+  const filtresAvancesActifs = Boolean(filtreEmployeId || filtreType || filtreDebut || filtreFin)
 
   async function handleResoudre(anomalieId: string) {
     try {
@@ -160,49 +219,121 @@ export function AnomaliesPage() {
 
   return (
     <div>
-      {estAdmin && <PolitiqueAnomaliesSection />}
+      <div className="mb-4 flex flex-wrap items-end gap-3 rounded-xl border border-[#D8D4CC] bg-white p-4">
+        <div className="min-w-[140px]">
+          <label className="mb-1 block text-[11px] font-medium text-[#6B7280]">Statut</label>
+          <select
+            value={filtreResolue === undefined ? 'all' : filtreResolue ? 'true' : 'false'}
+            onChange={(e) => {
+              setPage(0)
+              const v = e.target.value
+              setFiltreResolue(v === 'all' ? undefined : v === 'true')
+            }}
+            className="h-9 w-full cursor-pointer rounded-lg border border-[#D8D4CC] bg-white px-3 text-[13px] text-[#1B2A41] focus:border-[#1B2A41] focus:outline-none"
+          >
+            <option value="all">Toutes</option>
+            <option value="false">Non résolues</option>
+            <option value="true">Résolues</option>
+          </select>
+        </div>
+        <div className="min-w-[180px]">
+          <label className="mb-1 block text-[11px] font-medium text-[#6B7280]">Employé</label>
+          <select
+            value={filtreEmployeId}
+            onChange={(e) => {
+              setFiltreEmployeId(e.target.value)
+              setPage(0)
+            }}
+            className="h-9 w-full cursor-pointer rounded-lg border border-[#D8D4CC] bg-white px-3 text-[13px] text-[#1B2A41] focus:border-[#1B2A41] focus:outline-none"
+          >
+            <option value="">Tous les employés</option>
+            {optionsEmployes.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.nom}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="min-w-[170px]">
+          <label className="mb-1 block text-[11px] font-medium text-[#6B7280]">
+            Type d'anomalie
+          </label>
+          <select
+            value={filtreType}
+            onChange={(e) => {
+              setFiltreType(e.target.value as '' | TypeAnomalie)
+              setPage(0)
+            }}
+            className="h-9 w-full cursor-pointer rounded-lg border border-[#D8D4CC] bg-white px-3 text-[13px] text-[#1B2A41] focus:border-[#1B2A41] focus:outline-none"
+          >
+            <option value="">Tous les types</option>
+            {Object.entries(TYPES_LABELS).map(([valeur, label]) => (
+              <option key={valeur} value={valeur}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="min-w-[140px]">
+          <label className="mb-1 block text-[11px] font-medium text-[#6B7280]">Du</label>
+          <DatePicker
+            value={filtreDebut}
+            onChange={(d) => {
+              setFiltreDebut(d)
+              setPage(0)
+            }}
+          />
+        </div>
+        <div className="min-w-[140px]">
+          <label className="mb-1 block text-[11px] font-medium text-[#6B7280]">Au</label>
+          <DatePicker
+            value={filtreFin}
+            onChange={(d) => {
+              setFiltreFin(d)
+              setPage(0)
+            }}
+          />
+        </div>
+        {filtresAvancesActifs && (
+          <button
+            type="button"
+            onClick={reinitialiserFiltres}
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-[#D8D4CC] px-3 text-[12px] text-[#6B7280] transition-colors hover:border-[#1B2A41] hover:text-[#1B2A41]"
+          >
+            <RotateCcw size={13} /> Réinitialiser
+          </button>
+        )}
 
-      <div className="mb-4 flex items-center gap-3">
-        <span className="text-[12px] text-[#6B7280]">Filtre :</span>
-        <select
-          value={filtreResolue === undefined ? 'all' : filtreResolue ? 'true' : 'false'}
-          onChange={(e) => {
-            setPage(0)
-            const v = e.target.value
-            setFiltreResolue(v === 'all' ? undefined : v === 'true')
-          }}
-          className="rounded-lg border border-[#D8D4CC] bg-white px-3 py-2 text-[13px] text-[#6B7280] focus:border-[#1B2A41] focus:outline-none"
-        >
-          <option value="all">Toutes</option>
-          <option value="false">Non résolues</option>
-          <option value="true">Résolues</option>
-        </select>
+        {estAdmin && <PolitiqueAnomaliesSection />}
       </div>
 
       <div className="overflow-hidden rounded-xl border border-[#D8D4CC] bg-white">
         {loading ? (
           <p className="p-8 text-center text-[13px] text-[#9CA3AF]">Chargement…</p>
         ) : data.length === 0 ? (
-          <p className="p-8 text-center text-[13px] text-[#9CA3AF]">Aucune anomalie</p>
+          <p className="p-8 text-center text-[13px] text-[#9CA3AF]">
+            Aucune anomalie {filtresAvancesActifs ? 'pour ces filtres' : ''}
+          </p>
         ) : (
           <table className="w-full">
             <thead>
               <tr className="border-b border-[#D8D4CC] bg-[#F7F7F4]">
-                {[
-                  'Employé',
-                  'Date',
-                  'Type',
-                  'Statut',
-                  'Créé le',
-                  ...(estAdmin ? ['Action'] : []),
-                ].map((h) => (
-                  <th
-                    key={h}
-                    className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider text-[#9CA3AF] uppercase first:pl-5 last:pr-5"
-                  >
-                    {h}
+                <SortableTh
+                  label="Employé"
+                  champ="employeId"
+                  tri={tri}
+                  onChange={handleTri}
+                  className="first:pl-5"
+                />
+                <SortableTh label="Date" champ="datePointage" tri={tri} onChange={handleTri} />
+                <SortableTh label="Type" champ="typeAnomalie" tri={tri} onChange={handleTri} />
+                <SortableTh label="Statut" champ="resolue" tri={tri} onChange={handleTri} />
+                <SortableTh label="Créé le" champ="creeLe" tri={tri} onChange={handleTri} />
+                {estAdmin && (
+                  <th className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider text-[#9CA3AF] uppercase last:pr-5">
+                    Action
                   </th>
-                ))}
+                )}
               </tr>
             </thead>
             <tbody>
@@ -211,8 +342,14 @@ export function AnomaliesPage() {
                   key={a.id}
                   className="border-b border-[#D8D4CC]/50 transition-colors last:border-0 hover:bg-[#F7F7F4]"
                 >
-                  <td className="py-3.5 pr-4 pl-5 text-[13px] text-[#1B2A41]">
-                    {employes[a.employeId] ?? `${a.employeId.substring(0, 8)}…`}
+                  <td className="py-3.5 pr-4 pl-5 text-[13px]">
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/employes/${a.employeId}`)}
+                      className="text-[#1B2A41] hover:underline"
+                    >
+                      {employes[a.employeId] ?? `${a.employeId.substring(0, 8)}…`}
+                    </button>
                   </td>
                   <td
                     style={{ fontFamily: 'var(--font-code)' }}
@@ -224,10 +361,7 @@ export function AnomaliesPage() {
                     <StatusTag statut={TYPES_LABELS[a.typeAnomalie] ?? a.typeAnomalie} />
                   </td>
                   <td className="px-4 py-3.5">
-                    <StatusTag statut={a.resolue ? 'Actif' : 'En attente'} />
-                    <span className="ml-1 text-[11px] text-[#6B7280]">
-                      {a.resolue ? 'Résolue' : 'Non résolue'}
-                    </span>
+                    <StatusTag statut={a.resolue ? 'Résolue' : 'Non résolue'} />
                   </td>
                   <td
                     style={{ fontFamily: 'var(--font-code)' }}

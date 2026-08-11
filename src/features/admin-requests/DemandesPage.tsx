@@ -1,9 +1,11 @@
 import { FormEvent, useMemo, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { CalendarDays, Check, Download, Plus, X } from 'lucide-react'
 import { DatePicker } from '@/components/ui/DatePicker'
 import { PageHeader } from '@/components/ui/StatCard'
+import { basculerTri, SortableTh, type Tri } from '@/components/ui/SortableTh'
 import { StatusTag } from '@/components/ui/StatusTag'
 import { toast } from '@/components/ui/toast'
 import { useAuth } from '@/lib/AuthContext'
@@ -27,6 +29,7 @@ import {
   rejeterDemande,
   supprimerJourFerie,
   supprimerPeriodeBlocageConges,
+  televerserJustificatif,
   type DemandeAdministrativeRequete,
   type GranulariteConge,
   type StatutDemandeAdministrative,
@@ -39,6 +42,8 @@ function dateVersParam(date: Date | null): string | undefined {
 
 type Tab = 'liste' | 'nouvelle' | 'registre' | 'feries' | 'blocage' | 'politique'
 
+const TABS_VALIDES: Tab[] = ['liste', 'nouvelle', 'registre', 'feries', 'blocage', 'politique']
+
 const LABELS_TYPE_CONTRAT: Record<string, string> = {
   CDI: 'CDI',
   CDD: 'CDD',
@@ -50,6 +55,18 @@ const TYPES: { value: TypeDemandeAdministrative; label: string }[] = [
   { value: 'conge', label: 'Congé' },
   { value: 'bon_sortie', label: 'Bon de sortie' },
   { value: 'document_libre', label: 'Document libre' },
+  { value: 'conge_mariage', label: 'Congé mariage' },
+  { value: 'conge_naissance', label: 'Congé naissance' },
+  { value: 'conge_deces', label: 'Congé décès' },
+  { value: 'conge_maladie', label: 'Congé maladie' },
+]
+
+// EF-ADM-14 : congés légaux — période valide requise, pas de solde/quota (cf. TYPES ci-dessus).
+const TYPES_CONGE_SPECIAL: TypeDemandeAdministrative[] = [
+  'conge_mariage',
+  'conge_naissance',
+  'conge_deces',
+  'conge_maladie',
 ]
 
 const STATUTS: { value: StatutDemandeAdministrative; label: string }[] = [
@@ -72,6 +89,7 @@ function formatNombre(valeur?: number) {
 }
 
 export function DemandesPage() {
+  const navigate = useNavigate()
   const { role } = useAuth()
   const estDelegueActif = useEstDelegueActifMaintenant()
   // EF-AUTH-11/12 : un délégué actif peut approuver/rejeter/annuler comme l'Admin — jours fériés
@@ -79,7 +97,11 @@ export function DemandesPage() {
   // côté backend, qui ne couvre que ces trois actions).
   const peutDecider = role === 'admin' || estDelegueActif
   const queryClient = useQueryClient()
-  const [tab, setTab] = useState<Tab>('liste')
+  const [searchParams] = useSearchParams()
+  const tabParam = searchParams.get('tab')
+  const [tab, setTab] = useState<Tab>(
+    TABS_VALIDES.includes(tabParam as Tab) ? (tabParam as Tab) : 'liste',
+  )
   const [typeFiltre, setTypeFiltre] = useState<TypeDemandeAdministrative | ''>('')
   const [statutFiltre, setStatutFiltre] = useState<StatutDemandeAdministrative | ''>('en_attente')
   const [debutFiltre, setDebutFiltre] = useState<Date | null>(null)
@@ -96,6 +118,7 @@ export function DemandesPage() {
     dateFin: dateJour(),
     motif: '',
   })
+  const [justificatif, setJustificatif] = useState<File | null>(null)
   const [ferie, setFerie] = useState({ dateFerie: dateJour(), libelle: '' })
   const [blocage, setBlocage] = useState({
     dateDebut: dateJour(),
@@ -113,9 +136,17 @@ export function DemandesPage() {
 
   const debutParam = dateVersParam(debutFiltre)
   const finParam = dateVersParam(finFiltre)
+  const [triDemandes, setTriDemandes] = useState<Tri>({ champ: 'dateDebut', direction: 'desc' })
 
   const demandesQuery = useQuery({
-    queryKey: ['demandes-administratives', typeFiltre, statutFiltre, debutParam, finParam],
+    queryKey: [
+      'demandes-administratives',
+      typeFiltre,
+      statutFiltre,
+      debutParam,
+      finParam,
+      triDemandes,
+    ],
     queryFn: () =>
       listerDemandes({
         type: typeFiltre,
@@ -124,8 +155,13 @@ export function DemandesPage() {
         fin: finParam,
         page: 0,
         size: 50,
+        sort: `${triDemandes.champ},${triDemandes.direction}`,
       }),
   })
+
+  function handleTriDemandes(champ: string) {
+    setTriDemandes((t) => basculerTri(t, champ))
+  }
 
   async function lancerExportDemandes(fmt: 'xlsx' | 'pdf') {
     setShowExport(false)
@@ -180,6 +216,7 @@ export function DemandesPage() {
     onSuccess: async () => {
       setMessage('Demande enregistrée.')
       setErreur(null)
+      setJustificatif(null)
       await invalider()
     },
     onError: (e: ApiError) => setErreur(e.message),
@@ -269,15 +306,39 @@ export function DemandesPage() {
     setForm((f) => ({ ...f, [champ]: valeur || undefined }))
   }
 
-  function soumettreDemande(e: FormEvent) {
+  async function soumettreDemande(e: FormEvent) {
     e.preventDefault()
     setMessage(null)
+    setErreur(null)
+
+    let fichierDocumentLibreId = form.fichierDocumentLibreId
+    if (form.typeDemande === 'conge_maladie') {
+      if (!justificatif && !fichierDocumentLibreId) {
+        setErreur('Un justificatif est requis pour un congé maladie.')
+        return
+      }
+      if (justificatif) {
+        try {
+          fichierDocumentLibreId = await televerserJustificatif(justificatif)
+        } catch {
+          setErreur('Échec du téléversement du justificatif.')
+          return
+        }
+      }
+    }
+
+    const congeSpecial = TYPES_CONGE_SPECIAL.includes(form.typeDemande)
     mutationDemande.mutate({
       ...form,
-      dateFin: form.typeDemande === 'conge' ? (form.dateFin ?? form.dateDebut) : form.dateDebut,
+      dateFin:
+        form.typeDemande === 'conge' || congeSpecial
+          ? (form.dateFin ?? form.dateDebut)
+          : form.dateDebut,
       granularite: form.typeDemande === 'conge' ? form.granularite : undefined,
       heureDepart: form.typeDemande === 'bon_sortie' ? form.heureDepart : undefined,
       heureRetourPrevue: form.typeDemande === 'bon_sortie' ? form.heureRetourPrevue : undefined,
+      fichierDocumentLibreId:
+        form.typeDemande === 'conge_maladie' ? fichierDocumentLibreId : undefined,
     })
   }
 
@@ -375,16 +436,36 @@ export function DemandesPage() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-[#D8D4CC] bg-[#F7F7F4]">
-                  {['Employé', 'Type', 'Période / détail', 'Durée', 'Statut', 'Actions'].map(
-                    (h) => (
-                      <th
-                        key={h}
-                        className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider text-[#9CA3AF] uppercase"
-                      >
-                        {h}
-                      </th>
-                    ),
-                  )}
+                  <SortableTh
+                    label="Employé"
+                    champ="employeId"
+                    tri={triDemandes}
+                    onChange={handleTriDemandes}
+                  />
+                  <SortableTh
+                    label="Type"
+                    champ="typeDemande"
+                    tri={triDemandes}
+                    onChange={handleTriDemandes}
+                  />
+                  <SortableTh
+                    label="Période / détail"
+                    champ="dateDebut"
+                    tri={triDemandes}
+                    onChange={handleTriDemandes}
+                  />
+                  <th className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider text-[#9CA3AF] uppercase">
+                    Durée
+                  </th>
+                  <SortableTh
+                    label="Statut"
+                    champ="statut"
+                    tri={triDemandes}
+                    onChange={handleTriDemandes}
+                  />
+                  <th className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider text-[#9CA3AF] uppercase">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -393,8 +474,14 @@ export function DemandesPage() {
                     key={d.id}
                     className="border-b border-[#D8D4CC]/50 transition-colors last:border-0 hover:bg-[#F7F7F4]"
                   >
-                    <td className="px-4 py-3.5 text-[13px] font-medium text-[#1B2A41]">
-                      {d.employeNomComplet}
+                    <td className="px-4 py-3.5 text-[13px] font-medium">
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/employes/${d.employeId}`)}
+                        className="text-[#1B2A41] hover:underline"
+                      >
+                        {d.employeNomComplet}
+                      </button>
                     </td>
                     <td className="px-4 py-3.5 text-[13px] text-[#6B7280]">
                       {TYPES.find((t) => t.value === d.typeDemande)?.label ?? d.typeDemande}
@@ -455,7 +542,7 @@ export function DemandesPage() {
       {tab === 'nouvelle' && (
         <form
           onSubmit={soumettreDemande}
-          className="grid max-w-4xl gap-5 rounded-xl border border-[#D8D4CC] bg-white p-6 md:grid-cols-[1fr_280px]"
+          className="grid gap-5 rounded-xl border border-[#D8D4CC] bg-white p-6 md:grid-cols-[1fr_320px]"
         >
           <div className="space-y-4">
             <Select
@@ -526,6 +613,42 @@ export function DemandesPage() {
               </div>
             )}
 
+            {TYPES_CONGE_SPECIAL.includes(form.typeDemande) && (
+              <div className="grid gap-4 md:grid-cols-2">
+                <Input
+                  label="Début"
+                  type="date"
+                  value={form.dateDebut ?? ''}
+                  onChange={(v) => majForm('dateDebut', v)}
+                />
+                <Input
+                  label="Fin"
+                  type="date"
+                  value={form.dateFin ?? ''}
+                  onChange={(v) => majForm('dateFin', v)}
+                />
+              </div>
+            )}
+
+            {form.typeDemande === 'conge_maladie' && (
+              <label className="block">
+                <span className="text-[12px] font-medium text-[#1B2A41]">
+                  Justificatif (arrêt de travail) — requis
+                </span>
+                <input
+                  type="file"
+                  accept="application/pdf,image/jpeg,image/png"
+                  onChange={(e) => setJustificatif(e.target.files?.[0] ?? null)}
+                  className="mt-1.5 block w-full text-[12px] text-[#6B7280]"
+                />
+                {form.fichierDocumentLibreId && (
+                  <span className="mt-1 block text-[11px] text-[#4A7C6B]">
+                    Justificatif téléversé.
+                  </span>
+                )}
+              </label>
+            )}
+
             <label className="block">
               <span className="text-[12px] font-medium text-[#1B2A41]">Motif / détail</span>
               <textarea
@@ -565,7 +688,7 @@ export function DemandesPage() {
       )}
 
       {tab === 'registre' && (
-        <section className="max-w-3xl space-y-4">
+        <section className="space-y-4">
           <Select
             label="Employé"
             value={employeRegistreId}
@@ -610,7 +733,7 @@ export function DemandesPage() {
       )}
 
       {tab === 'feries' && (
-        <section className="grid max-w-4xl gap-5 md:grid-cols-[1fr_320px]">
+        <section className="grid gap-5 md:grid-cols-[1fr_320px]">
           <div className="overflow-hidden rounded-xl border border-[#D8D4CC] bg-white">
             {(joursFeriesQuery.data ?? []).map((j) => (
               <div
@@ -670,7 +793,7 @@ export function DemandesPage() {
       )}
 
       {tab === 'blocage' && (
-        <section className="grid max-w-4xl gap-5 md:grid-cols-[1fr_320px]">
+        <section className="grid gap-5 md:grid-cols-[1fr_320px]">
           <div className="overflow-hidden rounded-xl border border-[#D8D4CC] bg-white">
             {(periodesBlocageQuery.data ?? []).map((p) => (
               <div
@@ -748,7 +871,7 @@ export function DemandesPage() {
       )}
 
       {tab === 'politique' && (
-        <section className="max-w-2xl overflow-hidden rounded-xl border border-[#D8D4CC] bg-white">
+        <section className="overflow-hidden rounded-xl border border-[#D8D4CC] bg-white">
           <table className="w-full">
             <thead>
               <tr className="border-b border-[#D8D4CC] bg-[#F7F7F4]">

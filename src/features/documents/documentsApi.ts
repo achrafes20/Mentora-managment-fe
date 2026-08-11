@@ -4,7 +4,12 @@ export interface EnvoiDocumentResponse {
   id: string
   employeId: string
   typeDocument:
-    'certificat_stage' | 'certificat_travail' | 'document_libre' | 'email_rejet_candidature'
+    | 'certificat_stage'
+    | 'certificat_travail'
+    | 'attestation_travail'
+    | 'attestation_salaire'
+    | 'document_libre'
+    | 'email_rejet_candidature'
   fichierId: string
   destinataireEmail: string
   dateEnvoi: string
@@ -22,9 +27,41 @@ export async function listerEnvoisDocuments(employeId: string): Promise<EnvoiDoc
   return data.data ?? []
 }
 
-export async function envoyerCertificatStage(employeId: string): Promise<EnvoiDocumentResponse> {
+// EF-DOC : aperçu du PDF avant confirmation d'envoi — même génération que l'envoi réel côté
+// backend, mais sans e-mail ni enregistrement dans l'historique. Ouvert dans un nouvel onglet
+// plutôt qu'un lien <a href> brut : l'intercepteur Authorization ne porte pas sur une navigation
+// directe (même principe que `ouvrirDocument` dans employesApi.ts).
+async function ouvrirApercu(url: string): Promise<void> {
+  const { data } = await apiClient.get<Blob>(url, { responseType: 'blob' })
+  const blobUrl = URL.createObjectURL(data)
+  window.open(blobUrl, '_blank', 'noreferrer')
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000)
+}
+
+export async function apercuCertificatStage(employeId: string, sujetStage?: string): Promise<void> {
+  const params = sujetStage ? `?sujetStage=${encodeURIComponent(sujetStage)}` : ''
+  await ouvrirApercu(`/api/documents/employes/${employeId}/certificat-stage/apercu${params}`)
+}
+
+export async function apercuCertificatTravail(employeId: string): Promise<void> {
+  await ouvrirApercu(`/api/documents/employes/${employeId}/certificat-travail/apercu`)
+}
+
+export async function apercuAttestationTravail(employeId: string): Promise<void> {
+  await ouvrirApercu(`/api/documents/employes/${employeId}/attestation-travail/apercu`)
+}
+
+export async function apercuAttestationSalaire(employeId: string): Promise<void> {
+  await ouvrirApercu(`/api/documents/employes/${employeId}/attestation-salaire/apercu`)
+}
+
+export async function envoyerCertificatStage(
+  employeId: string,
+  sujetStage?: string,
+): Promise<EnvoiDocumentResponse> {
   const { data } = await apiClient.post<ApiResponse<EnvoiDocumentResponse>>(
     `/api/documents/employes/${employeId}/certificat-stage`,
+    sujetStage ? { sujetStage } : undefined,
   )
   return data.data!
 }
@@ -32,6 +69,20 @@ export async function envoyerCertificatStage(employeId: string): Promise<EnvoiDo
 export async function envoyerCertificatTravail(employeId: string): Promise<EnvoiDocumentResponse> {
   const { data } = await apiClient.post<ApiResponse<EnvoiDocumentResponse>>(
     `/api/documents/employes/${employeId}/certificat-travail`,
+  )
+  return data.data!
+}
+
+export async function envoyerAttestationTravail(employeId: string): Promise<EnvoiDocumentResponse> {
+  const { data } = await apiClient.post<ApiResponse<EnvoiDocumentResponse>>(
+    `/api/documents/employes/${employeId}/attestation-travail`,
+  )
+  return data.data!
+}
+
+export async function envoyerAttestationSalaire(employeId: string): Promise<EnvoiDocumentResponse> {
+  const { data } = await apiClient.post<ApiResponse<EnvoiDocumentResponse>>(
+    `/api/documents/employes/${employeId}/attestation-salaire`,
   )
   return data.data!
 }

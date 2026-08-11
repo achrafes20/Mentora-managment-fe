@@ -10,12 +10,15 @@ import {
   listerDocumentsEmploye,
   listerEmployes,
   modifierEmploye,
+  modifierSalaireEmploye,
+  modifierSujetStageEmploye,
   obtenirEmploye,
   televerserPhotoEmploye,
   transfererEmploye,
   supprimerDocumentEmploye,
   remplacerDocumentEmploye,
   envoyerCarteParEmail,
+  executerDesactivationAutomatique,
   type TransfertRequete,
   type DesactivationRequete,
 } from './employesApi'
@@ -73,6 +76,29 @@ export function useModifierEmploye(id: string) {
   })
 }
 
+export function useModifierSujetStage(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (sujetStage: string) => modifierSujetStageEmploye(id, sujetStage),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: CLE_EMPLOYES })
+      queryClient.invalidateQueries({ queryKey: cleDetail(id) })
+    },
+  })
+}
+
+export function useModifierSalaire(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (salaireBrutMensuel: number | null) =>
+      modifierSalaireEmploye(id, salaireBrutMensuel),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: CLE_EMPLOYES })
+      queryClient.invalidateQueries({ queryKey: cleDetail(id) })
+    },
+  })
+}
+
 export function useTransfererEmploye(id: string) {
   const queryClient = useQueryClient()
   return useMutation({
@@ -91,6 +117,19 @@ export function useDesactiverEmploye(id: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: CLE_EMPLOYES })
       queryClient.invalidateQueries({ queryKey: cleDetail(id) })
+    },
+  })
+}
+
+export function useExecuterDesactivationAutomatique() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: executerDesactivationAutomatique,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: CLE_EMPLOYES })
+      // Un employé désactivé annule ses notifications de surveillance encore en attente
+      // (SurveillancePlanifieeService#gererEvenementEmploye) — la liste doit se rafraîchir aussi.
+      queryClient.invalidateQueries({ queryKey: ['surveillance'] })
     },
   })
 }

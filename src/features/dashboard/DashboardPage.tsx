@@ -188,7 +188,7 @@ export function DashboardPage() {
 
   return (
     <div className="flex-1 overflow-auto">
-      <div className="mx-auto max-w-[1200px] p-8">
+      <div className="p-8">
         {/* Bandeau délégation active (EF-DASH-05) */}
         {role === 'admin' && delegationActive && (
           <div className="mb-5 flex items-center gap-3 rounded-lg border border-[#D8D4CC] bg-[#D8D4CC]/30 px-4 py-3">

@@ -4,10 +4,13 @@ import { HBLogo } from '@/components/ui/HBLogo'
 import { ROSE_MARQUE } from '@/components/ui/tokens'
 import type { ApiError } from '@/lib/apiClient'
 import { verifierCodeActivation } from './api'
-import { enregistrerJetonAppareil } from './kiosqueDevice'
 
 interface Props {
   onActive: () => void
+  onJeton: (jeton: string) => void
+  titre?: string
+  sousTitre?: string
+  libelleBouton?: string
 }
 
 function formatDecompte(secondes: number): string {
@@ -17,10 +20,16 @@ function formatDecompte(secondes: number): string {
 }
 
 /**
- * NFR-UX-02 : prompt d'activation affiché tant que cet appareil n'a pas de jeton valide — même
- * carte visuelle que l'écran de scan (KiosquePage) pour rester cohérent sur un même appareil.
+ * EF-ATT-17 : prompt d'activation affiché tant que le téléphone de l'employé n'a pas de jeton
+ * valide — appairage de l'appareil personnel (cf. MobilePointagePage).
  */
-export function KiosqueActivationPrompt({ onActive }: Props) {
+export function KiosqueActivationPrompt({
+  onActive,
+  onJeton,
+  titre = 'Activation',
+  sousTitre = 'Saisissez le code fourni par votre administrateur',
+  libelleBouton = 'Activer',
+}: Props) {
   const [code, setCode] = useState('')
   const [loading, setLoading] = useState(false)
   const [erreur, setErreur] = useState<string | null>(null)
@@ -45,7 +54,7 @@ export function KiosqueActivationPrompt({ onActive }: Props) {
     setErreur(null)
     try {
       const jeton = await verifierCodeActivation(code.trim())
-      enregistrerJetonAppareil(jeton)
+      onJeton(jeton)
       onActive()
     } catch (err: unknown) {
       const apiErr = err as ApiError
@@ -73,30 +82,29 @@ export function KiosqueActivationPrompt({ onActive }: Props) {
             style={{ fontFamily: 'var(--font-display)' }}
             className="text-[20px] font-semibold text-white"
           >
-            Activation du kiosque
+            {titre}
           </h1>
-          <p className="mt-1 text-[12px] text-white/60">
-            Saisissez le code fourni par votre administrateur
-          </p>
+          <p className="mt-1 text-[12px] text-white/60">{sousTitre}</p>
         </div>
 
         <div className="space-y-4 p-8">
           <div className="flex items-center gap-2 text-[11px] text-[#9CA3AF]">
             <KeyRound size={13} />
-            Code d'activation (6 caractères)
+            Code d'activation (4 chiffres)
           </div>
           <input
             type="text"
+            inputMode="numeric"
             value={code}
             onChange={(e) => {
-              setCode(e.target.value.toUpperCase())
+              setCode(e.target.value.replace(/\D/g, ''))
               setErreur(null)
             }}
             onKeyDown={(e) => {
               if (e.key === 'Enter') void soumettre()
             }}
-            maxLength={6}
-            placeholder="A1B2C3"
+            maxLength={4}
+            placeholder="1234"
             autoFocus
             disabled={encoreVerrouille}
             style={{ fontFamily: 'var(--font-code)' }}
@@ -108,7 +116,7 @@ export function KiosqueActivationPrompt({ onActive }: Props) {
             onClick={() => void soumettre()}
             className="w-full rounded-lg bg-[#1B2A41] py-3 text-[13px] font-medium text-white transition-colors hover:bg-[#243650] disabled:opacity-50"
           >
-            {loading ? '…' : 'Activer ce kiosque'}
+            {loading ? '…' : libelleBouton}
           </button>
 
           {erreur && (

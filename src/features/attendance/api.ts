@@ -38,7 +38,7 @@ export interface AnomaliePointageReponse {
   id: string
   employeId: string
   datePointage: string
-  typeAnomalie: 'retard' | 'depart_anticipe' | 'absence_checkout' | 'presence_incomplete'
+  typeAnomalie: 'retard' | 'depart_anticipe' | 'absence_checkout' | 'absence_totale'
   resolue: boolean
   creeLe: string
 }
@@ -74,20 +74,63 @@ export interface PlanningTeletravailReponse {
 
 const EN_TETE_JETON_APPAREIL = 'X-Kiosque-Device-Token'
 
-export async function scannerKiosque(
-  valeurQr: string,
+// EF-ATT-17 : deux preuves — l'identité vient de l'appairage de l'appareil (jetonAppareil), la
+// présence physique au lieu vient du QR de site scanné (valeurQrSite).
+export async function scannerPersonnel(
   typeScan: 'entree' | 'sortie',
+  valeurQrSite: string,
   jetonAppareil: string,
 ): Promise<PointageReponse> {
   const { data } = await apiClient.post<ApiResponse<PointageReponse>>(
-    '/api/kiosque/scan',
-    { valeurQr, typeScan },
+    '/api/kiosque/scan-personnel',
+    { typeScan, valeurQrSite },
     { headers: { [EN_TETE_JETON_APPAREIL]: jetonAppareil } },
   )
   return data.data as PointageReponse
 }
 
-/** NFR-UX-02 : cet appareil a-t-il déjà une activation valide ? (sans jeton -> false, pas d'appel). */
+// EF-ATT-19 : révocation en self-service depuis le lien reçu par e-mail — aucun jeton d'appareil
+// ni session requis, le jeton de révocation lui-même est la preuve d'intention.
+export async function revoquerParJeton(jeton: string): Promise<void> {
+  await apiClient.post('/api/kiosque/revoquer-perte', { jeton })
+}
+
+// EF-ATT-17 : historique perso affiché sur /pointage-mobile.
+export async function mesPointagesRecents(jetonAppareil: string): Promise<PointageReponse[]> {
+  const { data } = await apiClient.get<ApiResponse<PointageReponse[]>>(
+    '/api/kiosque/mes-pointages',
+    { headers: { [EN_TETE_JETON_APPAREIL]: jetonAppareil } },
+  )
+  return data.data ?? []
+}
+
+// ---- QR de site (Admin, ou délégué actif) ----
+
+export interface SiteQrCodeReponse {
+  id: string
+  libelle: string
+  valeur: string
+  actif: boolean
+  creePar: string | null
+  creeLe: string
+}
+
+export async function genererSiteQr(libelle: string): Promise<SiteQrCodeReponse> {
+  const { data } = await apiClient.post<ApiResponse<SiteQrCodeReponse>>('/api/kiosque/sites', {
+    libelle,
+  })
+  return data.data as SiteQrCodeReponse
+}
+
+export async function listerSitesQr(): Promise<SiteQrCodeReponse[]> {
+  const { data } = await apiClient.get<ApiResponse<SiteQrCodeReponse[]>>('/api/kiosque/sites')
+  return data.data ?? []
+}
+
+export async function desactiverSiteQr(id: string): Promise<void> {
+  await apiClient.post(`/api/kiosque/sites/${id}/desactiver`)
+}
+
 export async function statutActivationAppareil(jetonAppareil: string | null): Promise<boolean> {
   if (!jetonAppareil) return false
   const { data } = await apiClient.get<ApiResponse<{ actif: boolean }>>(
@@ -112,6 +155,7 @@ export interface KiosqueActivationReponse {
   id: string
   emisPar: string
   delegationId: string | null
+  employeId: string | null
   emisLe: string
   statut: 'en_attente' | 'active' | 'revoquee'
   activeeLe: string | null
@@ -119,10 +163,13 @@ export interface KiosqueActivationReponse {
   revoqueePar: string | null
 }
 
-/** Code en clair — affiché une seule fois, jamais renvoyé par un autre appel. */
-export async function genererCodeActivationKiosque(): Promise<{ id: string; code: string }> {
+// EF-ATT-16 : code lié à un employé — une fois saisi sur son téléphone, l'appareil devient sa
+// propre identité de pointage (voir scannerPersonnel ci-dessous).
+export async function genererCodeActivationPersonnel(
+  employeId: string,
+): Promise<{ id: string; code: string }> {
   const { data } = await apiClient.post<ApiResponse<{ id: string; code: string }>>(
-    '/api/kiosque/activations',
+    `/api/kiosque/activations/personnel/${employeId}`,
   )
   return data.data as { id: string; code: string }
 }
@@ -156,15 +203,73 @@ export async function qrCodeActif(employeId: string): Promise<QrCodeReponse | nu
 
 // ---- Pointages ----
 
+export interface FiltresPointages {
+  employeId?: string
+  typeScan?: 'entree' | 'sortie'
+  debut?: string
+  fin?: string
+}
+
 export async function listerPointages(
+  filtres: FiltresPointages = {},
   page = 0,
   size = 20,
+  sort?: string,
 ): Promise<PagedResponse<PointageReponse>> {
+  const params: Record<string, unknown> = { page, size }
+  if (filtres.employeId) params.employeId = filtres.employeId
+  if (filtres.typeScan) params.typeScan = filtres.typeScan
+  if (filtres.debut) params.debut = filtres.debut
+  if (filtres.fin) params.fin = filtres.fin
+  if (sort) params.sort = sort
   const { data } = await apiClient.get<ApiResponse<PagedResponse<PointageReponse>>>(
     '/api/pointages',
-    { params: { page, size } },
+    { params },
   )
   return data.data as PagedResponse<PointageReponse>
+}
+
+// ---- Tableau de bord ----
+
+export interface AnomalieEmployeReponse {
+  employeId: string
+  nomComplet: string
+  nombreAnomalies: number
+}
+
+export interface RepartitionTypeAnomalieReponse {
+  type: 'retard' | 'depart_anticipe' | 'absence_checkout' | 'absence_totale'
+  nombre: number
+}
+
+export interface PresenceDashboardReponse {
+  tauxPresence30Jours: number
+  joursOuvresPeriode: number
+  topAnomaliesRecurrentes: AnomalieEmployeReponse[]
+  repartitionParType: RepartitionTypeAnomalieReponse[]
+}
+
+export async function obtenirTableauDeBordPresence(): Promise<PresenceDashboardReponse> {
+  const { data } = await apiClient.get<ApiResponse<PresenceDashboardReponse>>(
+    '/api/pointages/dashboard',
+  )
+  return data.data as PresenceDashboardReponse
+}
+
+// EF-ATT-15 : statut calculé en direct, jamais persisté — voir PointageService#aujourdhui.
+export interface PresenceAujourdhuiReponse {
+  employeId: string
+  nomComplet: string
+  statut: 'present' | 'parti' | 'teletravail' | 'conge' | 'absent'
+  heureEntree?: string
+  heureSortie?: string
+}
+
+export async function obtenirPresenceAujourdhui(): Promise<PresenceAujourdhuiReponse[]> {
+  const { data } = await apiClient.get<ApiResponse<PresenceAujourdhuiReponse[]>>(
+    '/api/pointages/aujourdhui',
+  )
+  return data.data ?? []
 }
 
 export async function listerPointagesEmploye(
@@ -206,13 +311,27 @@ export async function corrigerPointage(
 
 // ---- Anomalies ----
 
+export interface FiltresAnomalies {
+  employeId?: string
+  type?: RepartitionTypeAnomalieReponse['type']
+  resolue?: boolean
+  debut?: string
+  fin?: string
+}
+
 export async function listerAnomalies(
-  resolue?: boolean,
+  filtres: FiltresAnomalies = {},
   page = 0,
   size = 20,
+  sort?: string,
 ): Promise<PagedResponse<AnomaliePointageReponse>> {
   const params: Record<string, unknown> = { page, size }
-  if (resolue !== undefined) params.resolue = resolue
+  if (filtres.employeId) params.employeId = filtres.employeId
+  if (filtres.type) params.type = filtres.type
+  if (filtres.resolue !== undefined) params.resolue = filtres.resolue
+  if (filtres.debut) params.debut = filtres.debut
+  if (filtres.fin) params.fin = filtres.fin
+  if (sort) params.sort = sort
   const { data } = await apiClient.get<ApiResponse<PagedResponse<AnomaliePointageReponse>>>(
     '/api/anomalies',
     { params },

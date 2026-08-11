@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { PresenceAujourdhuiPage } from './PresenceAujourdhuiPage'
 import { PointagesPage } from './PointagesPage'
 import { AnomaliesPage } from './AnomaliesPage'
 import { HorairesReferencePage } from './HorairesReferencePage'
@@ -7,10 +9,16 @@ import { PageHeader } from '@/components/ui/StatCard'
 import { useAuth } from '@/lib/AuthContext'
 import { useEstDelegueActifMaintenant } from '../delegation/useDelegation'
 
-type Tab = 'pointages' | 'anomalies' | 'horaires' | 'kiosque'
+type Tab = 'aujourdhui' | 'pointages' | 'anomalies' | 'horaires' | 'kiosque'
+
+const TABS_VALIDES: Tab[] = ['aujourdhui', 'pointages', 'anomalies', 'horaires', 'kiosque']
 
 export function PresencePage() {
-  const [tab, setTab] = useState<Tab>('pointages')
+  const [searchParams] = useSearchParams()
+  const tabParam = searchParams.get('tab')
+  const [tab, setTab] = useState<Tab>(
+    TABS_VALIDES.includes(tabParam as Tab) ? (tabParam as Tab) : 'aujourdhui',
+  )
   const { role } = useAuth()
   const estDelegueActif = useEstDelegueActifMaintenant()
   // NFR-UX-02 : génération/révocation des codes réservée à l'Admin (ou délégué actif) côté
@@ -18,10 +26,11 @@ export function PresencePage() {
   const peutGererKiosque = role === 'admin' || estDelegueActif
 
   const tabs: { key: Tab; label: string }[] = [
+    { key: 'aujourdhui', label: "Aujourd'hui" },
     { key: 'pointages', label: 'Historique pointages' },
     { key: 'anomalies', label: 'Anomalies' },
     { key: 'horaires', label: 'Horaires de référence' },
-    ...(peutGererKiosque ? [{ key: 'kiosque' as const, label: 'Kiosque' }] : []),
+    ...(peutGererKiosque ? [{ key: 'kiosque' as const, label: 'Pointage mobile' }] : []),
   ]
 
   return (
@@ -44,6 +53,7 @@ export function PresencePage() {
         ))}
       </div>
 
+      {tab === 'aujourdhui' && <PresenceAujourdhuiPage />}
       {tab === 'pointages' && <PointagesPage />}
       {tab === 'anomalies' && <AnomaliesPage />}
       {tab === 'horaires' && <HorairesReferencePage />}

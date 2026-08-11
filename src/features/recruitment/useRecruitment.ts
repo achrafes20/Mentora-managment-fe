@@ -32,8 +32,11 @@ function cleCandidature(id: string) {
   return ['candidatures', id] as const
 }
 
-export function useOffres(statut?: string) {
-  return useQuery({ queryKey: [...CLE_OFFRES, statut], queryFn: () => listerOffres(statut) })
+export function useOffres(statut?: string, categorie?: string) {
+  return useQuery({
+    queryKey: [...CLE_OFFRES, statut, categorie],
+    queryFn: () => listerOffres(statut, categorie),
+  })
 }
 
 export function useOffre(id: string | undefined) {

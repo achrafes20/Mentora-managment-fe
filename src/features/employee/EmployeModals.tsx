@@ -126,6 +126,7 @@ const MOTIFS = [
   { value: 'demission', label: 'Démission' },
   { value: 'licenciement', label: 'Licenciement' },
   { value: 'fin_cdd', label: 'Fin de CDD' },
+  { value: 'fin_stage', label: 'Fin de stage' },
   { value: 'rupture', label: 'Rupture conventionnelle' },
   { value: 'autre', label: 'Autre' },
 ] as const
