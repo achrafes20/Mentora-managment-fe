@@ -234,7 +234,6 @@ export function EmployeFormModal({
         </>
       }
     >
-      {errorMessage && <Alert message={errorMessage} />}
       <FormField label="Photo (optionnelle)">
         <div className="flex items-center gap-4">
           <Avatar
@@ -442,6 +441,10 @@ export function EmployeFormModal({
           </FormField>
         </>
       )}
+      {/* En bas, juste au-dessus du footer (Enregistrer/Créer) — pas en haut d'un formulaire long
+          et défilable, où l'utilisateur qui vient de cliquer sur le bouton en bas ne le voit pas
+          sans remonter. */}
+      {errorMessage && <Alert message={errorMessage} />}
     </Dialog>
   )
 }

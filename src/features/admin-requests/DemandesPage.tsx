@@ -899,10 +899,6 @@ export function DemandesPage() {
               ))}
             </tbody>
           </table>
-          <p className="border-t border-[#D8D4CC] px-4 py-3 text-[11px] text-[#6B7280]">
-            Remplace le taux fixe précédemment codé en dur — le solde de chaque employé est
-            recalculé à la volée, aucune donnée déjà enregistrée n'est modifiée rétroactivement.
-          </p>
         </section>
       )}
     </div>

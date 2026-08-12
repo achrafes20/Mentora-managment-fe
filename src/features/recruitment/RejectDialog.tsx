@@ -45,7 +45,7 @@ export function RejectDialog({ open, onCancel, onConfirm, submitting }: Props) {
       }
     >
       <p className="mb-2 text-[12px] text-[#6B7280]">
-        Message envoyé au candidat (EF-REC-14) — éditable avant envoi.
+        Message envoyé au candidat — éditable avant envoi.
       </p>
       <textarea
         value={corps}

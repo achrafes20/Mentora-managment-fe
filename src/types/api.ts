@@ -3099,9 +3099,9 @@ export interface components {
             /** Format: date-time */
             timestamp?: string;
         };
-        ApiResponseListNotificationPlanifieeReponse: {
+        ApiResponsePagedResponseNotificationPlanifieeReponse: {
             success?: boolean;
-            data?: components["schemas"]["NotificationPlanifieeReponse"][];
+            data?: components["schemas"]["PagedResponseNotificationPlanifieeReponse"];
             error?: string;
             /** Format: date-time */
             timestamp?: string;
@@ -3115,6 +3115,18 @@ export interface components {
             /** Format: date */
             dateEcheance?: string;
             statut?: string;
+        };
+        PagedResponseNotificationPlanifieeReponse: {
+            content?: components["schemas"]["NotificationPlanifieeReponse"][];
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            size?: number;
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+            last?: boolean;
         };
         ApiResponseListEnvoiDocumentResponse: {
             success?: boolean;
@@ -6090,7 +6102,10 @@ export interface operations {
     };
     listerSurveillance: {
         parameters: {
-            query?: never;
+            query: {
+                jours?: number;
+                pageable: components["schemas"]["Pageable"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -6103,7 +6118,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["ApiResponseListNotificationPlanifieeReponse"];
+                    "*/*": components["schemas"]["ApiResponsePagedResponseNotificationPlanifieeReponse"];
                 };
             };
         };

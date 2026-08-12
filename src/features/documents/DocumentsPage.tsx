@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { PageHeader } from '@/components/ui/StatCard'
 import {
   useExecuterSurveillance,
@@ -7,23 +8,29 @@ import {
 import { useEmployes, useExecuterDesactivationAutomatique } from '../employee/useEmployes'
 import dayjs from 'dayjs'
 import { toast } from '@/components/ui/toast'
+import { Button } from '@/components/ui/Button'
 import type { ApiError } from '@/lib/apiClient'
 
+const FENETRE_RESTREINTE = 10
+const FENETRE_ELARGIE = 30
+
 export function DocumentsPage() {
-  const { data: surveillance } = useSurveillance()
+  const [page, setPage] = useState(0)
+  const [jours, setJours] = useState(FENETRE_RESTREINTE)
+  const { data: surveillance } = useSurveillance(page, 10, jours)
   const { data: employesData } = useEmployes({})
   const renvoyerMutation = useRenvoyerDocumentSurveillance()
   const executerSurveillanceMutation = useExecuterSurveillance()
   const executerDesactivationMutation = useExecuterDesactivationAutomatique()
 
-  const pendingNotifs = surveillance ?? []
+  const pendingNotifs = surveillance?.content ?? []
   const employes = employesData?.content ?? []
 
   const docsATraiter = pendingNotifs.map((notif) => {
     const employe = employes.find((e) => e.id === notif.employeId)
     let delai = ''
     if (notif.dateEcheance) {
-      const diff = dayjs(notif.dateEcheance).diff(dayjs(), 'day')
+      const diff = dayjs(notif.dateEcheance).startOf('day').diff(dayjs().startOf('day'), 'day')
       delai = diff > 0 ? `J-${diff}` : diff === 0 ? "Aujourd'hui" : `En retard (${diff}j)`
     }
     return {
@@ -43,9 +50,22 @@ export function DocumentsPage() {
       <PageHeader title="Documents RH" subtitle="Certificats et envois de documents" />
 
       <div className="mt-6 mb-3 flex items-center justify-between">
-        <h2 className="text-[13px] font-semibold text-[#1B2A41]">
-          Documents de fin de contrat à surveiller
-        </h2>
+        <div className="flex items-center gap-3">
+          <h2 className="text-[13px] font-semibold text-[#1B2A41]">
+            Documents de fin de contrat à surveiller
+          </h2>
+          <button
+            onClick={() => {
+              setPage(0)
+              setJours(jours === FENETRE_RESTREINTE ? FENETRE_ELARGIE : FENETRE_RESTREINTE)
+            }}
+            className="text-[11px] text-[#6B7280] underline hover:text-[#1B2A41]"
+          >
+            {jours === FENETRE_RESTREINTE
+              ? `Voir sur ${FENETRE_ELARGIE} jours`
+              : `Revenir à ${FENETRE_RESTREINTE} jours`}
+          </button>
+        </div>
         <div className="flex gap-2">
           <button
             onClick={async () => {
@@ -129,6 +149,30 @@ export function DocumentsPage() {
             </div>
           </div>
         ))}
+        {surveillance && surveillance.totalElements! > 0 && (
+          <div className="flex items-center justify-between border-t border-[#D8D4CC] pt-3">
+            <span className="text-[12px] text-[#6B7280]">
+              Page {surveillance.page! + 1} sur {Math.max(surveillance.totalPages!, 1)} (
+              {surveillance.totalElements} entrées)
+            </span>
+            <div className="flex gap-2">
+              <Button
+                variant="secondary"
+                disabled={page === 0}
+                onClick={() => setPage((p) => p - 1)}
+              >
+                Précédent
+              </Button>
+              <Button
+                variant="secondary"
+                disabled={surveillance.last}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                Suivant
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

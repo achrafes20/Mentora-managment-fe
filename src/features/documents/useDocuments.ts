@@ -100,10 +100,10 @@ export function useEnvoyerDocumentLibre() {
   })
 }
 
-export function useSurveillance() {
+export function useSurveillance(page = 0, size = 10, jours = 10) {
   return useQuery({
-    queryKey: ['surveillance'],
-    queryFn: listerSurveillance,
+    queryKey: ['surveillance', page, size, jours],
+    queryFn: () => listerSurveillance(page, size, jours),
   })
 }
 

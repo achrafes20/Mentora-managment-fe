@@ -1,19 +1,28 @@
 import { useState } from 'react'
-import { AlertTriangle, Lock } from 'lucide-react'
+import { AlertTriangle, Clock, Lock } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/lib/AuthContext'
 import { HBLogo } from '@/components/ui/HBLogo'
 import { ROSE_MARQUE } from '@/components/ui/tokens'
+import { formatDecompte, useCompteARebours } from '@/components/ui/useCompteARebours'
+import type { ApiError } from '@/lib/apiClient'
 
 export function LoginPage() {
   const { signIn } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [error, setError] = useState<string | null>(null)
-  const [locked, setLocked] = useState(false)
+  // Épinglé au chargement de la réponse d'erreur (data.verrouilleJusquA, en ISO) — même pattern que
+  // KiosqueActivationPrompt (NFR-UX-02).
+  const [verrouilleJusquA, setVerrouilleJusquA] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+
+  // `locked` retombe à false tout seul quand le décompte arrive à zéro (useCompteARebours) — le
+  // rendu ci-dessous en dépend directement, laissant réapparaître le formulaire sans action
+  // supplémentaire ; verrouilleJusquA lui-même est remis à null au prochain essai (handleSubmit).
+  const { secondesRestantes, enCours: locked } = useCompteARebours(verrouilleJusquA)
 
   const from =
     (location.state as { from?: { pathname: string } })?.from?.pathname ?? '/tableau-de-bord'
@@ -21,17 +30,18 @@ export function LoginPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
-    setLocked(false)
+    setVerrouilleJusquA(null)
     setLoading(true)
     try {
       await signIn(email, password)
       navigate(from, { replace: true })
     } catch (err: unknown) {
-      const msg = (err as { message?: string })?.message ?? 'Identifiant ou mot de passe incorrect.'
-      if (msg.toLowerCase().includes('verrouillé')) {
-        setLocked(true)
+      const apiErr = err as ApiError
+      const donnee = apiErr?.data as { verrouilleJusquA?: string } | undefined
+      if (donnee?.verrouilleJusquA) {
+        setVerrouilleJusquA(new Date(donnee.verrouilleJusquA).getTime())
       } else {
-        setError(msg)
+        setError(apiErr?.message ?? 'Identifiant ou mot de passe incorrect.')
       }
     } finally {
       setLoading(false)
@@ -76,6 +86,12 @@ export function LoginPage() {
                 Suite à plusieurs tentatives échouées. Réessayez dans quelques minutes, ou contactez
                 un administrateur.
               </p>
+              <div className="flex items-center gap-2 rounded-lg border border-[#C1495A]/20 bg-[#C1495A]/8 px-4 py-2.5 text-[13px] font-medium text-[#C1495A]">
+                <Clock size={14} className="shrink-0" />
+                <span style={{ fontFamily: 'var(--font-code)' }}>
+                  {formatDecompte(secondesRestantes)}
+                </span>
+              </div>
             </div>
           </div>
         ) : (

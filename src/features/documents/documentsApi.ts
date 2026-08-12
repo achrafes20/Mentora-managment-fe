@@ -1,4 +1,5 @@
 import { apiClient } from '../../lib/apiClient'
+import type { components } from '../../types/api'
 
 export interface EnvoiDocumentResponse {
   id: string
@@ -103,19 +104,32 @@ export async function envoyerDocumentLibre(
   return data.data!
 }
 
-export interface NotificationPlanifieeResponse {
-  id: string
-  employeId: string
-  typeFinSurveillee: string
-  dateEcheance: string
-  statut: string
+export type NotificationPlanifieeResponse = components['schemas']['NotificationPlanifieeReponse']
+export type PageSurveillance = components['schemas']['PagedResponseNotificationPlanifieeReponse']
+
+const PAGE_VIDE: PageSurveillance = {
+  content: [],
+  page: 0,
+  size: 0,
+  totalElements: 0,
+  totalPages: 0,
+  last: true,
 }
 
-export async function listerSurveillance(): Promise<NotificationPlanifieeResponse[]> {
-  const { data } = await apiClient.get<ApiResponse<NotificationPlanifieeResponse[]>>(
+// Fenêtre resserrée à 10 jours par défaut (au lieu des 30 jours renvoyés par le backend avant
+// EF-DOC : un pic de stagiaires l'été peut produire des dizaines d'échéances simultanées) —
+// `jours` reste ajustable côté écran pour élargir la vue. Résultat paginé, trié par échéance
+// croissante par le backend (le plus urgent en premier).
+export async function listerSurveillance(
+  page = 0,
+  size = 10,
+  jours = 10,
+): Promise<PageSurveillance> {
+  const { data } = await apiClient.get<ApiResponse<PageSurveillance>>(
     '/api/documents/surveillance',
+    { params: { page, size, jours } },
   )
-  return data.data ?? []
+  return data.data ?? PAGE_VIDE
 }
 
 export async function renvoyerDocumentSurveillance(

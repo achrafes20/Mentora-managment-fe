@@ -71,7 +71,8 @@ function FinContratAlert({ count, onClick }: { count: number; onClick: () => voi
             {count} fin{count > 1 ? 's' : ''} de contrat dans les 7 jours
           </p>
           <p className="mt-1 text-[11px] leading-relaxed text-[#C1495A]/70">
-            Stagiaire{count > 1 ? 's' : ''} dont le contrat arrive à échéance cette semaine.
+            Employé{count > 1 ? 's' : ''} (CDD, stage) dont le contrat arrive à échéance cette
+            semaine.
           </p>
           <button
             onClick={onClick}
@@ -152,7 +153,7 @@ export function DashboardPage() {
         {
           label: 'Fins de contrat < 7j',
           value: stats.finContratDans7Jours ?? 0,
-          sub: 'Stagiaires en fin de période',
+          sub: 'CDD et stages en fin de période',
           accentColor: '#C1495A',
           path: '/documents',
         },

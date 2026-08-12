@@ -447,7 +447,11 @@ export function EmployeDetailPage() {
           <ArrowLeft size={13} /> Retour à la liste
         </button>
 
-        {erreur && (
+        {/* modaleEdition affiche déjà erreur dans son propre Alert (EmployeFormModal) — l'afficher
+            aussi ici en même temps dupliquait le message derrière la modale (illisible tant
+            qu'elle n'est pas fermée). Ce bandeau ne sert donc que pour transfert/désactivation,
+            qui n'ont pas encore leur propre affichage inline. */}
+        {erreur && !modaleEdition && (
           <div className="mb-4 rounded-lg border border-[#C1495A]/20 bg-[#C1495A]/8 p-3 text-[12px] text-[#C1495A]">
             {erreur}
           </div>

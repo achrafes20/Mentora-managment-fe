@@ -1,7 +1,8 @@
 import { Clock, KeyRound, XCircle } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { HBLogo } from '@/components/ui/HBLogo'
 import { ROSE_MARQUE } from '@/components/ui/tokens'
+import { formatDecompte, useCompteARebours } from '@/components/ui/useCompteARebours'
 import type { ApiError } from '@/lib/apiClient'
 import { verifierCodeActivation } from './api'
 
@@ -11,12 +12,6 @@ interface Props {
   titre?: string
   sousTitre?: string
   libelleBouton?: string
-}
-
-function formatDecompte(secondes: number): string {
-  const m = Math.floor(secondes / 60)
-  const s = secondes % 60
-  return `${m}:${String(s).padStart(2, '0')}`
 }
 
 /**
@@ -36,17 +31,7 @@ export function KiosqueActivationPrompt({
   // Épinglé au chargement de la réponse d'erreur (data.verrouilleJusquA, en ISO) — le décompte
   // affiché est dérivé de cette valeur fixe et de l'horloge locale, jamais re-demandé au serveur.
   const [verrouilleJusquA, setVerrouilleJusquA] = useState<number | null>(null)
-  const [maintenant, setMaintenant] = useState(() => Date.now())
-
-  useEffect(() => {
-    if (verrouilleJusquA === null) return
-    const id = setInterval(() => setMaintenant(Date.now()), 1000)
-    return () => clearInterval(id)
-  }, [verrouilleJusquA])
-
-  const secondesRestantes =
-    verrouilleJusquA !== null ? Math.max(0, Math.ceil((verrouilleJusquA - maintenant) / 1000)) : 0
-  const encoreVerrouille = verrouilleJusquA !== null && secondesRestantes > 0
+  const { secondesRestantes, enCours: encoreVerrouille } = useCompteARebours(verrouilleJusquA)
 
   async function soumettre() {
     if (!code.trim() || encoreVerrouille) return
