@@ -30,12 +30,21 @@ describe('documentsApi', () => {
     await expect(listerEnvoisDocuments('emp-1')).resolves.toEqual([])
   })
 
-  it('liste la file de surveillance sur le bon endpoint', async () => {
-    getMock.mockResolvedValueOnce({ data: { data: [] } })
+  // Paginee (EF-DOC) : fenetre par defaut resserree a 10 jours (au lieu de 30) pour ne pas noyer
+  // l'urgent sous le lointain en pic estival de stagiaires — page/size/jours toujours envoyes,
+  // meme avec les valeurs par defaut de listerSurveillance().
+  it('liste la file de surveillance sur le bon endpoint, paginee', async () => {
+    getMock.mockResolvedValueOnce({
+      data: {
+        data: { content: [], page: 0, size: 10, totalElements: 0, totalPages: 0, last: true },
+      },
+    })
 
     await listerSurveillance()
 
-    expect(getMock).toHaveBeenCalledWith('/api/documents/surveillance')
+    expect(getMock).toHaveBeenCalledWith('/api/documents/surveillance', {
+      params: { page: 0, size: 10, jours: 10 },
+    })
   })
 
   // Le nom de la partie ("file") doit matcher @RequestParam("file") cote backend
