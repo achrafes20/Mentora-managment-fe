@@ -26,23 +26,29 @@ export function DocumentsPage() {
   const pendingNotifs = surveillance?.content ?? []
   const employes = employesData?.content ?? []
 
-  const docsATraiter = pendingNotifs.map((notif) => {
+  // id/employeId sont optionnels dans le type généré (springdoc ne les marque jamais requis) mais
+  // une ligne sans les deux n'est de toute façon pas exploitable ici (ni renvoi ni lien possible) —
+  // flatMap plutôt que map pour les exclure proprement au lieu de propager `undefined`.
+  const docsATraiter = pendingNotifs.flatMap((notif) => {
+    if (!notif.id || !notif.employeId) return []
     const employe = employes.find((e) => e.id === notif.employeId)
     let delai = ''
     if (notif.dateEcheance) {
       const diff = dayjs(notif.dateEcheance).startOf('day').diff(dayjs().startOf('day'), 'day')
       delai = diff > 0 ? `J-${diff}` : diff === 0 ? "Aujourd'hui" : `En retard (${diff}j)`
     }
-    return {
-      id: notif.id,
-      employeId: notif.employeId,
-      nom: employe ? `${employe.prenom} ${employe.nom}` : 'Inconnu',
-      type:
-        notif.typeFinSurveillee === 'fin_stage' ? 'Certificat de stage' : 'Certificat de travail',
-      delai,
-      poste: employe?.poste ?? '—',
-      isStage: notif.typeFinSurveillee === 'fin_stage',
-    }
+    return [
+      {
+        id: notif.id,
+        employeId: notif.employeId,
+        nom: employe ? `${employe.prenom} ${employe.nom}` : 'Inconnu',
+        type:
+          notif.typeFinSurveillee === 'fin_stage' ? 'Certificat de stage' : 'Certificat de travail',
+        delai,
+        poste: employe?.poste ?? '—',
+        isStage: notif.typeFinSurveillee === 'fin_stage',
+      },
+    ]
   })
 
   return (
