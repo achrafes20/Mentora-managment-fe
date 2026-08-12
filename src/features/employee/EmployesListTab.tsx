@@ -15,6 +15,13 @@ import {
 import { useAuth } from '../../lib/AuthContext'
 import { apiClient, type ApiError } from '../../lib/apiClient'
 import { basculerTri, SortableTh, type Tri } from '@/components/ui/SortableTh'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/DropdownMenu'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/Popover'
 import { EmployeFormModal, type EmployeFormValues, type EmployePrefill } from './EmployeFormModal'
 import { useDepartements } from './useDepartements'
 import { useQueryClient } from '@tanstack/react-query'
@@ -77,9 +84,8 @@ export function EmployesListTab() {
   const [erreur, setErreur] = useState<string | null>(null)
   const [selectionMode, setSelectionMode] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
-  const [showExport, setShowExport] = useState(false)
-  const [showExportPaie, setShowExportPaie] = useState(false)
   const [moisPaie, setMoisPaie] = useState(() => format(new Date(), 'yyyy-MM'))
+  const [exportPaieOuvert, setExportPaieOuvert] = useState(false)
   const [searchParams, setSearchParams] = useSearchParams()
 
   const queryClient = useQueryClient()
@@ -171,7 +177,6 @@ export function EmployesListTab() {
   }
 
   async function lancerExport(fmt: 'xlsx' | 'pdf') {
-    setShowExport(false)
     try {
       await exporterEmployes(
         {
@@ -189,7 +194,6 @@ export function EmployesListTab() {
   }
 
   async function lancerExportPaie(fmt: 'xlsx' | 'pdf') {
-    setShowExportPaie(false)
     try {
       await exporterPaie(moisPaie, fmt)
     } catch {
@@ -236,61 +240,62 @@ export function EmployesListTab() {
               </button>
             )}
             {/* EF-EXP-01 : Export ouvert à Admin + Manager côté backend (EmployeController#exporter),
-                donc jamais restreint au bloc Admin-only ci-dessous. */}
-            <div className="relative">
-              <button
-                onClick={() => setShowExport((v) => !v)}
-                className="flex items-center gap-1.5 rounded-lg border border-[#D8D4CC] px-3 py-2 text-[12px] text-[#6B7280] transition-colors hover:border-[#1B2A41] hover:text-[#1B2A41]"
-              >
-                <Download size={13} /> Exporter
-              </button>
-              {showExport && (
-                <div className="absolute top-full right-0 z-10 mt-1 w-36 overflow-hidden rounded-lg border border-[#D8D4CC] bg-white shadow-lg">
-                  {(['xlsx', 'pdf'] as const).map((fmt) => (
-                    <button
-                      key={fmt}
-                      onClick={() => void lancerExport(fmt)}
-                      className="block w-full px-4 py-2.5 text-left text-[12px] text-[#1B2A41] transition-colors hover:bg-[#F7F7F4]"
-                    >
-                      {fmt === 'xlsx' ? 'Excel (.xlsx)' : 'PDF'}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-            {estAdmin && (
-              <div className="relative">
-                <button
-                  onClick={() => setShowExportPaie((v) => !v)}
-                  className="flex items-center gap-1.5 rounded-lg border border-[#D8D4CC] px-3 py-2 text-[12px] text-[#6B7280] transition-colors hover:border-[#1B2A41] hover:text-[#1B2A41]"
-                >
-                  <Download size={13} /> Export paie
+                donc jamais restreint au bloc Admin-only ci-dessous. DropdownMenu (pas un div
+                "absolute" fait main) : ferme au clic extérieur/Échap, et surtout se ferme tout
+                seul si l'autre menu export (Export paie) s'ouvre — deux triggers indépendants
+                hand-roulés pouvaient rester ouverts ensemble et se chevaucher. */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-1.5 rounded-lg border border-[#D8D4CC] px-3 py-2 text-[12px] text-[#6B7280] transition-colors hover:border-[#1B2A41] hover:text-[#1B2A41]">
+                  <Download size={13} /> Exporter
                 </button>
-                {showExportPaie && (
-                  <div className="absolute top-full right-0 z-10 mt-1 w-52 overflow-hidden rounded-lg border border-[#D8D4CC] bg-white p-3 shadow-lg">
-                    <label className="mb-1 block text-[11px] font-medium text-[#6B7280]">
-                      Mois
-                    </label>
-                    <input
-                      type="month"
-                      value={moisPaie}
-                      onChange={(e) => setMoisPaie(e.target.value)}
-                      className="mb-2 w-full rounded-lg border border-[#D8D4CC] px-2 py-1.5 text-[12px] text-[#1B2A41] outline-none focus:border-[#1B2A41]"
-                    />
-                    <div className="flex gap-2">
-                      {(['xlsx', 'pdf'] as const).map((fmt) => (
-                        <button
-                          key={fmt}
-                          onClick={() => void lancerExportPaie(fmt)}
-                          className="flex-1 rounded-lg border border-[#D8D4CC] px-2 py-1.5 text-[12px] text-[#1B2A41] transition-colors hover:bg-[#F7F7F4]"
-                        >
-                          {fmt === 'xlsx' ? 'Excel' : 'PDF'}
-                        </button>
-                      ))}
-                    </div>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-36">
+                {(['xlsx', 'pdf'] as const).map((fmt) => (
+                  <DropdownMenuItem key={fmt} onSelect={() => void lancerExport(fmt)}>
+                    {fmt === 'xlsx' ? 'Excel (.xlsx)' : 'PDF'}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            {estAdmin && (
+              // Popover, pas DropdownMenu : ce panneau contient un vrai contrôle de formulaire
+              // (<input type="month">), pas une liste de commandes — DropdownMenu modélise un
+              // role="menu" dont la navigation clavier/typeahead peut avaler les interactions avec
+              // un input natif à l'intérieur (constaté : les boutons Excel/PDF ne déclenchaient
+              // plus aucun appel réseau une fois placés dans un DropdownMenuItem). `open` contrôlé
+              // explicitement plutôt que PopoverClose : fermeture déclenchée nous-mêmes après avoir
+              // lancé l'export, aucune dépendance à la composition d'event handlers de Radix.
+              <Popover open={exportPaieOuvert} onOpenChange={setExportPaieOuvert}>
+                <PopoverTrigger asChild>
+                  <button className="flex items-center gap-1.5 rounded-lg border border-[#D8D4CC] px-3 py-2 text-[12px] text-[#6B7280] transition-colors hover:border-[#1B2A41] hover:text-[#1B2A41]">
+                    <Download size={13} /> Export paie
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-52">
+                  <label className="mb-1 block text-[11px] font-medium text-[#6B7280]">Mois</label>
+                  <input
+                    type="month"
+                    value={moisPaie}
+                    onChange={(e) => setMoisPaie(e.target.value)}
+                    className="mb-2 w-full rounded-lg border border-[#D8D4CC] px-2 py-1.5 text-[12px] text-[#1B2A41] outline-none focus:border-[#1B2A41]"
+                  />
+                  <div className="flex gap-2">
+                    {(['xlsx', 'pdf'] as const).map((fmt) => (
+                      <button
+                        key={fmt}
+                        onClick={() => {
+                          setExportPaieOuvert(false)
+                          void lancerExportPaie(fmt)
+                        }}
+                        className="flex-1 rounded-lg border border-[#D8D4CC] px-2 py-1.5 text-[12px] text-[#1B2A41] transition-colors hover:bg-[#F7F7F4]"
+                      >
+                        {fmt === 'xlsx' ? 'Excel' : 'PDF'}
+                      </button>
+                    ))}
                   </div>
-                )}
-              </div>
+                </PopoverContent>
+              </Popover>
             )}
             {estAdmin && (
               <>

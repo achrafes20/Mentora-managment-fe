@@ -17,7 +17,6 @@ import { useTriLocal } from '@/components/ui/useTriLocal'
 import { formatStatut } from '@/components/ui/tokens'
 import { toast } from '@/components/ui/toast'
 import { confirm } from '@/components/ui/confirm'
-import { useAuth } from '@/lib/AuthContext'
 import type { ApiError } from '@/lib/apiClient'
 import {
   useCreerDelegation,
@@ -41,7 +40,6 @@ const schema = z
 type FormValues = z.infer<typeof schema>
 
 export function DelegationPage() {
-  const { user } = useAuth()
   const [showForm, setShowForm] = useState(false)
   const [erreur, setErreur] = useState<string | null>(null)
 
@@ -64,9 +62,9 @@ export function DelegationPage() {
   } = useForm<FormValues>({ resolver: zodResolver(schema) })
 
   const delegablesOptions = (utilisateurs ?? [])
-    .filter((u) => u.statut === 'actif' && u.id !== user?.id)
+    .filter((u) => u.statut === 'actif' && u.role === 'manager')
     .map((u) => ({
-      label: `${u.prenom} ${u.nom} (${u.role === 'admin' ? 'Admin' : 'Manager'})`,
+      label: `${u.prenom} ${u.nom} (Manager)`,
       value: u.id,
     }))
 
