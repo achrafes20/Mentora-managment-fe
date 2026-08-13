@@ -8,7 +8,6 @@ interface ApiResponse<T> {
 export type TypeDemandeAdministrative =
   | 'conge'
   | 'bon_sortie'
-  | 'document_libre'
   | 'autre'
   | 'conge_mariage'
   | 'conge_naissance'
@@ -33,7 +32,7 @@ export interface DemandeAdministrative {
   dureeJours?: number
   creeLe?: string
   dateDecision?: string
-  fichierDocumentLibreId?: string
+  fichierJustificatifId?: string
 }
 
 export interface DemandeAdministrativeRequete {
@@ -45,7 +44,7 @@ export interface DemandeAdministrativeRequete {
   heureDepart?: string
   heureRetourPrevue?: string
   motif?: string
-  fichierDocumentLibreId?: string
+  fichierJustificatifId?: string
 }
 
 export interface SoldeConge {
@@ -127,6 +126,26 @@ export async function exporterDemandes(
   declencherTelechargement(data, `demandes_administratives.${format}`)
 }
 
+// Ouvert dans un nouvel onglet (le backend répond en Content-Disposition: inline) plutôt qu'un
+// <a href> brut : l'intercepteur Authorization ne porte pas sur une navigation directe (même
+// principe que ouvrirDocument dans employesApi.ts / ouvrirApercu dans documentsApi.ts).
+export async function voirJustificatif(demandeId: string): Promise<void> {
+  const { data } = await apiClient.get<Blob>(
+    `/api/demandes-administratives/${demandeId}/justificatif`,
+    { responseType: 'blob' },
+  )
+  const blobUrl = URL.createObjectURL(data)
+  window.open(blobUrl, '_blank', 'noreferrer')
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000)
+}
+
+export async function obtenirDemande(id: string): Promise<DemandeAdministrative> {
+  const { data } = await apiClient.get<ApiResponse<DemandeAdministrative>>(
+    `/api/demandes-administratives/${id}`,
+  )
+  return data.data as DemandeAdministrative
+}
+
 export async function creerDemande(
   requete: DemandeAdministrativeRequete,
 ): Promise<DemandeAdministrative> {
@@ -138,7 +157,7 @@ export async function creerDemande(
 }
 
 // EF-ADM-14 : justificatif (arrêt de travail...) téléversé avant la création de la demande —
-// l'UUID retourné est ensuite passé en fichierDocumentLibreId dans creerDemande().
+// l'UUID retourné est ensuite passé en fichierJustificatifId dans creerDemande().
 export async function televerserJustificatif(fichier: File): Promise<string> {
   const formData = new FormData()
   formData.append('fichier', fichier)

@@ -13,8 +13,14 @@ import { confirm } from '@/components/ui/confirm'
 import type { ApiError } from '@/lib/apiClient'
 import { useDepartements } from '@/features/employee/useDepartements'
 import { useEmployes } from '@/features/employee/useEmployes'
-import { useCandidatures, useOffres, CLE_CANDIDATURES } from './useRecruitment'
+import {
+  useCandidatures,
+  useCreerCandidatureManuelle,
+  useOffres,
+  CLE_CANDIDATURES,
+} from './useRecruitment'
 import { changerStatutCandidature, type Candidature } from './recruitmentApi'
+import { CandidatureFormModal, type CandidatureFormValues } from './CandidatureFormModal'
 import { EntretienScheduleDialog } from './EntretienScheduleDialog'
 import { RejectDialog } from './RejectDialog'
 
@@ -162,10 +168,13 @@ export function RecruitmentPage() {
   const [colonneSurvolee, setColonneSurvolee] = useState<string | null>(null)
   const [dialogEntretienId, setDialogEntretienId] = useState<string | null>(null)
   const [dialogRejetId, setDialogRejetId] = useState<string | null>(null)
+  const [showNouvelleCandidature, setShowNouvelleCandidature] = useState(false)
+  const [erreurNouvelleCandidature, setErreurNouvelleCandidature] = useState<string | null>(null)
   const queryClient = useQueryClient()
 
   const { data: page, isLoading } = useCandidatures({ recherche: search || undefined, size: 200 })
   const { data: offres } = useOffres()
+  const creerCandidatureMutation = useCreerCandidatureManuelle()
   const { data: departements } = useDepartements()
   const { data: pageEmployes } = useEmployes({ size: 500 })
 
@@ -240,6 +249,25 @@ export function RecruitmentPage() {
   }
 
   const candidatureEntretien = candidatures.find((c) => c.id === dialogEntretienId)
+
+  async function creerCandidatureManuelle(values: CandidatureFormValues, cv: File | null) {
+    setErreurNouvelleCandidature(null)
+    try {
+      await creerCandidatureMutation.mutateAsync({
+        nom: values.nom,
+        prenom: values.prenom,
+        email: values.email,
+        telephone: values.telephone || undefined,
+        offreId: values.offreId || undefined,
+        notes: values.notes || undefined,
+        cv: cv ?? undefined,
+      })
+      toast.success('Candidature créée')
+      setShowNouvelleCandidature(false)
+    } catch (err) {
+      setErreurNouvelleCandidature((err as ApiError).message ?? 'Échec de la création')
+    }
+  }
 
   // EF-AUTH-11/12 : un délégué actif bascule sur la vue Admin complète (kanban + accès aux
   // Offres) — sans ça, ce branchement sur `role` seul l'enfermait dans la vue restreinte
@@ -344,17 +372,36 @@ export function RecruitmentPage() {
         }}
         submitting={false}
       />
+      <CandidatureFormModal
+        open={showNouvelleCandidature}
+        offres={offres ?? []}
+        onCancel={() => {
+          setShowNouvelleCandidature(false)
+          setErreurNouvelleCandidature(null)
+        }}
+        onSubmit={creerCandidatureManuelle}
+        submitting={creerCandidatureMutation.isPending}
+        errorMessage={erreurNouvelleCandidature}
+      />
 
       <PageHeader
         title="Recrutement"
         subtitle="Pipeline des candidatures — glisser-déposer une carte pour changer son statut"
         actions={
-          <button
-            onClick={() => navigate('/recrutement/offres')}
-            className="rounded-lg border border-[#D8D4CC] px-3 py-2 text-[12px] text-[#6B7280] transition-colors hover:border-[#1B2A41] hover:text-[#1B2A41]"
-          >
-            Offres d'emploi
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowNouvelleCandidature(true)}
+              className="rounded-lg bg-[#1B2A41] px-3 py-2 text-[12px] font-medium text-white transition-colors hover:bg-[#243650]"
+            >
+              + Nouvelle candidature
+            </button>
+            <button
+              onClick={() => navigate('/recrutement/offres')}
+              className="rounded-lg border border-[#D8D4CC] px-3 py-2 text-[12px] text-[#6B7280] transition-colors hover:border-[#1B2A41] hover:text-[#1B2A41]"
+            >
+              Offres d'emploi
+            </button>
+          </div>
         }
       />
 

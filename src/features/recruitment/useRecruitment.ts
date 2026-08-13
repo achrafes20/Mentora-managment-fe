@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   changerStatutCandidature,
+  creerCandidatureManuelle,
   creerOffre,
   enregistrerResultatEntretien,
   fermerOffre,
@@ -90,6 +91,14 @@ export function useCandidatures(filtres: FiltresCandidatures) {
   return useQuery({
     queryKey: [...CLE_CANDIDATURES, filtres],
     queryFn: () => listerCandidatures(filtres),
+  })
+}
+
+export function useCreerCandidatureManuelle() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: creerCandidatureManuelle,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: CLE_CANDIDATURES }),
   })
 }
 

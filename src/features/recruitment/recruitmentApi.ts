@@ -101,6 +101,32 @@ export async function voirCvCandidature(id: string): Promise<void> {
   setTimeout(() => URL.revokeObjectURL(url), 60_000)
 }
 
+// Candidat reçu au bureau (hors ingestion e-mail) — offre optionnelle, CV optionnel, aucune
+// analyse IA déclenchée automatiquement (cf. AdministrativeController#creerManuellement côté
+// backend pour le raisonnement complet).
+export async function creerCandidatureManuelle(payload: {
+  nom: string
+  prenom: string
+  email: string
+  telephone?: string
+  offreId?: string
+  notes?: string
+  cv?: File
+}): Promise<Candidature> {
+  const formData = new FormData()
+  formData.append('nom', payload.nom)
+  formData.append('prenom', payload.prenom)
+  formData.append('email', payload.email)
+  if (payload.telephone) formData.append('telephone', payload.telephone)
+  if (payload.offreId) formData.append('offreId', payload.offreId)
+  if (payload.notes) formData.append('notes', payload.notes)
+  if (payload.cv) formData.append('cv', payload.cv)
+  const { data } = await apiClient.post<ApiResponse<Candidature>>('/api/candidatures', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+  return data.data as Candidature
+}
+
 export async function listerEntretiens(candidatureId: string): Promise<Entretien[]> {
   const { data } = await apiClient.get<ApiResponse<Entretien[]>>(
     `/api/candidatures/${candidatureId}/entretiens`,

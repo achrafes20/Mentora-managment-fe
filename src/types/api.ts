@@ -913,6 +913,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/candidatures": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["lister_9"];
+        put?: never;
+        post: operations["creerManuellement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/candidatures/{id}/statut": {
         parameters: {
             query?: never;
@@ -1267,7 +1283,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["lister_9"];
+        get: operations["lister_10"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1364,7 +1380,7 @@ export interface paths {
             cookie?: never;
         };
         /** Lister mes notifications non archivees */
-        get: operations["lister_10"];
+        get: operations["lister_11"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1630,6 +1646,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/demandes-administratives/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["trouver"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/demandes-administratives/{id}/justificatif": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["telechargerJustificatif"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/demandes-administratives/politique-conges": {
         parameters: {
             query?: never;
@@ -1737,22 +1785,6 @@ export interface paths {
         };
         /** Statistiques tableau de bord Manager (EF-DASH-02) */
         get: operations["statsManager"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/candidatures": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["lister_11"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2553,7 +2585,7 @@ export interface components {
             /** Format: uuid */
             employeId: string;
             /** @enum {string} */
-            typeDemande: "conge" | "bon_sortie" | "document_libre" | "autre" | "conge_mariage" | "conge_naissance" | "conge_deces" | "conge_maladie";
+            typeDemande: "conge" | "bon_sortie" | "autre" | "conge_mariage" | "conge_naissance" | "conge_deces" | "conge_maladie";
             /** @enum {string} */
             granularite?: "journee" | "demi_matin" | "demi_apres_midi";
             /** Format: date */
@@ -2564,7 +2596,7 @@ export interface components {
             heureRetourPrevue?: string;
             motif?: string;
             /** Format: uuid */
-            fichierDocumentLibreId?: string;
+            fichierJustificatifId?: string;
         };
         ApiResponseDemandeAdministrativeReponse: {
             success?: boolean;
@@ -2582,7 +2614,7 @@ export interface components {
             /** Format: uuid */
             managerId?: string;
             /** @enum {string} */
-            typeDemande?: "conge" | "bon_sortie" | "document_libre" | "autre" | "conge_mariage" | "conge_naissance" | "conge_deces" | "conge_maladie";
+            typeDemande?: "conge" | "bon_sortie" | "autre" | "conge_mariage" | "conge_naissance" | "conge_deces" | "conge_maladie";
             /** @enum {string} */
             granularite?: "journee" | "demi_matin" | "demi_apres_midi";
             /** Format: date */
@@ -2593,7 +2625,7 @@ export interface components {
             heureRetourPrevue?: string;
             motif?: string;
             /** Format: uuid */
-            fichierDocumentLibreId?: string;
+            fichierJustificatifId?: string;
             /** @enum {string} */
             statut?: "en_attente" | "approuvee" | "rejetee" | "annulee";
             dureeJours?: number;
@@ -3193,6 +3225,8 @@ export interface components {
             /** Format: uuid */
             employeId?: string;
             employeNomComplet?: string;
+            acquisJours?: number;
+            mouvementsJours?: number;
             soldeJours?: number;
         };
         ApiResponseListMouvementCongeReponse: {
@@ -4726,7 +4760,9 @@ export interface operations {
     };
     envoyerDocumentLibre: {
         parameters: {
-            query?: never;
+            query?: {
+                corpsMessage?: string;
+            };
             header?: never;
             path: {
                 employeId: string;
@@ -4915,7 +4951,7 @@ export interface operations {
         parameters: {
             query: {
                 employeId?: string;
-                type?: "conge" | "bon_sortie" | "document_libre" | "autre" | "conge_mariage" | "conge_naissance" | "conge_deces" | "conge_maladie";
+                type?: "conge" | "bon_sortie" | "autre" | "conge_mariage" | "conge_naissance" | "conge_deces" | "conge_maladie";
                 statut?: "en_attente" | "approuvee" | "rejetee" | "annulee";
                 debut?: string;
                 fin?: string;
@@ -5233,6 +5269,66 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseIdentiteEntrepriseReponse"];
+                };
+            };
+        };
+    };
+    lister_9: {
+        parameters: {
+            query: {
+                offreId?: string;
+                statut?: "recu" | "preselectionne" | "entretien" | "decision" | "embauche" | "rejete" | "en_attente" | "suggestion_reactivation" | "archivee" | "non_traite";
+                scoreMin?: number;
+                recherche?: string;
+                pageable: components["schemas"]["Pageable"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePagedResponseCandidatureReponse"];
+                };
+            };
+        };
+    };
+    creerManuellement: {
+        parameters: {
+            query: {
+                nom: string;
+                prenom: string;
+                email: string;
+                telephone?: string;
+                offreId?: string;
+                notes?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    cv?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCandidatureReponse"];
                 };
             };
         };
@@ -5715,7 +5811,7 @@ export interface operations {
             };
         };
     };
-    lister_9: {
+    lister_10: {
         parameters: {
             query: {
                 employeId?: string;
@@ -5852,7 +5948,7 @@ export interface operations {
             };
         };
     };
-    lister_10: {
+    lister_11: {
         parameters: {
             query?: {
                 page?: number;
@@ -6235,6 +6331,50 @@ export interface operations {
             };
         };
     };
+    trouver: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDemandeAdministrativeReponse"];
+                };
+            };
+        };
+    };
+    telechargerJustificatif: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
     politiqueConges: {
         parameters: {
             query?: never;
@@ -6260,7 +6400,7 @@ export interface operations {
             query: {
                 format: "xlsx" | "pdf";
                 employeId?: string;
-                type?: "conge" | "bon_sortie" | "document_libre" | "autre" | "conge_mariage" | "conge_naissance" | "conge_deces" | "conge_maladie";
+                type?: "conge" | "bon_sortie" | "autre" | "conge_mariage" | "conge_naissance" | "conge_deces" | "conge_maladie";
                 statut?: "en_attente" | "approuvee" | "rejetee" | "annulee";
                 debut?: string;
                 fin?: string;
@@ -6382,32 +6522,6 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseDashboardStatsReponse"];
-                };
-            };
-        };
-    };
-    lister_11: {
-        parameters: {
-            query: {
-                offreId?: string;
-                statut?: "recu" | "preselectionne" | "entretien" | "decision" | "embauche" | "rejete" | "en_attente" | "suggestion_reactivation" | "archivee" | "non_traite";
-                scoreMin?: number;
-                recherche?: string;
-                pageable: components["schemas"]["Pageable"];
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["ApiResponsePagedResponseCandidatureReponse"];
                 };
             };
         };

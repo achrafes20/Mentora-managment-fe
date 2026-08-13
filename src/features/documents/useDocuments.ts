@@ -92,8 +92,15 @@ export function useEnvoyerAttestationSalaire() {
 export function useEnvoyerDocumentLibre() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ employeId, fichier }: { employeId: string; fichier: File }) =>
-      envoyerDocumentLibre(employeId, fichier),
+    mutationFn: ({
+      employeId,
+      fichier,
+      corpsMessage,
+    }: {
+      employeId: string
+      fichier: File
+      corpsMessage?: string
+    }) => envoyerDocumentLibre(employeId, fichier, corpsMessage),
     onSuccess: (_, { employeId }) => {
       queryClient.invalidateQueries({ queryKey: ['employes', employeId, 'envois_documents'] })
     },

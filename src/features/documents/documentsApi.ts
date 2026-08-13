@@ -91,9 +91,11 @@ export async function envoyerAttestationSalaire(employeId: string): Promise<Envo
 export async function envoyerDocumentLibre(
   employeId: string,
   fichier: File,
+  corpsMessage?: string,
 ): Promise<EnvoiDocumentResponse> {
   const formData = new FormData()
   formData.append('file', fichier)
+  if (corpsMessage) formData.append('corpsMessage', corpsMessage)
   const { data } = await apiClient.post<ApiResponse<EnvoiDocumentResponse>>(
     `/api/documents/employes/${employeId}/document-libre`,
     formData,
