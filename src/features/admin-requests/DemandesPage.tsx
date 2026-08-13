@@ -2,8 +2,9 @@ import { FormEvent, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
-import { CalendarDays, Check, Download, Plus, X } from 'lucide-react'
+import { CalendarDays, Check, Download, Paperclip, Plus, Search, X } from 'lucide-react'
 import { DatePicker } from '@/components/ui/DatePicker'
+import { Dialog } from '@/components/ui/Dialog'
 import { PageHeader } from '@/components/ui/StatCard'
 import { basculerTri, SortableTh, type Tri } from '@/components/ui/SortableTh'
 import { StatusTag } from '@/components/ui/StatusTag'
@@ -25,16 +26,153 @@ import {
   listerPeriodesBlocageConges,
   listerPolitiqueConges,
   modifierPolitiqueConge,
+  obtenirDemande,
   obtenirSolde,
+  voirJustificatif,
   rejeterDemande,
   supprimerJourFerie,
   supprimerPeriodeBlocageConges,
   televerserJustificatif,
   type DemandeAdministrativeRequete,
   type GranulariteConge,
+  type MouvementConge,
   type StatutDemandeAdministrative,
   type TypeDemandeAdministrative,
 } from './adminRequestsApi'
+
+// Le commentaire des mouvements consommation/recredit est un texte technique généré par le backend
+// (autrefois "Consommation demande <uuid>", jamais destiné à être lu tel quel) — un libellé FR fixe
+// est plus lisible. initialisation/ajustement peuvent porter un vrai commentaire humain (import
+// Excel, saisie manuelle) : celui-ci reste affiché en priorité s'il est présent.
+const LABELS_MOUVEMENT: Record<MouvementConge['typeMouvement'], string> = {
+  initialisation: 'Solde initial',
+  consommation: 'Consommation',
+  recredit: 'Recrédit (annulation)',
+  ajustement: 'Ajustement manuel',
+}
+
+function libelleMouvement(m: MouvementConge): string {
+  if (m.typeMouvement === 'consommation' || m.typeMouvement === 'recredit') {
+    return LABELS_MOUVEMENT[m.typeMouvement]
+  }
+  return m.commentaire || LABELS_MOUVEMENT[m.typeMouvement]
+}
+
+// Typeahead local (pas le Select générique du fichier — celui-ci filtre une liste déjà chargée
+// côté client, pas de recherche serveur nécessaire pour un effectif de cette taille).
+function EmployeSearch({
+  employes,
+  value,
+  onChange,
+}: {
+  employes: { id?: string; nom?: string; prenom?: string; email?: string }[]
+  value: string
+  onChange: (id: string) => void
+}) {
+  const selectionne = employes.find((e) => e.id === value)
+  const [query, setQuery] = useState('')
+  const [ouvert, setOuvert] = useState(false)
+
+  const resultats = employes
+    .filter((e) => e.id)
+    .filter((e) => nomEmploye(e).toLowerCase().includes(query.trim().toLowerCase()))
+
+  return (
+    <div className="relative min-w-64">
+      <span className="text-[12px] font-medium text-[#1B2A41]">Employé</span>
+      <div className="relative mt-1.5">
+        <Search size={14} className="absolute top-1/2 left-3 -translate-y-1/2 text-[#9CA3AF]" />
+        <input
+          value={ouvert ? query : selectionne ? nomEmploye(selectionne) : query}
+          onChange={(e) => {
+            setQuery(e.target.value)
+            setOuvert(true)
+            if (value) onChange('')
+          }}
+          onFocus={() => setOuvert(true)}
+          onBlur={() => setTimeout(() => setOuvert(false), 150)}
+          placeholder="Rechercher un employé…"
+          className="h-9 w-full rounded-lg border border-[#D8D4CC] bg-white pr-3 pl-8 text-[13px] text-[#1B2A41] outline-none focus:border-[#1B2A41]"
+        />
+      </div>
+      {ouvert && (
+        <div className="absolute z-50 mt-1 max-h-64 w-full overflow-y-auto rounded-lg border border-[#D8D4CC] bg-white shadow-lg">
+          {resultats.length === 0 && (
+            <p className="px-3 py-2 text-[12px] text-[#9CA3AF]">Aucun résultat</p>
+          )}
+          {resultats.map((e) => (
+            <button
+              key={e.id}
+              type="button"
+              onMouseDown={(ev) => ev.preventDefault()}
+              onClick={() => {
+                onChange(e.id as string)
+                setQuery('')
+                setOuvert(false)
+              }}
+              className="block w-full px-3 py-2 text-left text-[13px] text-[#1B2A41] hover:bg-[#F7F7F4]"
+            >
+              {nomEmploye(e)}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function DemandeDetailDialog({
+  demandeId,
+  onClose,
+}: {
+  demandeId: string | null
+  onClose: () => void
+}) {
+  const { data, isLoading } = useQuery({
+    queryKey: ['demande-detail', demandeId],
+    queryFn: () => obtenirDemande(demandeId as string),
+    enabled: !!demandeId,
+  })
+
+  return (
+    <Dialog open={!!demandeId} onOpenChange={(o) => !o && onClose()} title="Détail de la demande">
+      {isLoading && <p className="text-[13px] text-[#6B7280]">Chargement…</p>}
+      {data && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-[12px] text-[#6B7280]">Type</span>
+            <span className="text-[13px] text-[#1B2A41]">
+              {TYPES.find((t) => t.value === data.typeDemande)?.label ?? data.typeDemande}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-[12px] text-[#6B7280]">Statut</span>
+            <StatusTag statut={data.statut} />
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-[12px] text-[#6B7280]">Période</span>
+            <span className="text-[13px] text-[#1B2A41]">
+              {data.dateDebut}
+              {data.dateFin && data.dateFin !== data.dateDebut ? ` → ${data.dateFin}` : ''}
+            </span>
+          </div>
+          {data.dureeJours ? (
+            <div className="flex items-center justify-between">
+              <span className="text-[12px] text-[#6B7280]">Durée</span>
+              <span className="text-[13px] text-[#1B2A41]">{formatNombre(data.dureeJours)} j</span>
+            </div>
+          ) : null}
+          {data.motif && (
+            <div>
+              <span className="text-[12px] text-[#6B7280]">Motif</span>
+              <p className="mt-0.5 text-[13px] text-[#1B2A41]">{data.motif}</p>
+            </div>
+          )}
+        </div>
+      )}
+    </Dialog>
+  )
+}
 
 function dateVersParam(date: Date | null): string | undefined {
   return date ? format(date, 'yyyy-MM-dd') : undefined
@@ -54,7 +192,6 @@ const LABELS_TYPE_CONTRAT: Record<string, string> = {
 const TYPES: { value: TypeDemandeAdministrative; label: string }[] = [
   { value: 'conge', label: 'Congé' },
   { value: 'bon_sortie', label: 'Bon de sortie' },
-  { value: 'document_libre', label: 'Document libre' },
   { value: 'conge_mariage', label: 'Congé mariage' },
   { value: 'conge_naissance', label: 'Congé naissance' },
   { value: 'conge_deces', label: 'Congé décès' },
@@ -108,6 +245,7 @@ export function DemandesPage() {
   const [finFiltre, setFinFiltre] = useState<Date | null>(null)
   const [showExport, setShowExport] = useState(false)
   const [employeRegistreId, setEmployeRegistreId] = useState('')
+  const [demandeDetailId, setDemandeDetailId] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [erreur, setErreur] = useState<string | null>(null)
   const [form, setForm] = useState<DemandeAdministrativeRequete>({
@@ -311,15 +449,15 @@ export function DemandesPage() {
     setMessage(null)
     setErreur(null)
 
-    let fichierDocumentLibreId = form.fichierDocumentLibreId
+    let fichierJustificatifId = form.fichierJustificatifId
     if (form.typeDemande === 'conge_maladie') {
-      if (!justificatif && !fichierDocumentLibreId) {
-        setErreur('Un justificatif est requis pour un congé maladie.')
+      if (!justificatif && !fichierJustificatifId && !form.motif?.trim()) {
+        setErreur('Un justificatif ou un motif est requis pour un congé maladie.')
         return
       }
       if (justificatif) {
         try {
-          fichierDocumentLibreId = await televerserJustificatif(justificatif)
+          fichierJustificatifId = await televerserJustificatif(justificatif)
         } catch {
           setErreur('Échec du téléversement du justificatif.')
           return
@@ -337,8 +475,8 @@ export function DemandesPage() {
       granularite: form.typeDemande === 'conge' ? form.granularite : undefined,
       heureDepart: form.typeDemande === 'bon_sortie' ? form.heureDepart : undefined,
       heureRetourPrevue: form.typeDemande === 'bon_sortie' ? form.heureRetourPrevue : undefined,
-      fichierDocumentLibreId:
-        form.typeDemande === 'conge_maladie' ? fichierDocumentLibreId : undefined,
+      fichierJustificatifId:
+        form.typeDemande === 'conge_maladie' ? fichierJustificatifId : undefined,
     })
   }
 
@@ -491,6 +629,25 @@ export function DemandesPage() {
                       {d.dateFin && d.dateFin !== d.dateDebut ? ` → ${d.dateFin}` : ''}
                       {d.heureDepart ? ` · ${d.heureDepart}-${d.heureRetourPrevue}` : ''}
                       {d.motif ? <div className="text-[#9CA3AF]">{d.motif}</div> : null}
+                      {d.fichierJustificatifId && (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              await voirJustificatif(d.id)
+                            } catch (error) {
+                              const apiError = error as ApiError
+                              toast.error(
+                                apiError.message ?? "Échec de l'ouverture du justificatif",
+                              )
+                            }
+                          }}
+                          className="mt-0.5 flex items-center gap-1 text-[#4A7C6B] hover:underline"
+                        >
+                          <Paperclip size={11} />
+                          Voir le justificatif
+                        </button>
+                      )}
                     </td>
                     <td className="px-4 py-3.5 text-[12px] text-[#6B7280]">
                       {d.dureeJours ? `${formatNombre(d.dureeJours)} j` : '—'}
@@ -633,7 +790,7 @@ export function DemandesPage() {
             {form.typeDemande === 'conge_maladie' && (
               <label className="block">
                 <span className="text-[12px] font-medium text-[#1B2A41]">
-                  Justificatif (arrêt de travail) — requis
+                  Justificatif (arrêt de travail) — optionnel
                 </span>
                 <input
                   type="file"
@@ -641,16 +798,27 @@ export function DemandesPage() {
                   onChange={(e) => setJustificatif(e.target.files?.[0] ?? null)}
                   className="mt-1.5 block w-full text-[12px] text-[#6B7280]"
                 />
-                {form.fichierDocumentLibreId && (
+                {form.fichierJustificatifId && (
                   <span className="mt-1 block text-[11px] text-[#4A7C6B]">
                     Justificatif téléversé.
                   </span>
                 )}
+                <span className="mt-1 block text-[11px] text-[#9CA3AF]">
+                  Sans arrêt de travail (repos à domicile, prévenu par message) : laissez vide et
+                  précisez le contexte dans le motif ci-dessous.
+                </span>
               </label>
             )}
 
             <label className="block">
-              <span className="text-[12px] font-medium text-[#1B2A41]">Motif / détail</span>
+              <span className="text-[12px] font-medium text-[#1B2A41]">
+                Motif / détail
+                {form.typeDemande === 'conge_maladie' &&
+                !justificatif &&
+                !form.fichierJustificatifId
+                  ? ' — requis en l’absence de justificatif'
+                  : ''}
+              </span>
               <textarea
                 value={form.motif ?? ''}
                 onChange={(e) => majForm('motif', e.target.value)}
@@ -688,47 +856,73 @@ export function DemandesPage() {
       )}
 
       {tab === 'registre' && (
-        <section className="space-y-4">
-          <Select
-            label="Employé"
-            value={employeRegistreId}
-            onChange={setEmployeRegistreId}
-            options={[
-              { value: '', label: 'Sélectionner' },
-              ...employes
-                .filter((e) => e.id)
-                .map((e) => ({ value: e.id as string, label: nomEmploye(e) })),
-            ]}
-          />
-          {soldeActuel && employeRegistreId && (
-            <div className="grid gap-3 md:grid-cols-3">
-              <Metric label="Acquis" value={`${formatNombre(soldeActuel.acquisJours)} j`} />
-              <Metric label="Mouvements" value={`${formatNombre(soldeActuel.mouvementsJours)} j`} />
-              <Metric label="Solde" value={`${formatNombre(soldeActuel.soldeJours)} j`} />
+        <section className="space-y-5">
+          <div className="flex flex-wrap items-end gap-4">
+            <div className="max-w-sm min-w-64 flex-1">
+              <EmployeSearch
+                employes={employes}
+                value={employeRegistreId}
+                onChange={setEmployeRegistreId}
+              />
             </div>
-          )}
-          <div className="space-y-3">
-            {(mouvementsQuery.data ?? []).map((m) => (
-              <div
-                key={m.id}
-                className="flex items-center justify-between rounded-lg border border-[#D8D4CC] bg-white px-4 py-3"
-              >
-                <div>
-                  <p className="text-[12px] text-[#1B2A41]">{m.commentaire ?? m.typeMouvement}</p>
-                  <p className="text-[10px] text-[#9CA3AF]">{m.creeLe?.slice(0, 10)}</p>
-                </div>
+            {soldeActuel && employeRegistreId && (
+              <div className="rounded-xl border border-[#4A7C6B]/20 bg-[#4A7C6B]/6 px-5 py-3">
+                <p className="text-[10px] font-medium tracking-wider text-[#9CA3AF] uppercase">
+                  Solde
+                </p>
                 <p
-                  style={{ fontFamily: 'var(--font-code)' }}
-                  className={`text-[13px] font-medium ${
-                    m.quantiteJours >= 0 ? 'text-[#4A7C6B]' : 'text-[#C1495A]'
-                  }`}
+                  style={{ fontFamily: 'var(--font-display)' }}
+                  className="text-[26px] font-semibold text-[#4A7C6B]"
                 >
-                  {m.quantiteJours >= 0 ? '+' : ''}
-                  {formatNombre(m.quantiteJours)} j
+                  {formatNombre(soldeActuel.soldeJours)} j
                 </p>
               </div>
-            ))}
+            )}
           </div>
+
+          {employeRegistreId && (
+            <div className="overflow-hidden rounded-xl border border-[#D8D4CC] bg-white">
+              {(mouvementsQuery.data ?? []).length === 0 && (
+                <p className="px-4 py-6 text-center text-[13px] text-[#9CA3AF]">Aucun mouvement</p>
+              )}
+              {(mouvementsQuery.data ?? []).map((m) => (
+                <div
+                  key={m.id}
+                  className="flex items-center justify-between border-b border-[#D8D4CC]/60 px-4 py-3 last:border-0"
+                >
+                  <div>
+                    {m.demandeId ? (
+                      <button
+                        type="button"
+                        onClick={() => setDemandeDetailId(m.demandeId as string)}
+                        className="text-[13px] font-medium text-[#4A7C6B] hover:underline"
+                      >
+                        {libelleMouvement(m)}
+                      </button>
+                    ) : (
+                      <p className="text-[13px] font-medium text-[#1B2A41]">
+                        {libelleMouvement(m)}
+                      </p>
+                    )}
+                    <p className="text-[11px] text-[#9CA3AF]">{m.creeLe?.slice(0, 10)}</p>
+                  </div>
+                  <p
+                    style={{ fontFamily: 'var(--font-code)' }}
+                    className={`text-[13px] font-medium ${
+                      m.quantiteJours >= 0 ? 'text-[#4A7C6B]' : 'text-[#C1495A]'
+                    }`}
+                  >
+                    {m.quantiteJours >= 0 ? '+' : ''}
+                    {formatNombre(m.quantiteJours)} j
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+          <DemandeDetailDialog
+            demandeId={demandeDetailId}
+            onClose={() => setDemandeDetailId(null)}
+          />
         </section>
       )}
 
@@ -1024,19 +1218,5 @@ function ActionButton({
       {icon}
       {label}
     </button>
-  )
-}
-
-function Metric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl border border-[#D8D4CC] bg-white p-4">
-      <p className="text-[10px] font-medium tracking-wider text-[#9CA3AF] uppercase">{label}</p>
-      <p
-        style={{ fontFamily: 'var(--font-display)' }}
-        className="mt-1 text-[28px] font-semibold text-[#1B2A41]"
-      >
-        {value}
-      </p>
-    </div>
   )
 }
