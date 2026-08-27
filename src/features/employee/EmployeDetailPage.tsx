@@ -15,7 +15,7 @@ import {
   Send,
   Trash2,
 } from 'lucide-react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from '@/components/ui/toast'
 import { useQueryClient } from '@tanstack/react-query'
@@ -661,18 +661,20 @@ export function EmployeDetailPage() {
                 Informations personnelles
               </p>
               <div className="grid grid-cols-2 gap-x-10 gap-y-4">
-                {[
-                  ['Nom complet', `${employe.prenom} ${employe.nom}`],
-                  ['Email professionnel', <EmailLink key="email" email={employe.email} />],
-                  ['Département', employe.departementNom ?? '—'],
-                  ['Manager direct', managerNom],
-                  ['Type de contrat', formatStatut(employe.typeContrat ?? '')],
+                {(
                   [
-                    "Date d'embauche",
-                    employe.dateEmbauche ? dayjs(employe.dateEmbauche).format('DD/MM/YYYY') : '—',
-                  ],
-                  ['Téléphone', <WhatsappLink key="telephone" telephone={employe.telephone} />],
-                ].map(([label, value]) => (
+                    ['Nom complet', `${employe.prenom} ${employe.nom}`],
+                    ['Email professionnel', <EmailLink key="email" email={employe.email} />],
+                    ['Département', employe.departementNom ?? '—'],
+                    ['Manager direct', managerNom],
+                    ['Type de contrat', formatStatut(employe.typeContrat ?? '')],
+                    [
+                      "Date d'embauche",
+                      employe.dateEmbauche ? dayjs(employe.dateEmbauche).format('DD/MM/YYYY') : '—',
+                    ],
+                    ['Téléphone', <WhatsappLink key="telephone" telephone={employe.telephone} />],
+                  ] as [string, ReactNode][]
+                ).map(([label, value]) => (
                   <div key={label} className="border-b border-[#D8D4CC]/50 pb-3">
                     <p className="text-[10px] tracking-wider text-[#9CA3AF] uppercase">{label}</p>
                     <p className="mt-0.5 text-[13px] text-[#1B2A41]">{value}</p>

@@ -2,12 +2,37 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { CalendarDays } from 'lucide-react'
 import { PageHeader } from '@/components/ui/StatCard'
-import { Input } from '@/components/ui/Input'
 import type { ApiError } from '@/lib/apiClient'
 import { creerJourFerie, listerJoursFeries, supprimerJourFerie } from './adminRequestsApi'
 
 function dateJour() {
   return new Date().toISOString().slice(0, 10)
+}
+
+// Wrapper local (pas @/components/ui/Input, qui est un <input> brut sans label ni onChange
+// string) — même définition que l'ex-Input local de DemandesPage.tsx, dont cet écran est extrait.
+function Input({
+  label,
+  value,
+  onChange,
+  type = 'text',
+}: {
+  label: string
+  value: string
+  onChange: (value: string) => void
+  type?: string
+}) {
+  return (
+    <label className="block">
+      <span className="text-[12px] font-medium text-[#1B2A41]">{label}</span>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="mt-1.5 w-full rounded-lg border border-[#D8D4CC] bg-[#F7F7F4] px-3 py-2.5 text-[13px] focus:border-[#1B2A41] focus:outline-none"
+      />
+    </label>
+  )
 }
 
 // EF-ADM-12 : gestion réservée Admin, jamais délégable — page dédiée (comme le Journal d'audit),

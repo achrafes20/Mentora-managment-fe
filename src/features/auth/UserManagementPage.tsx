@@ -163,11 +163,7 @@ function CreateUserModal({ open, onClose }: { open: boolean; onClose: () => void
       width={480}
     >
       {apiError && <Alert message={apiError} />}
-      <form
-        onSubmit={handleSubmit((v) =>
-          mutation.mutate({ ...v, mattermostUserId: v.mattermostUserId?.trim() || null }),
-        )}
-      >
+      <form onSubmit={handleSubmit((v) => mutation.mutate(v))}>
         <div className="grid grid-cols-2 gap-x-4">
           <FormField label="Nom" required error={errors.nom?.message} htmlFor="create-nom">
             <Controller
