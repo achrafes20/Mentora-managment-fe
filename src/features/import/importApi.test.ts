@@ -46,7 +46,7 @@ describe('importApi', () => {
     postMock.mockResolvedValueOnce({ data: { data: { lignes: [] } } })
     const fichier = new File(['a,b'], 'employes.csv', { type: 'text/csv' })
 
-    await analyserImport(fichier, 'EMPLOYES', { nom: 0, prenom: 1 })
+    await analyserImport(fichier, 'EMPLOYES', { nom: 0, prenom: 1 }, 'ECRASER')
 
     const [, body] = postMock.mock.calls[0]
     const mappingPart = (body as FormData).get('mapping')

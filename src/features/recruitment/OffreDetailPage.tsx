@@ -1,6 +1,7 @@
 import { useNavigate, useParams } from 'react-router-dom'
 import { PageHeader } from '@/components/ui/StatCard'
 import { StatusTag } from '@/components/ui/StatusTag'
+import { EmailLink } from '@/components/ui/EmailLink'
 import { formatStatut } from '@/components/ui/tokens'
 import { useDepartements } from '@/features/employee/useDepartements'
 import { useCandidatures, useOffre } from './useRecruitment'
@@ -66,7 +67,9 @@ export function OffreDetailPage() {
                   <td className="px-4 py-3.5 text-[13px] font-medium text-[#1B2A41]">
                     {c.prenom || c.nom ? `${c.prenom ?? ''} ${c.nom ?? ''}`.trim() : '—'}
                   </td>
-                  <td className="px-4 py-3.5 text-[13px] text-[#6B7280]">{c.email}</td>
+                  <td className="px-4 py-3.5 text-[13px] text-[#6B7280]">
+                    <EmailLink email={c.email} />
+                  </td>
                   <td className="px-4 py-3.5">
                     <StatusTag statut={formatStatut(c.statut ?? '')} />
                   </td>

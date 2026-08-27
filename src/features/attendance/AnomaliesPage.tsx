@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/components/ui/toast'
 import { Button } from '@/components/ui/Button'
 import { DatePicker } from '@/components/ui/DatePicker'
+import { PersonSearch } from '@/components/ui/PersonSearch'
 import type { ApiError } from '@/lib/apiClient'
 import { useAuth } from '@/lib/AuthContext'
 import { StatusTag } from '@/components/ui/StatusTag'
@@ -237,22 +238,16 @@ export function AnomaliesPage() {
           </select>
         </div>
         <div className="min-w-[180px]">
-          <label className="mb-1 block text-[11px] font-medium text-[#6B7280]">Employé</label>
-          <select
+          <PersonSearch
+            label="Employé"
+            placeholder="Tous les employés"
+            personnes={optionsEmployes}
             value={filtreEmployeId}
-            onChange={(e) => {
-              setFiltreEmployeId(e.target.value)
+            onChange={(v) => {
+              setFiltreEmployeId(v)
               setPage(0)
             }}
-            className="h-9 w-full cursor-pointer rounded-lg border border-[#D8D4CC] bg-white px-3 text-[13px] text-[#1B2A41] focus:border-[#1B2A41] focus:outline-none"
-          >
-            <option value="">Tous les employés</option>
-            {optionsEmployes.map((e) => (
-              <option key={e.id} value={e.id}>
-                {e.nom}
-              </option>
-            ))}
-          </select>
+          />
         </div>
         <div className="min-w-[170px]">
           <label className="mb-1 block text-[11px] font-medium text-[#6B7280]">

@@ -6,7 +6,11 @@ import { Alert } from '@/components/ui/Alert'
 import { toast } from '@/components/ui/toast'
 import { RapportTable } from './RapportTable'
 import { useAnalyserImport, useExecuterImport, usePrevisualiserImport } from './useImport'
-import type { ImportApercu, ImportCible, ImportRapport } from './importApi'
+import type { ImportApercu, ImportCible, ImportRapport, StrategieDoublon } from './importApi'
+
+// DEPARTEMENTS ne réécrit jamais un département existant (AUCUN_CHANGEMENT, cf. backend) — le
+// choix n'a de sens que pour les cibles qui font un upsert par e-mail.
+const CIBLES_AVEC_DOUBLONS: ImportCible[] = ['EMPLOYES', 'SOLDES_CONGES_INITIAUX']
 
 const CIBLES: { value: ImportCible; label: string }[] = [
   { value: 'DEPARTEMENTS', label: 'Départements' },
@@ -16,14 +20,24 @@ const CIBLES: { value: ImportCible; label: string }[] = [
 
 type Etape = 'upload' | 'mapping' | 'rapport'
 
+// Seules CREATION/MISE_A_JOUR correspondent à une écriture réelle en base — AUCUN_CHANGEMENT
+// (département déjà existant) et IGNOREE (doublon ignoré, e-mail en double dans le fichier) n'en
+// sont pas, même si leur statut n'est pas ERREUR.
+function compterLignesEcrites(rapport: ImportRapport): number {
+  return (
+    rapport.lignes?.filter((l) => l.action === 'CREATION' || l.action === 'MISE_A_JOUR').length ?? 0
+  )
+}
+
 export function ImportWizard() {
-  const [cible, setCible] = useState<ImportCible>('DEPARTEMENTS')
+  const [cible, setCible] = useState<ImportCible>('EMPLOYES')
   const [etape, setEtape] = useState<Etape>('upload')
   const [fichier, setFichier] = useState<File | null>(null)
   const [apercu, setApercu] = useState<ImportApercu | null>(null)
   const [mapping, setMapping] = useState<Record<string, number>>({})
   const [rapport, setRapport] = useState<ImportRapport | null>(null)
   const [rapportEstReel, setRapportEstReel] = useState(false)
+  const [strategieDoublon, setStrategieDoublon] = useState<StrategieDoublon>('ECRASER')
   const inputRef = useRef<HTMLInputElement>(null)
 
   const previsualiser = usePrevisualiserImport()
@@ -37,6 +51,7 @@ export function ImportWizard() {
     setMapping({})
     setRapport(null)
     setRapportEstReel(false)
+    setStrategieDoublon('ECRASER')
     if (inputRef.current) inputRef.current.value = ''
   }
 
@@ -63,7 +78,7 @@ export function ImportWizard() {
   function lancerSimulation() {
     if (!fichier) return
     analyser.mutate(
-      { fichier, cible, mapping },
+      { fichier, cible, mapping, strategieDoublon },
       {
         onSuccess: (data) => {
           setRapport(data)
@@ -78,12 +93,15 @@ export function ImportWizard() {
   function confirmerImport() {
     if (!fichier) return
     executer.mutate(
-      { fichier, cible, mapping },
+      { fichier, cible, mapping, strategieDoublon },
       {
         onSuccess: (data) => {
           setRapport(data)
           setRapportEstReel(true)
-          toast.success(`Import terminé : ${data.lignesValides} ligne(s) traitée(s).`)
+          const ecrites = compterLignesEcrites(data)
+          toast.success(
+            `Import terminé : ${ecrites} ligne(s) créée(s)/mise(s) à jour, ${data.lignesErreur ?? 0} en erreur.`,
+          )
         },
         onError: (err) => toast.error(err.message),
       },
@@ -92,6 +110,15 @@ export function ImportWizard() {
 
   const champsManquants =
     apercu?.champsCible?.filter((c) => c.requis && mapping[c.cle ?? ''] === undefined) ?? []
+
+  // "Valides" (statut != ERREUR) inclut aussi les lignes IGNOREE (doublon avec la stratégie
+  // "Laisser tel quel") — ce n'est pas la même chose que "réellement écrites en base". Distinction
+  // nécessaire pour que le résumé ne donne pas l'impression que des lignes ignorées ont été
+  // importées.
+  const lignesEcrites = rapport ? compterLignesEcrites(rapport) : 0
+  const lignesIgnorees =
+    rapport?.lignes?.filter((l) => l.statut === 'AVERTISSEMENT' && l.action === 'IGNOREE').length ??
+    0
 
   return (
     <div>
@@ -203,6 +230,42 @@ export function ImportWizard() {
             />
           )}
 
+          {CIBLES_AVEC_DOUBLONS.includes(cible) && (
+            <div className="mb-5 rounded-xl border border-[#D8D4CC] bg-white p-4">
+              <p className="mb-2 text-[12px] font-medium text-[#1B2A41]">
+                Si une ligne correspond à une fiche déjà existante (même e-mail)
+              </p>
+              <div className="flex flex-col gap-2">
+                <label className="flex cursor-pointer items-start gap-2 text-[12px] text-[#1B2A41]">
+                  <input
+                    type="radio"
+                    name="strategieDoublon"
+                    className="mt-0.5"
+                    checked={strategieDoublon === 'ECRASER'}
+                    onChange={() => setStrategieDoublon('ECRASER')}
+                  />
+                  <span>
+                    <strong>Écraser</strong> — mettre à jour la fiche existante avec les valeurs du
+                    fichier
+                  </span>
+                </label>
+                <label className="flex cursor-pointer items-start gap-2 text-[12px] text-[#1B2A41]">
+                  <input
+                    type="radio"
+                    name="strategieDoublon"
+                    className="mt-0.5"
+                    checked={strategieDoublon === 'IGNORER'}
+                    onChange={() => setStrategieDoublon('IGNORER')}
+                  />
+                  <span>
+                    <strong>Laisser tel quel</strong> — ignorer la ligne, ne pas toucher la fiche
+                    existante
+                  </span>
+                </label>
+              </div>
+            </div>
+          )}
+
           <Button
             onClick={lancerSimulation}
             loading={analyser.isPending}
@@ -217,7 +280,8 @@ export function ImportWizard() {
         <div>
           <div className="mb-4 flex flex-wrap items-center gap-4 rounded-xl border border-[#D8D4CC] bg-white p-4">
             <ResumeStat label="Lignes analysées" value={rapport.totalLignes ?? 0} />
-            <ResumeStat label="Valides" value={rapport.lignesValides ?? 0} accent="#4A7C6B" />
+            <ResumeStat label="Créées/mises à jour" value={lignesEcrites} accent="#4A7C6B" />
+            <ResumeStat label="Ignorées (doublons)" value={lignesIgnorees} accent="#C87F3A" />
             <ResumeStat label="Erreurs" value={rapport.lignesErreur ?? 0} accent="#C1495A" />
           </div>
 
@@ -237,8 +301,8 @@ export function ImportWizard() {
           ) : (
             <div className="rounded-xl border border-[#4A7C6B]/30 bg-[#4A7C6B]/6 p-4">
               <p className="mb-3 text-[13px] font-medium text-[#4A7C6B]">
-                Import réel terminé : {rapport.lignesValides} ligne(s) traitée(s),{' '}
-                {rapport.lignesErreur} ligne(s) en erreur.
+                Import réel terminé : {lignesEcrites} ligne(s) créée(s)/mise(s) à jour,{' '}
+                {lignesIgnorees} ignorée(s), {rapport.lignesErreur} en erreur.
               </p>
               <Button onClick={reinitialiser}>Nouvel import</Button>
             </div>

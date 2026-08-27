@@ -13,6 +13,7 @@ export type TypeDemandeAdministrative =
   | 'conge_naissance'
   | 'conge_deces'
   | 'conge_maladie'
+  | 'demande_document'
 export type GranulariteConge = 'journee' | 'demi_matin' | 'demi_apres_midi'
 export type StatutDemandeAdministrative = 'en_attente' | 'approuvee' | 'rejetee' | 'annulee'
 export type TypeMouvementConge = 'initialisation' | 'consommation' | 'recredit' | 'ajustement'
@@ -124,6 +125,14 @@ export async function exporterDemandes(
     responseType: 'blob',
   })
   declencherTelechargement(data, `demandes_administratives.${format}`)
+}
+
+export async function exporterRegistre(employeId: string, format: 'xlsx' | 'pdf'): Promise<void> {
+  const { data } = await apiClient.get<Blob>(
+    `/api/demandes-administratives/employes/${employeId}/mouvements/export`,
+    { params: { format }, responseType: 'blob' },
+  )
+  declencherTelechargement(data, `registre_conges.${format}`)
 }
 
 // Ouvert dans un nouvel onglet (le backend répond en Content-Disposition: inline) plutôt qu'un

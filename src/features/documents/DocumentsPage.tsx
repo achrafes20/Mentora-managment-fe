@@ -11,7 +11,7 @@ import dayjs from 'dayjs'
 import { toast } from '@/components/ui/toast'
 import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
-import { Select } from '@/components/ui/Select'
+import { PersonSearch } from '@/components/ui/PersonSearch'
 import { FileText, Paperclip, RotateCcw, Send, X } from 'lucide-react'
 import type { ApiError } from '@/lib/apiClient'
 
@@ -22,10 +22,6 @@ const FENETRE_ELARGIE = 30
 // départ éditable avant envoi (même principe que RejectDialog en recrutement, EF-REC-14).
 const CORPS_DOCUMENT_LIBRE_DEFAUT =
   'Bonjour,\n\nVeuillez trouver un document RH en pièce jointe.\n\nCordialement, RH'
-
-function nomEmploye(e: { nom?: string; prenom?: string; email?: string }) {
-  return `${e.prenom ?? ''} ${e.nom ?? ''}`.trim() || e.email || 'Employé'
-}
 
 function EnvoyerDocumentLibreModal({
   open,
@@ -92,19 +88,12 @@ function EnvoyerDocumentLibreModal({
       }
     >
       <div className="space-y-4">
-        <label className="block">
-          <span className="text-[12px] font-medium text-[#1B2A41]">Employé</span>
-          <div className="mt-1.5">
-            <Select
-              value={employeId}
-              onChange={setEmployeId}
-              options={employes
-                .filter((e) => e.id)
-                .map((e) => ({ value: e.id as string, label: nomEmploye(e) }))}
-              placeholder="Sélectionner un employé"
-            />
-          </div>
-        </label>
+        <PersonSearch
+          placeholder="Rechercher un employé…"
+          personnes={employes}
+          value={employeId}
+          onChange={setEmployeId}
+        />
 
         <div>
           <span className="text-[12px] font-medium text-[#1B2A41]">
@@ -173,21 +162,30 @@ export function DocumentsPage() {
   const docsATraiter = pendingNotifs.flatMap((notif) => {
     if (!notif.id || !notif.employeId) return []
     const employe = employes.find((e) => e.id === notif.employeId)
+    const isStage = notif.typeFinSurveillee === 'fin_stage'
+    // La vraie date de fin de contrat/stage (Employe.dateFinStagePrevue/dateFinContratPrevue),
+    // pas notif.dateEcheance : ce dernier est le seuil interne d'alerte (J-15/J-3 ouvrés avant la
+    // vraie fin, cf. SurveillancePlanifieeService), pas la date que l'Admin RH veut voir — un
+    // badge basé dessus était trompeur (ex. "J-7" alors que le contrat finit dans 10 jours).
+    const dateFin = isStage ? employe?.dateFinStagePrevue : employe?.dateFinContratPrevue
     let delai = ''
-    if (notif.dateEcheance) {
-      const diff = dayjs(notif.dateEcheance).startOf('day').diff(dayjs().startOf('day'), 'day')
+    let urgent = false
+    if (dateFin) {
+      const diff = dayjs(dateFin).startOf('day').diff(dayjs().startOf('day'), 'day')
       delai = diff > 0 ? `J-${diff}` : diff === 0 ? "Aujourd'hui" : `En retard (${diff}j)`
+      urgent = diff <= 3
     }
     return [
       {
         id: notif.id,
         employeId: notif.employeId,
         nom: employe ? `${employe.prenom} ${employe.nom}` : 'Inconnu',
-        type:
-          notif.typeFinSurveillee === 'fin_stage' ? 'Certificat de stage' : 'Certificat de travail',
+        type: isStage ? 'Certificat de stage' : 'Certificat de travail',
         delai,
+        urgent,
+        dateFin,
         poste: employe?.poste ?? '—',
-        isStage: notif.typeFinSurveillee === 'fin_stage',
+        isStage,
       },
     ]
   })
@@ -263,14 +261,13 @@ export function DocumentsPage() {
                 <p className="text-[14px] font-medium text-[#1B2A41]">{d.nom}</p>
                 <p className="text-[12px] text-[#6B7280]">
                   {d.poste} — {d.type}
+                  {d.dateFin && ` — Fin le ${dayjs(d.dateFin).format('DD/MM/YYYY')}`}
                 </p>
               </div>
               <div className="flex items-center gap-3">
                 <span
                   className={`rounded px-2 py-0.5 text-[11px] font-medium ${
-                    d.delai.includes('J-3') || d.delai.includes('retard')
-                      ? 'bg-[#C1495A]/10 text-[#C1495A]'
-                      : 'bg-[#C87F3A]/10 text-[#C87F3A]'
+                    d.urgent ? 'bg-[#C1495A]/10 text-[#C1495A]' : 'bg-[#C87F3A]/10 text-[#C87F3A]'
                   }`}
                 >
                   {d.delai}

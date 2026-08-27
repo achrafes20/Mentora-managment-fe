@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, Download, Info, Pencil, RotateCcw } from 'lu
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { DatePicker } from '@/components/ui/DatePicker'
+import { PersonSearch } from '@/components/ui/PersonSearch'
 import { toast } from '@/components/ui/toast'
 import { StatusTag } from '@/components/ui/StatusTag'
 import { basculerTri, SortableTh, type Tri } from '@/components/ui/SortableTh'
@@ -172,22 +173,16 @@ export function PointagesPage() {
           toujours sur l'ensemble filtré, jamais sur la page affichée). */}
       <div className="mb-4 flex flex-wrap items-end gap-3 rounded-xl border border-[#D8D4CC] bg-white p-4">
         <div className="min-w-[180px]">
-          <label className="mb-1 block text-[11px] font-medium text-[#6B7280]">Employé</label>
-          <select
+          <PersonSearch
+            label="Employé"
+            placeholder="Tous les employés"
+            personnes={optionsEmployes}
             value={filtreEmployeId}
-            onChange={(e) => {
-              setFiltreEmployeId(e.target.value)
+            onChange={(v) => {
+              setFiltreEmployeId(v)
               setPage(0)
             }}
-            className="h-9 w-full cursor-pointer rounded-lg border border-[#D8D4CC] bg-white px-3 text-[13px] text-[#1B2A41] focus:border-[#1B2A41] focus:outline-none"
-          >
-            <option value="">Tous les employés</option>
-            {optionsEmployes.map((e) => (
-              <option key={e.id} value={e.id}>
-                {e.nom}
-              </option>
-            ))}
-          </select>
+          />
         </div>
         <div className="min-w-[140px]">
           <label className="mb-1 block text-[11px] font-medium text-[#6B7280]">Type</label>

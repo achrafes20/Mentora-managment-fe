@@ -1,27 +1,35 @@
 import { FormEvent, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
-import { CalendarDays, Check, Download, Paperclip, Plus, Search, X } from 'lucide-react'
+import { CalendarDays, Check, Download, ExternalLink, Paperclip, Send, X } from 'lucide-react'
 import { DatePicker } from '@/components/ui/DatePicker'
 import { Dialog } from '@/components/ui/Dialog'
 import { PageHeader } from '@/components/ui/StatCard'
 import { basculerTri, SortableTh, type Tri } from '@/components/ui/SortableTh'
+import { useTriLocal } from '@/components/ui/useTriLocal'
+import { PersonSearch } from '@/components/ui/PersonSearch'
 import { StatusTag } from '@/components/ui/StatusTag'
 import { toast } from '@/components/ui/toast'
 import { useAuth } from '@/lib/AuthContext'
 import type { ApiError } from '@/lib/apiClient'
 import { useEstDelegueActifMaintenant } from '../delegation/useDelegation'
-import { listerEmployes } from '../employee/employesApi'
+import { listerEmployes, type Employe } from '../employee/employesApi'
+import {
+  useApercuAttestationTravail,
+  useApercuAttestationSalaire,
+  useEnvoyerAttestationTravail,
+  useEnvoyerAttestationSalaire,
+  useEnvoyerDocumentLibre,
+} from '../documents/useDocuments'
 import {
   annulerDemande,
   approuverDemande,
   creerDemande,
-  creerJourFerie,
   creerPeriodeBlocageConges,
   exporterDemandes,
+  exporterRegistre,
   listerDemandes,
-  listerJoursFeries,
   listerMouvements,
   listerPeriodesBlocageConges,
   listerPolitiqueConges,
@@ -30,142 +38,159 @@ import {
   obtenirSolde,
   voirJustificatif,
   rejeterDemande,
-  supprimerJourFerie,
   supprimerPeriodeBlocageConges,
   televerserJustificatif,
+  type DemandeAdministrative,
   type DemandeAdministrativeRequete,
   type GranulariteConge,
-  type MouvementConge,
   type StatutDemandeAdministrative,
   type TypeDemandeAdministrative,
 } from './adminRequestsApi'
 
-// Le commentaire des mouvements consommation/recredit est un texte technique généré par le backend
-// (autrefois "Consommation demande <uuid>", jamais destiné à être lu tel quel) — un libellé FR fixe
-// est plus lisible. initialisation/ajustement peuvent porter un vrai commentaire humain (import
-// Excel, saisie manuelle) : celui-ci reste affiché en priorité s'il est présent.
-const LABELS_MOUVEMENT: Record<MouvementConge['typeMouvement'], string> = {
-  initialisation: 'Solde initial',
-  consommation: 'Consommation',
-  recredit: 'Recrédit (annulation)',
-  ajustement: 'Ajustement manuel',
-}
-
-function libelleMouvement(m: MouvementConge): string {
-  if (m.typeMouvement === 'consommation' || m.typeMouvement === 'recredit') {
-    return LABELS_MOUVEMENT[m.typeMouvement]
-  }
-  return m.commentaire || LABELS_MOUVEMENT[m.typeMouvement]
-}
-
-// Typeahead local (pas le Select générique du fichier — celui-ci filtre une liste déjà chargée
-// côté client, pas de recherche serveur nécessaire pour un effectif de cette taille).
-function EmployeSearch({
-  employes,
-  value,
-  onChange,
-}: {
-  employes: { id?: string; nom?: string; prenom?: string; email?: string }[]
-  value: string
-  onChange: (id: string) => void
-}) {
-  const selectionne = employes.find((e) => e.id === value)
-  const [query, setQuery] = useState('')
-  const [ouvert, setOuvert] = useState(false)
-
-  const resultats = employes
-    .filter((e) => e.id)
-    .filter((e) => nomEmploye(e).toLowerCase().includes(query.trim().toLowerCase()))
-
-  return (
-    <div className="relative min-w-64">
-      <span className="text-[12px] font-medium text-[#1B2A41]">Employé</span>
-      <div className="relative mt-1.5">
-        <Search size={14} className="absolute top-1/2 left-3 -translate-y-1/2 text-[#9CA3AF]" />
-        <input
-          value={ouvert ? query : selectionne ? nomEmploye(selectionne) : query}
-          onChange={(e) => {
-            setQuery(e.target.value)
-            setOuvert(true)
-            if (value) onChange('')
-          }}
-          onFocus={() => setOuvert(true)}
-          onBlur={() => setTimeout(() => setOuvert(false), 150)}
-          placeholder="Rechercher un employé…"
-          className="h-9 w-full rounded-lg border border-[#D8D4CC] bg-white pr-3 pl-8 text-[13px] text-[#1B2A41] outline-none focus:border-[#1B2A41]"
-        />
-      </div>
-      {ouvert && (
-        <div className="absolute z-50 mt-1 max-h-64 w-full overflow-y-auto rounded-lg border border-[#D8D4CC] bg-white shadow-lg">
-          {resultats.length === 0 && (
-            <p className="px-3 py-2 text-[12px] text-[#9CA3AF]">Aucun résultat</p>
-          )}
-          {resultats.map((e) => (
-            <button
-              key={e.id}
-              type="button"
-              onMouseDown={(ev) => ev.preventDefault()}
-              onClick={() => {
-                onChange(e.id as string)
-                setQuery('')
-                setOuvert(false)
-              }}
-              className="block w-full px-3 py-2 text-left text-[13px] text-[#1B2A41] hover:bg-[#F7F7F4]"
-            >
-              {nomEmploye(e)}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
-function DemandeDetailDialog({
-  demandeId,
+// EF-ADM-15 : traite une "demande_document" en réglant réellement la demande, plutôt qu'un simple
+// changement de statut — équivalent à "Envoyer un document libre" côté Documents RH, mais avec en
+// plus les documents déjà générables automatiquement pour cet employé (attestation de travail /
+// de salaire) proposés en premier, prêts à envoyer sans ressaisie. La demande n'est marquée
+// approuvée qu'une fois l'envoi effectivement confirmé (cf. onEnvoye côté appelant).
+function EnvoyerDocumentModal({
+  demande,
+  employe,
   onClose,
+  onEnvoye,
 }: {
-  demandeId: string | null
+  demande: DemandeAdministrative | null
+  employe: Employe | undefined
   onClose: () => void
+  onEnvoye: () => Promise<void>
 }) {
-  const { data, isLoading } = useQuery({
-    queryKey: ['demande-detail', demandeId],
-    queryFn: () => obtenirDemande(demandeId as string),
-    enabled: !!demandeId,
-  })
+  const [fichierLibre, setFichierLibre] = useState<File | null>(null)
+  const [envoiEnCours, setEnvoiEnCours] = useState(false)
+  const envoyerAttestationTravail = useEnvoyerAttestationTravail()
+  const envoyerAttestationSalaire = useEnvoyerAttestationSalaire()
+  const envoyerDocumentLibre = useEnvoyerDocumentLibre()
+  const apercuAttestationTravail = useApercuAttestationTravail()
+  const apercuAttestationSalaire = useApercuAttestationSalaire()
+
+  async function envoyer(action: () => Promise<unknown>) {
+    setEnvoiEnCours(true)
+    try {
+      await action()
+      toast.success(
+        demande?.statut === 'en_attente'
+          ? 'Document envoyé à l’employé — demande marquée approuvée.'
+          : 'Document renvoyé à l’employé.',
+      )
+      setFichierLibre(null)
+      await onEnvoye()
+    } catch (error) {
+      const apiError = error as ApiError
+      toast.error(apiError.message ?? "Échec de l'envoi du document")
+    } finally {
+      setEnvoiEnCours(false)
+    }
+  }
+
+  // Ouvre le PDF dans un nouvel onglet, sans envoi ni entrée dans l'historique — même génération
+  // que l'envoi réel (DocumentRhService), juste pour vérifier le contenu avant de le transmettre.
+  async function apercevoir(action: () => Promise<unknown>) {
+    try {
+      await action()
+    } catch (error) {
+      const apiError = error as ApiError
+      toast.error(apiError.message ?? "Erreur lors de l'aperçu du document")
+    }
+  }
+
+  // Même éligibilité que côté backend (DocumentRhService#validerEligibiliteAttestation) : employé
+  // actif, CDI ou CDD. Affiché même indisponible (plutôt que masqué) pour que l'Admin comprenne
+  // pourquoi l'option est grisée au lieu de la croire simplement absente.
+  const eligibleAttestationTravail =
+    employe?.statut === 'actif' &&
+    (employe?.typeContrat === 'CDI' || employe?.typeContrat === 'CDD')
+  const eligibleAttestationSalaire =
+    eligibleAttestationTravail && employe?.salaireBrutMensuel != null
 
   return (
-    <Dialog open={!!demandeId} onOpenChange={(o) => !o && onClose()} title="Détail de la demande">
-      {isLoading && <p className="text-[13px] text-[#6B7280]">Chargement…</p>}
-      {data && (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-[12px] text-[#6B7280]">Type</span>
-            <span className="text-[13px] text-[#1B2A41]">
-              {TYPES.find((t) => t.value === data.typeDemande)?.label ?? data.typeDemande}
-            </span>
+    <Dialog
+      open={!!demande}
+      onOpenChange={(o) => !o && onClose()}
+      title={demande?.statut === 'en_attente' ? 'Envoyer un document' : 'Renvoyer un document'}
+      width={480}
+    >
+      {demande && (
+        <div>
+          <p className="mb-4 text-[12px] text-[#6B7280]">
+            Demande de{' '}
+            <span className="font-medium text-[#1B2A41]">{demande.employeNomComplet}</span>
+            {demande.motif ? <> — « {demande.motif} »</> : null}
+          </p>
+
+          <p className="mb-2 text-[11px] font-semibold tracking-wider text-[#9CA3AF] uppercase">
+            Documents prêts à envoyer
+          </p>
+          <div className="mb-4 space-y-2">
+            <DocumentOption
+              label="Attestation de travail"
+              disabled={!eligibleAttestationTravail || envoiEnCours}
+              apercuEnCours={apercuAttestationTravail.isPending}
+              hint={
+                !eligibleAttestationTravail ? 'Nécessite un employé actif en CDI ou CDD' : undefined
+              }
+              onApercu={() =>
+                apercevoir(() => apercuAttestationTravail.mutateAsync(demande.employeId))
+              }
+              onEnvoyer={() =>
+                envoyer(() => envoyerAttestationTravail.mutateAsync(demande.employeId))
+              }
+            />
+            <DocumentOption
+              label="Attestation de salaire"
+              disabled={!eligibleAttestationSalaire || envoiEnCours}
+              apercuEnCours={apercuAttestationSalaire.isPending}
+              hint={
+                !eligibleAttestationSalaire && eligibleAttestationTravail
+                  ? 'Salaire brut non renseigné sur la fiche'
+                  : !eligibleAttestationTravail
+                    ? 'Nécessite un employé actif en CDI ou CDD'
+                    : undefined
+              }
+              onApercu={() =>
+                apercevoir(() => apercuAttestationSalaire.mutateAsync(demande.employeId))
+              }
+              onEnvoyer={() =>
+                envoyer(() => envoyerAttestationSalaire.mutateAsync(demande.employeId))
+              }
+            />
           </div>
-          <div className="flex items-center justify-between">
-            <span className="text-[12px] text-[#6B7280]">Statut</span>
-            <StatusTag statut={data.statut} />
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-[12px] text-[#6B7280]">Période</span>
-            <span className="text-[13px] text-[#1B2A41]">
-              {data.dateDebut}
-              {data.dateFin && data.dateFin !== data.dateDebut ? ` → ${data.dateFin}` : ''}
-            </span>
-          </div>
-          {data.dureeJours ? (
-            <div className="flex items-center justify-between">
-              <span className="text-[12px] text-[#6B7280]">Durée</span>
-              <span className="text-[13px] text-[#1B2A41]">{formatNombre(data.dureeJours)} j</span>
-            </div>
-          ) : null}
-          {data.motif && (
-            <div>
-              <span className="text-[12px] text-[#6B7280]">Motif</span>
-              <p className="mt-0.5 text-[13px] text-[#1B2A41]">{data.motif}</p>
+
+          <p className="mb-2 text-[11px] font-semibold tracking-wider text-[#9CA3AF] uppercase">
+            Ou un autre document
+          </p>
+          <label className="inline-block cursor-pointer rounded-lg border border-dashed border-[#D8D4CC] px-4 py-2 text-[12px] text-[#6B7280] hover:border-[#1B2A41]">
+            Choisir un fichier
+            <input
+              type="file"
+              className="hidden"
+              onChange={(e) => setFichierLibre(e.target.files?.[0] ?? null)}
+            />
+          </label>
+          {fichierLibre && (
+            <div className="mt-2 flex items-center gap-3">
+              <span className="text-[12px] text-[#6B7280]">{fichierLibre.name}</span>
+              <button
+                disabled={envoiEnCours}
+                onClick={() =>
+                  envoyer(() =>
+                    envoyerDocumentLibre.mutateAsync({
+                      employeId: demande.employeId,
+                      fichier: fichierLibre,
+                    }),
+                  )
+                }
+                className="rounded-md bg-[#1B2A41] px-2.5 py-1.5 text-[11px] font-medium text-white disabled:opacity-50"
+              >
+                Envoyer ce fichier
+              </button>
             </div>
           )}
         </div>
@@ -174,13 +199,56 @@ function DemandeDetailDialog({
   )
 }
 
+function DocumentOption({
+  label,
+  hint,
+  disabled,
+  apercuEnCours,
+  onApercu,
+  onEnvoyer,
+}: {
+  label: string
+  hint?: string
+  disabled?: boolean
+  apercuEnCours?: boolean
+  onApercu: () => void
+  onEnvoyer: () => void
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-lg border border-[#D8D4CC] px-3 py-2.5">
+      <div className="min-w-0">
+        <p className="text-[13px] font-medium text-[#1B2A41]">{label}</p>
+        {hint && <p className="mt-0.5 text-[11px] text-[#9CA3AF]">{hint}</p>}
+      </div>
+      <div className="flex flex-shrink-0 items-center gap-2">
+        <button
+          type="button"
+          disabled={disabled || apercuEnCours}
+          onClick={onApercu}
+          className="flex items-center gap-1 rounded-md border border-[#D8D4CC] px-2.5 py-1.5 text-[11px] text-[#6B7280] transition-colors hover:border-[#1B2A41] hover:text-[#1B2A41] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <ExternalLink size={11} /> Aperçu
+        </button>
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={onEnvoyer}
+          className="flex items-center gap-1 rounded-md bg-[#1B2A41] px-2.5 py-1.5 text-[11px] font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <Send size={11} /> Envoyer
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function dateVersParam(date: Date | null): string | undefined {
   return date ? format(date, 'yyyy-MM-dd') : undefined
 }
 
-type Tab = 'liste' | 'nouvelle' | 'registre' | 'feries' | 'blocage' | 'politique'
+type Tab = 'liste' | 'nouvelle' | 'registre' | 'blocage' | 'politique'
 
-const TABS_VALIDES: Tab[] = ['liste', 'nouvelle', 'registre', 'feries', 'blocage', 'politique']
+const TABS_VALIDES: Tab[] = ['liste', 'nouvelle', 'registre', 'blocage', 'politique']
 
 const LABELS_TYPE_CONTRAT: Record<string, string> = {
   CDI: 'CDI',
@@ -196,6 +264,8 @@ const TYPES: { value: TypeDemandeAdministrative; label: string }[] = [
   { value: 'conge_naissance', label: 'Congé naissance' },
   { value: 'conge_deces', label: 'Congé décès' },
   { value: 'conge_maladie', label: 'Congé maladie' },
+  { value: 'demande_document', label: 'Demande de document' },
+  { value: 'autre', label: 'Autre' },
 ]
 
 // EF-ADM-14 : congés légaux — période valide requise, pas de solde/quota (cf. TYPES ci-dessus).
@@ -233,19 +303,42 @@ export function DemandesPage() {
   // (plus bas) restent strictement Admin, jamais délégables (miroir de verifierAdminOuDelegue()
   // côté backend, qui ne couvre que ces trois actions).
   const peutDecider = role === 'admin' || estDelegueActif
+  // "Demandes / approbation" reste accessible à un délégué actif (il doit voir ce qu'il approuve),
+  // mais Blocage congés / Politique de congés restent strictement Admin — même périmètre que
+  // peutDecider vs. les écrans non délégables (cf. commentaire ci-dessus). Jours fériés a sa propre
+  // page (JoursFeriesPage), accessible uniquement depuis Configuration, comme le Journal d'audit.
+  const tabsVisibles: Tab[] = [
+    ...(peutDecider ? (['liste'] as const) : []),
+    'nouvelle',
+    'registre',
+    ...(role === 'admin' ? (['blocage', 'politique'] as const) : []),
+  ]
   const queryClient = useQueryClient()
   const [searchParams] = useSearchParams()
   const tabParam = searchParams.get('tab')
   const [tab, setTab] = useState<Tab>(
-    TABS_VALIDES.includes(tabParam as Tab) ? (tabParam as Tab) : 'liste',
+    TABS_VALIDES.includes(tabParam as Tab) && tabsVisibles.includes(tabParam as Tab)
+      ? (tabParam as Tab)
+      : tabsVisibles[0],
   )
+  // Filet de sécurité si le statut de délégué expire en cours de session (estDelegueActif change
+  // de façon asynchrone, cf. useEstDelegueActifMaintenant) : dérivé au rendu plutôt qu'un effet +
+  // setState (pas de cascade de rendus), retombe sur le premier onglet encore visible.
+  const tabEffectif = tabsVisibles.includes(tab) ? tab : tabsVisibles[0]
   const [typeFiltre, setTypeFiltre] = useState<TypeDemandeAdministrative | ''>('')
   const [statutFiltre, setStatutFiltre] = useState<StatutDemandeAdministrative | ''>('en_attente')
   const [debutFiltre, setDebutFiltre] = useState<Date | null>(null)
   const [finFiltre, setFinFiltre] = useState<Date | null>(null)
   const [showExport, setShowExport] = useState(false)
-  const [employeRegistreId, setEmployeRegistreId] = useState('')
-  const [demandeDetailId, setDemandeDetailId] = useState<string | null>(null)
+  const [showExportRegistre, setShowExportRegistre] = useState(false)
+  // Lien direct depuis la fiche employé (EmployeDetailPage) vers son registre pré-filtré, ex.
+  // /demandes?tab=registre&employeId=... — évite une recherche manuelle répétitive.
+  const [employeRegistreId, setEmployeRegistreId] = useState(searchParams.get('employeId') ?? '')
+  // demande_document en attente en cours de traitement via la modale "Envoyer un document" —
+  // distinct du simple Approuver/Rejeter des autres types (cf. modale plus bas).
+  const [demandeDocumentActive, setDemandeDocumentActive] = useState<DemandeAdministrative | null>(
+    null,
+  )
   const [message, setMessage] = useState<string | null>(null)
   const [erreur, setErreur] = useState<string | null>(null)
   const [form, setForm] = useState<DemandeAdministrativeRequete>({
@@ -257,7 +350,6 @@ export function DemandesPage() {
     motif: '',
   })
   const [justificatif, setJustificatif] = useState<File | null>(null)
-  const [ferie, setFerie] = useState({ dateFerie: dateJour(), libelle: '' })
   const [blocage, setBlocage] = useState({
     dateDebut: dateJour(),
     dateFin: dateJour(),
@@ -313,6 +405,16 @@ export function DemandesPage() {
     }
   }
 
+  async function lancerExportRegistre(fmt: 'xlsx' | 'pdf') {
+    setShowExportRegistre(false)
+    if (!employeRegistreId) return
+    try {
+      await exporterRegistre(employeRegistreId, fmt)
+    } catch {
+      void toast.error("Échec de l'export")
+    }
+  }
+
   const soldeQuery = useQuery({
     queryKey: ['solde-conge', employeSoldeId],
     queryFn: () => obtenirSolde(employeSoldeId),
@@ -324,11 +426,31 @@ export function DemandesPage() {
     queryFn: () => listerMouvements(employeRegistreId),
     enabled: Boolean(employeRegistreId),
   })
+  const {
+    trie: mouvementsTries,
+    tri: triMouvements,
+    handleTri: handleTriMouvements,
+  } = useTriLocal(
+    mouvementsQuery.data,
+    (m, champ) => (champ === 'creeLe' ? m.creeLe : m.quantiteJours),
+    { champ: 'creeLe', direction: 'desc' },
+  )
 
-  const joursFeriesQuery = useQuery({
-    queryKey: ['jours-feries'],
-    queryFn: listerJoursFeries,
+  // Détail de la demande intégré directement dans le tableau du registre (plus de modale à part) :
+  // un fetch par demande liée, en parallèle — le nombre de mouvements par employé reste faible,
+  // pas besoin d'un endpoint de lecture groupée dédié pour ça.
+  const demandeIdsRegistre = [
+    ...new Set((mouvementsQuery.data ?? []).flatMap((m) => (m.demandeId ? [m.demandeId] : []))),
+  ]
+  const demandesRegistreQueries = useQueries({
+    queries: demandeIdsRegistre.map((id) => ({
+      queryKey: ['demande-detail', id],
+      queryFn: () => obtenirDemande(id),
+    })),
   })
+  const demandesRegistreParId = new Map(
+    demandeIdsRegistre.map((id, i) => [id, demandesRegistreQueries[i]?.data]),
+  )
 
   const periodesBlocageQuery = useQuery({
     queryKey: ['periodes-blocage-conges'],
@@ -344,7 +466,6 @@ export function DemandesPage() {
     await queryClient.invalidateQueries({ queryKey: ['demandes-administratives'] })
     await queryClient.invalidateQueries({ queryKey: ['solde-conge'] })
     await queryClient.invalidateQueries({ queryKey: ['mouvements-conges'] })
-    await queryClient.invalidateQueries({ queryKey: ['jours-feries'] })
     await queryClient.invalidateQueries({ queryKey: ['periodes-blocage-conges'] })
     await queryClient.invalidateQueries({ queryKey: ['politique-conges'] })
   }
@@ -380,23 +501,6 @@ export function DemandesPage() {
     onError: (e: ApiError) => setErreur(e.message),
   })
 
-  const ferieMutation = useMutation({
-    mutationFn: creerJourFerie,
-    onSuccess: async () => {
-      setFerie({ dateFerie: dateJour(), libelle: '' })
-      setMessage('Jour férié enregistré.')
-      setErreur(null)
-      await invalider()
-    },
-    onError: (e: ApiError) => setErreur(e.message),
-  })
-
-  const supprimerFerieMutation = useMutation({
-    mutationFn: supprimerJourFerie,
-    onSuccess: invalider,
-    onError: (e: ApiError) => setErreur(e.message),
-  })
-
   const blocageMutation = useMutation({
     mutationFn: creerPeriodeBlocageConges,
     onSuccess: async () => {
@@ -425,14 +529,17 @@ export function DemandesPage() {
     onError: (e: ApiError) => setErreur(e.message),
   })
 
-  const tabs: { key: Tab; label: string }[] = [
-    { key: 'liste', label: 'Demandes / approbation' },
-    { key: 'nouvelle', label: 'Nouvelle demande' },
-    { key: 'registre', label: 'Registre congés' },
-    { key: 'feries', label: 'Jours fériés' },
-    { key: 'blocage', label: 'Blocage congés' },
-    { key: 'politique', label: 'Politique de congés' },
-  ]
+  const LIBELLES_TAB: Record<Tab, string> = {
+    liste: 'Demandes / approbation',
+    nouvelle: 'Nouvelle demande',
+    registre: 'Registre congés',
+    blocage: 'Blocage congés',
+    politique: 'Politique de congés',
+  }
+  const tabs: { key: Tab; label: string }[] = tabsVisibles.map((key) => ({
+    key,
+    label: LIBELLES_TAB[key],
+  }))
 
   const soldeActuel = soldeQuery.data
   const employeSelectionne = useMemo(
@@ -449,19 +556,33 @@ export function DemandesPage() {
     setMessage(null)
     setErreur(null)
 
+    // Le justificatif est optionnel pour tous les types de demande (upload générique, supporté
+    // tel quel par le backend — DemandeAdministrative.fichierJustificatifId) ; seul conge_maladie
+    // impose qu'au moins l'un des deux (justificatif ou motif) soit renseigné.
     let fichierJustificatifId = form.fichierJustificatifId
-    if (form.typeDemande === 'conge_maladie') {
-      if (!justificatif && !fichierJustificatifId && !form.motif?.trim()) {
-        setErreur('Un justificatif ou un motif est requis pour un congé maladie.')
+    if (
+      form.typeDemande === 'conge_maladie' &&
+      !justificatif &&
+      !fichierJustificatifId &&
+      !form.motif?.trim()
+    ) {
+      setErreur('Un justificatif ou un motif est requis pour un congé maladie.')
+      return
+    }
+    // Même validation que le backend (case autre, demande_document -> motif obligatoire).
+    if (
+      (form.typeDemande === 'demande_document' || form.typeDemande === 'autre') &&
+      !form.motif?.trim()
+    ) {
+      setErreur('Le motif est obligatoire pour ce type de demande.')
+      return
+    }
+    if (justificatif) {
+      try {
+        fichierJustificatifId = await televerserJustificatif(justificatif)
+      } catch {
+        setErreur('Échec du téléversement du justificatif.')
         return
-      }
-      if (justificatif) {
-        try {
-          fichierJustificatifId = await televerserJustificatif(justificatif)
-        } catch {
-          setErreur('Échec du téléversement du justificatif.')
-          return
-        }
       }
     }
 
@@ -475,8 +596,7 @@ export function DemandesPage() {
       granularite: form.typeDemande === 'conge' ? form.granularite : undefined,
       heureDepart: form.typeDemande === 'bon_sortie' ? form.heureDepart : undefined,
       heureRetourPrevue: form.typeDemande === 'bon_sortie' ? form.heureRetourPrevue : undefined,
-      fichierJustificatifId:
-        form.typeDemande === 'conge_maladie' ? fichierJustificatifId : undefined,
+      fichierJustificatifId,
     })
   }
 
@@ -485,14 +605,6 @@ export function DemandesPage() {
       <PageHeader
         title="Demandes administratives"
         subtitle="Congés, bons de sortie, documents libres, solde et jours fériés."
-        actions={
-          <button
-            onClick={() => setTab('nouvelle')}
-            className="flex items-center gap-1.5 rounded-lg bg-[#1B2A41] px-4 py-2 text-[12px] font-medium text-white"
-          >
-            <Plus size={13} /> Nouvelle demande
-          </button>
-        }
       />
 
       <div className="mb-5 flex gap-1 border-b border-[#D8D4CC]">
@@ -501,7 +613,7 @@ export function DemandesPage() {
             key={t.key}
             onClick={() => setTab(t.key)}
             className={`px-4 py-2.5 text-[12px] font-medium transition-colors ${
-              tab === t.key
+              tabEffectif === t.key
                 ? 'border-b-2 border-[#C92B6A] text-[#1B2A41]'
                 : 'text-[#6B7280] hover:text-[#1B2A41]'
             }`}
@@ -523,7 +635,7 @@ export function DemandesPage() {
         </div>
       )}
 
-      {tab === 'liste' && (
+      {tabEffectif === 'liste' && (
         <section className="space-y-4">
           <div className="flex flex-wrap items-end gap-3 rounded-xl border border-[#D8D4CC] bg-white p-4">
             <Select
@@ -658,13 +770,25 @@ export function DemandesPage() {
                     <td className="px-4 py-3.5">
                       {peutDecider && d.statut === 'en_attente' && (
                         <div className="flex gap-2">
-                          <ActionButton
-                            label="Approuver"
-                            icon={<Check size={12} />}
-                            onClick={() =>
-                              decisionMutation.mutate({ id: d.id, action: 'approuver' })
-                            }
-                          />
+                          {d.typeDemande === 'demande_document' ? (
+                            // Approuver seul ne règle pas la demande — l'Admin doit encore aller
+                            // générer/envoyer le document depuis Documents RH. Cette action ouvre
+                            // directement ce flux (mêmes documents auto-générés + document libre)
+                            // et marque la demande approuvée une fois l'envoi confirmé.
+                            <ActionButton
+                              label="Envoyer un document"
+                              icon={<Send size={12} />}
+                              onClick={() => setDemandeDocumentActive(d)}
+                            />
+                          ) : (
+                            <ActionButton
+                              label="Approuver"
+                              icon={<Check size={12} />}
+                              onClick={() =>
+                                decisionMutation.mutate({ id: d.id, action: 'approuver' })
+                              }
+                            />
+                          )}
                           <ActionButton
                             label="Rejeter"
                             icon={<X size={12} />}
@@ -673,13 +797,34 @@ export function DemandesPage() {
                           />
                         </div>
                       )}
-                      {peutDecider && d.statut === 'approuvee' && (
-                        <ActionButton
-                          label="Annuler"
-                          danger
-                          onClick={() => decisionMutation.mutate({ id: d.id, action: 'annuler' })}
-                        />
-                      )}
+                      {peutDecider &&
+                        d.statut === 'approuvee' &&
+                        (d.typeDemande === 'demande_document' ? (
+                          // Annuler n'a pas de sens ici (pas de solde à recréditer) — permet de
+                          // renvoyer un document si le premier envoi s'est perdu ou qu'un autre
+                          // document est finalement nécessaire, via la même modale de choix.
+                          <ActionButton
+                            label="Renvoyer un document"
+                            icon={<Send size={12} />}
+                            onClick={() => setDemandeDocumentActive(d)}
+                          />
+                        ) : !d.dateDebut || d.dateDebut > dateJour() ? (
+                          <ActionButton
+                            label="Annuler"
+                            danger
+                            onClick={() => decisionMutation.mutate({ id: d.id, action: 'annuler' })}
+                          />
+                        ) : (
+                          // Miroir de la règle backend (AdministrativeService#annuler) : jour de
+                          // départ atteint ou passé, plus annulable — l'employé peut déjà être
+                          // absent, on ne peut plus faire comme si le congé n'avait jamais eu lieu.
+                          <span
+                            className="text-[11px] text-[#9CA3AF]"
+                            title="Jour de départ atteint ou passé"
+                          >
+                            Non annulable
+                          </span>
+                        ))}
                     </td>
                   </tr>
                 ))}
@@ -693,25 +838,38 @@ export function DemandesPage() {
               </tbody>
             </table>
           </div>
+          <EnvoyerDocumentModal
+            demande={demandeDocumentActive}
+            employe={employes.find((e) => e.id === demandeDocumentActive?.employeId)}
+            onClose={() => setDemandeDocumentActive(null)}
+            onEnvoye={async () => {
+              // Renvoyer un document sur une demande déjà approuvée ne doit pas re-déclencher
+              // approuver() : le backend refuse d'approuver une demande qui n'est plus en_attente.
+              if (demandeDocumentActive && demandeDocumentActive.statut === 'en_attente') {
+                await decisionMutation.mutateAsync({
+                  id: demandeDocumentActive.id,
+                  action: 'approuver',
+                })
+              }
+              setDemandeDocumentActive(null)
+            }}
+          />
         </section>
       )}
 
-      {tab === 'nouvelle' && (
+      {tabEffectif === 'nouvelle' && (
         <form
           onSubmit={soumettreDemande}
           className="grid gap-5 rounded-xl border border-[#D8D4CC] bg-white p-6 md:grid-cols-[1fr_320px]"
         >
           <div className="space-y-4">
-            <Select
+            <PersonSearch
               label="Employé"
+              placeholder="Rechercher un employé…"
+              personnes={employes}
               value={form.employeId}
               onChange={(v) => majForm('employeId', v)}
-              options={[
-                { value: '', label: 'Sélectionner' },
-                ...employes
-                  .filter((e) => e.id)
-                  .map((e) => ({ value: e.id as string, label: nomEmploye(e) })),
-              ]}
+              required
             />
             <Select
               label="Type de demande"
@@ -787,29 +945,6 @@ export function DemandesPage() {
               </div>
             )}
 
-            {form.typeDemande === 'conge_maladie' && (
-              <label className="block">
-                <span className="text-[12px] font-medium text-[#1B2A41]">
-                  Justificatif (arrêt de travail) — optionnel
-                </span>
-                <input
-                  type="file"
-                  accept="application/pdf,image/jpeg,image/png"
-                  onChange={(e) => setJustificatif(e.target.files?.[0] ?? null)}
-                  className="mt-1.5 block w-full text-[12px] text-[#6B7280]"
-                />
-                {form.fichierJustificatifId && (
-                  <span className="mt-1 block text-[11px] text-[#4A7C6B]">
-                    Justificatif téléversé.
-                  </span>
-                )}
-                <span className="mt-1 block text-[11px] text-[#9CA3AF]">
-                  Sans arrêt de travail (repos à domicile, prévenu par message) : laissez vide et
-                  précisez le contexte dans le motif ci-dessous.
-                </span>
-              </label>
-            )}
-
             <label className="block">
               <span className="text-[12px] font-medium text-[#1B2A41]">
                 Motif / détail
@@ -818,14 +953,54 @@ export function DemandesPage() {
                 !form.fichierJustificatifId
                   ? ' — requis en l’absence de justificatif'
                   : ''}
+                {form.typeDemande === 'demande_document' ? ' — requis (ex. document attendu)' : ''}
+                {form.typeDemande === 'autre' ? ' — requis' : ''}
               </span>
               <textarea
                 value={form.motif ?? ''}
                 onChange={(e) => majForm('motif', e.target.value)}
                 rows={4}
+                placeholder={
+                  form.typeDemande === 'demande_document'
+                    ? 'Ex. : attestation de travail pour la banque'
+                    : undefined
+                }
                 className="mt-1.5 w-full rounded-lg border border-[#D8D4CC] bg-[#F7F7F4] px-3 py-2.5 text-[13px] focus:border-[#1B2A41] focus:outline-none"
               />
             </label>
+
+            <div>
+              <span className="text-[12px] font-medium text-[#1B2A41]">
+                {form.typeDemande === 'conge_maladie'
+                  ? 'Justificatif (arrêt de travail) — optionnel'
+                  : 'Justificatif (optionnel)'}
+              </span>
+              <div className="mt-1.5 flex items-center gap-3">
+                <label className="cursor-pointer rounded-lg border border-dashed border-[#D8D4CC] px-4 py-2 text-[12px] text-[#6B7280] hover:border-[#1B2A41]">
+                  Choisir un fichier
+                  <input
+                    type="file"
+                    accept="application/pdf,image/jpeg,image/png"
+                    onChange={(e) => setJustificatif(e.target.files?.[0] ?? null)}
+                    className="hidden"
+                  />
+                </label>
+                {justificatif && (
+                  <span className="text-[12px] text-[#6B7280]">{justificatif.name}</span>
+                )}
+              </div>
+              {form.fichierJustificatifId && (
+                <span className="mt-1 block text-[11px] text-[#4A7C6B]">
+                  Justificatif téléversé.
+                </span>
+              )}
+              {form.typeDemande === 'conge_maladie' && (
+                <span className="mt-1 block text-[11px] text-[#9CA3AF]">
+                  Sans arrêt de travail (repos à domicile, prévenu par message) : laissez vide et
+                  précisez le contexte dans le motif ci-dessus.
+                </span>
+              )}
+            </div>
 
             <button
               disabled={!form.employeId || mutationDemande.isPending}
@@ -855,138 +1030,166 @@ export function DemandesPage() {
         </form>
       )}
 
-      {tab === 'registre' && (
+      {tabEffectif === 'registre' && (
         <section className="space-y-5">
-          <div className="flex flex-wrap items-end gap-4">
+          <div>
+            <h2 className="text-[13px] font-semibold text-[#1B2A41]">Registre des congés</h2>
+            <p className="mt-0.5 text-[12px] text-[#9CA3AF]">
+              Historique des mouvements de solde (acquisition, consommation, recrédit, ajustement)
+              par employé.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-4 rounded-xl border border-[#D8D4CC] bg-white p-4">
             <div className="max-w-sm min-w-64 flex-1">
-              <EmployeSearch
-                employes={employes}
+              <PersonSearch
+                placeholder="Rechercher un employé…"
+                personnes={employes}
                 value={employeRegistreId}
                 onChange={setEmployeRegistreId}
               />
             </div>
-            {soldeActuel && employeRegistreId && (
-              <div className="rounded-xl border border-[#4A7C6B]/20 bg-[#4A7C6B]/6 px-5 py-3">
-                <p className="text-[10px] font-medium tracking-wider text-[#9CA3AF] uppercase">
-                  Solde
-                </p>
-                <p
-                  style={{ fontFamily: 'var(--font-display)' }}
-                  className="text-[26px] font-semibold text-[#4A7C6B]"
-                >
-                  {formatNombre(soldeActuel.soldeJours)} j
-                </p>
+            {employeRegistreId && (
+              <div className="ml-auto flex items-center gap-3">
+                {soldeActuel && (
+                  <div className="flex items-center gap-2 rounded-lg border border-[#4A7C6B]/20 bg-[#4A7C6B]/6 px-3 py-1.5">
+                    <span className="text-[10px] font-medium tracking-wider text-[#9CA3AF] uppercase">
+                      Solde
+                    </span>
+                    <span
+                      style={{ fontFamily: 'var(--font-display)' }}
+                      className="text-[16px] font-semibold text-[#4A7C6B]"
+                    >
+                      {formatNombre(soldeActuel.soldeJours)} j
+                    </span>
+                  </div>
+                )}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowExportRegistre((v) => !v)}
+                    className="flex h-9 items-center gap-1.5 rounded-lg border border-[#D8D4CC] px-3 text-[12px] text-[#6B7280] transition-colors hover:border-[#1B2A41] hover:text-[#1B2A41]"
+                  >
+                    <Download size={13} /> Exporter
+                  </button>
+                  {showExportRegistre && (
+                    <div className="absolute top-full right-0 z-10 mt-1 w-36 overflow-hidden rounded-lg border border-[#D8D4CC] bg-white shadow-lg">
+                      {(['xlsx', 'pdf'] as const).map((fmt) => (
+                        <button
+                          key={fmt}
+                          onClick={() => void lancerExportRegistre(fmt)}
+                          className="block w-full px-4 py-2.5 text-left text-[12px] text-[#1B2A41] transition-colors hover:bg-[#F7F7F4]"
+                        >
+                          {fmt === 'xlsx' ? 'Excel (.xlsx)' : 'PDF'}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
 
-          {employeRegistreId && (
-            <div className="overflow-hidden rounded-xl border border-[#D8D4CC] bg-white">
-              {(mouvementsQuery.data ?? []).length === 0 && (
-                <p className="px-4 py-6 text-center text-[13px] text-[#9CA3AF]">Aucun mouvement</p>
-              )}
-              {(mouvementsQuery.data ?? []).map((m) => (
-                <div
-                  key={m.id}
-                  className="flex items-center justify-between border-b border-[#D8D4CC]/60 px-4 py-3 last:border-0"
-                >
-                  <div>
-                    {m.demandeId ? (
-                      <button
-                        type="button"
-                        onClick={() => setDemandeDetailId(m.demandeId as string)}
-                        className="text-[13px] font-medium text-[#4A7C6B] hover:underline"
-                      >
-                        {libelleMouvement(m)}
-                      </button>
-                    ) : (
-                      <p className="text-[13px] font-medium text-[#1B2A41]">
-                        {libelleMouvement(m)}
-                      </p>
-                    )}
-                    <p className="text-[11px] text-[#9CA3AF]">{m.creeLe?.slice(0, 10)}</p>
-                  </div>
-                  <p
-                    style={{ fontFamily: 'var(--font-code)' }}
-                    className={`text-[13px] font-medium ${
-                      m.quantiteJours >= 0 ? 'text-[#4A7C6B]' : 'text-[#C1495A]'
-                    }`}
-                  >
-                    {m.quantiteJours >= 0 ? '+' : ''}
-                    {formatNombre(m.quantiteJours)} j
-                  </p>
-                </div>
-              ))}
+          {!employeRegistreId && (
+            <div className="rounded-xl border border-dashed border-[#D8D4CC] bg-white p-10 text-center">
+              <p className="text-[13px] text-[#9CA3AF]">
+                Sélectionnez un employé ci-dessus pour consulter son registre de congés.
+              </p>
             </div>
           )}
-          <DemandeDetailDialog
-            demandeId={demandeDetailId}
-            onClose={() => setDemandeDetailId(null)}
-          />
-        </section>
-      )}
 
-      {tab === 'feries' && (
-        <section className="grid gap-5 md:grid-cols-[1fr_320px]">
-          <div className="overflow-hidden rounded-xl border border-[#D8D4CC] bg-white">
-            {(joursFeriesQuery.data ?? []).map((j) => (
-              <div
-                key={j.id}
-                className="flex items-center justify-between border-b border-[#D8D4CC]/60 px-4 py-3 last:border-0"
-              >
-                <div className="flex items-center gap-3">
-                  <CalendarDays size={16} className="text-[#4A7C6B]" />
-                  <div>
-                    <p className="text-[13px] font-medium text-[#1B2A41]">{j.libelle}</p>
-                    <p className="text-[11px] text-[#9CA3AF]">{j.dateFerie}</p>
-                  </div>
-                </div>
-                {role === 'admin' && (
-                  <button
-                    onClick={() => supprimerFerieMutation.mutate(j.id)}
-                    className="text-[12px] text-[#C1495A]"
-                  >
-                    Supprimer
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-
-          {role === 'admin' && (
-            <form
-              onSubmit={(e) => {
-                e.preventDefault()
-                ferieMutation.mutate(ferie)
-              }}
-              className="space-y-4 rounded-xl border border-[#D8D4CC] bg-white p-5"
-            >
-              <Input
-                label="Date"
-                type="date"
-                value={ferie.dateFerie}
-                onChange={(v) => setFerie((f) => ({ ...f, dateFerie: v }))}
-              />
-              <Input
-                label="Libellé"
-                value={ferie.libelle}
-                onChange={(v) => setFerie((f) => ({ ...f, libelle: v }))}
-              />
-              <button
-                disabled={!ferie.dateFerie || !ferie.libelle || ferieMutation.isPending}
-                className="w-full rounded-lg bg-[#1B2A41] py-2.5 text-[13px] font-medium text-white disabled:opacity-40"
-              >
-                Ajouter / mettre à jour
-              </button>
-              <p className="text-[11px] text-[#6B7280]">
-                Les fêtes hégiriennes se saisissent manuellement chaque année.
-              </p>
-            </form>
+          {employeRegistreId && (
+            <div className="overflow-hidden rounded-xl border border-[#D8D4CC] bg-white">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-[#D8D4CC] bg-[#F7F7F4]">
+                    <SortableTh
+                      label="Date"
+                      champ="creeLe"
+                      tri={triMouvements}
+                      onChange={handleTriMouvements}
+                    />
+                    <SortableTh
+                      label="Quantité"
+                      champ="quantiteJours"
+                      tri={triMouvements}
+                      onChange={handleTriMouvements}
+                      className="text-right"
+                    />
+                    <th className="px-4 py-2.5 text-left text-[10px] font-semibold tracking-wider text-[#9CA3AF] uppercase">
+                      Statut de la demande
+                    </th>
+                    <th className="px-4 py-2.5 text-left text-[10px] font-semibold tracking-wider text-[#9CA3AF] uppercase">
+                      Période
+                    </th>
+                    <th className="px-4 py-2.5 text-left text-[10px] font-semibold tracking-wider text-[#9CA3AF] uppercase">
+                      Motif
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {mouvementsTries.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="px-4 py-6 text-center text-[13px] text-[#9CA3AF]">
+                        Aucun mouvement pour cet employé.
+                      </td>
+                    </tr>
+                  )}
+                  {mouvementsTries.map((m) => {
+                    const demande = m.demandeId ? demandesRegistreParId.get(m.demandeId) : undefined
+                    return (
+                      <tr
+                        key={m.id}
+                        className="border-b border-[#D8D4CC]/60 transition-colors last:border-0 hover:bg-[#F7F7F4]"
+                      >
+                        <td
+                          style={{ fontFamily: 'var(--font-code)' }}
+                          className="px-4 py-3 text-[12px] text-[#6B7280]"
+                        >
+                          {m.creeLe?.slice(0, 10)}
+                        </td>
+                        <td
+                          style={{ fontFamily: 'var(--font-code)' }}
+                          className={`px-4 py-3 text-right text-[13px] font-medium ${
+                            m.quantiteJours >= 0 ? 'text-[#4A7C6B]' : 'text-[#C1495A]'
+                          }`}
+                        >
+                          {m.quantiteJours >= 0 ? '+' : ''}
+                          {formatNombre(m.quantiteJours)} j
+                        </td>
+                        <td className="px-4 py-3">
+                          {demande ? (
+                            <StatusTag statut={demande.statut} />
+                          ) : (
+                            <span className="text-[12px] text-[#D8D4CC]">—</span>
+                          )}
+                        </td>
+                        <td
+                          style={{ fontFamily: 'var(--font-code)' }}
+                          className="px-4 py-3 text-[12px] text-[#6B7280]"
+                        >
+                          {demande
+                            ? `${demande.dateDebut}${
+                                demande.dateFin && demande.dateFin !== demande.dateDebut
+                                  ? ` → ${demande.dateFin}`
+                                  : ''
+                              }`
+                            : '—'}
+                        </td>
+                        <td className="px-4 py-3 text-[12px] text-[#6B7280]">
+                          {demande?.motif || '—'}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
           )}
         </section>
       )}
 
-      {tab === 'blocage' && (
+      {tabEffectif === 'blocage' && (
         <section className="grid gap-5 md:grid-cols-[1fr_320px]">
           <div className="overflow-hidden rounded-xl border border-[#D8D4CC] bg-white">
             {(periodesBlocageQuery.data ?? []).map((p) => (
@@ -1064,7 +1267,7 @@ export function DemandesPage() {
         </section>
       )}
 
-      {tab === 'politique' && (
+      {tabEffectif === 'politique' && (
         <section className="overflow-hidden rounded-xl border border-[#D8D4CC] bg-white">
           <table className="w-full">
             <thead>

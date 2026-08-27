@@ -8,7 +8,7 @@ import { PageHeader } from '@/components/ui/StatCard'
 import { CornerMark } from '@/components/ui/CornerMark'
 import { Button } from '@/components/ui/Button'
 import { FormField } from '@/components/ui/FormField'
-import { Select } from '@/components/ui/Select'
+import { PersonSearch } from '@/components/ui/PersonSearch'
 import { DatePicker } from '@/components/ui/DatePicker'
 import { Alert } from '@/components/ui/Alert'
 import { StatusTag } from '@/components/ui/StatusTag'
@@ -61,12 +61,9 @@ export function DelegationPage() {
     formState: { errors },
   } = useForm<FormValues>({ resolver: zodResolver(schema) })
 
-  const delegablesOptions = (utilisateurs ?? [])
-    .filter((u) => u.statut === 'actif' && u.role === 'manager')
-    .map((u) => ({
-      label: `${u.prenom} ${u.nom} (Manager)`,
-      value: u.id,
-    }))
+  const delegables = (utilisateurs ?? []).filter(
+    (u) => u.statut === 'actif' && u.role === 'manager',
+  )
 
   function nomUtilisateur(id?: string): string {
     const u = utilisateurs?.find((u) => u.id === id)
@@ -183,12 +180,12 @@ export function DelegationPage() {
                 name="delegueId"
                 control={control}
                 render={({ field }) => (
-                  <Select
+                  <PersonSearch
+                    label=""
                     value={field.value ?? ''}
                     onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    options={delegablesOptions}
-                    placeholder="Sélectionner un compte"
+                    personnes={delegables}
+                    placeholder="Rechercher un manager…"
                   />
                 )}
               />

@@ -6,6 +6,7 @@ import dayjs from 'dayjs'
 import QRCode from 'react-qr-code'
 import { Button } from '@/components/ui/Button'
 import { StatusTag } from '@/components/ui/StatusTag'
+import { PersonSearch } from '@/components/ui/PersonSearch'
 import { SortableTh } from '@/components/ui/SortableTh'
 import { useTriLocal } from '@/components/ui/useTriLocal'
 import { formatStatut } from '@/components/ui/tokens'
@@ -68,12 +69,29 @@ export function KiosqueActivationsPanel() {
     return e ? `${e.prenom} ${e.nom}` : 'Personnel'
   }
 
+  // "Expiré" est un statut dérivé à l'affichage (cf. estCodeExpire ci-dessus), jamais stocké tel
+  // quel en base — le filtre doit donc le recalculer plutôt que comparer a.statut directement.
+  function statutEffectif(a: KiosqueActivationReponse): string {
+    return estCodeExpire(a) ? 'expire' : a.statut
+  }
+
+  const [filtreEmployeId, setFiltreEmployeId] = useState('')
+  const [filtreStatut, setFiltreStatut] = useState<
+    '' | 'en_attente' | 'active' | 'expire' | 'revoquee'
+  >('')
+
+  const activationsFiltrees = (activations ?? []).filter((a) => {
+    if (filtreEmployeId && a.employeId !== filtreEmployeId) return false
+    if (filtreStatut && statutEffectif(a) !== filtreStatut) return false
+    return true
+  })
+
   const {
     trie: activationsTriees,
     tri,
     handleTri,
   } = useTriLocal(
-    activations,
+    activationsFiltrees,
     (a, champ) => {
       if (champ === 'employe') return nomEmploye(a)
       return a[champ as keyof KiosqueActivationReponse] as string | number | null | undefined
@@ -159,10 +177,6 @@ export function KiosqueActivationsPanel() {
 
       <div className="rounded-xl border border-[#D8D4CC] bg-white p-4">
         <h4 className="mb-1 text-[12px] font-semibold text-[#1B2A41]">QR code de site</h4>
-        <p className="mb-3 text-[11px] text-[#6B7280]">
-          Affichez ou imprimez ce QR au lieu de travail — l'employé le scanne avec son téléphone
-          (déjà appairé) pour prouver sa présence sur place à chaque pointage.
-        </p>
         {sitesQrLoading ? (
           <p className="text-[12px] text-[#9CA3AF]">Chargement…</p>
         ) : siteActif ? (
@@ -211,6 +225,53 @@ export function KiosqueActivationsPanel() {
           </p>
         </div>
       )}
+
+      <div className="flex flex-wrap items-end gap-3 rounded-xl border border-[#D8D4CC] bg-white p-4">
+        <div className="max-w-xs min-w-56 flex-1">
+          <PersonSearch
+            label="Employé"
+            placeholder="Rechercher un employé…"
+            personnes={employes}
+            value={filtreEmployeId}
+            onChange={setFiltreEmployeId}
+          />
+        </div>
+        <div className="flex flex-wrap gap-1">
+          {(
+            [
+              { valeur: '', label: 'Tous' },
+              { valeur: 'en_attente', label: 'En attente' },
+              { valeur: 'active', label: 'Active' },
+              { valeur: 'expire', label: 'Expiré' },
+              { valeur: 'revoquee', label: 'Révoquée' },
+            ] as const
+          ).map(({ valeur, label }) => (
+            <button
+              key={valeur}
+              aria-label={`Filtrer par statut : ${label}`}
+              onClick={() => setFiltreStatut(valeur)}
+              className={`rounded-full px-3 py-1.5 text-[11px] font-medium transition-colors ${
+                filtreStatut === valeur
+                  ? 'bg-[#1B2A41] text-white'
+                  : 'bg-[#F7F7F4] text-[#6B7280] hover:bg-[#D8D4CC]/50'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {(filtreEmployeId || filtreStatut) && (
+          <button
+            onClick={() => {
+              setFiltreEmployeId('')
+              setFiltreStatut('')
+            }}
+            className="text-[11px] text-[#9CA3AF] hover:text-[#1B2A41]"
+          >
+            Réinitialiser
+          </button>
+        )}
+      </div>
 
       <div className="overflow-hidden rounded-xl border border-[#D8D4CC] bg-white">
         <table className="w-full">
@@ -291,6 +352,13 @@ export function KiosqueActivationsPanel() {
               <tr>
                 <td colSpan={5} className="p-8 text-center text-[13px] text-[#9CA3AF]">
                   Aucune activation pour le moment.
+                </td>
+              </tr>
+            )}
+            {!isLoading && (activations ?? []).length > 0 && activationsFiltrees.length === 0 && (
+              <tr>
+                <td colSpan={5} className="p-8 text-center text-[13px] text-[#9CA3AF]">
+                  Aucune activation pour ces filtres.
                 </td>
               </tr>
             )}

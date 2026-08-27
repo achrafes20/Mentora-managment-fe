@@ -54,5 +54,6 @@ export const modules: ModuleNavEntry[] = [
   ...adminBottomNavItems.map((m) => ({ key: m.key, label: m.label, path: m.path, enabled: true })),
   { key: 'notifications', label: 'Notifications', path: '/notifications', enabled: true },
   { key: 'audit', label: "Journal d'audit", path: '/audit', enabled: true },
+  { key: 'jours-feries', label: 'Jours fériés', path: '/jours-feries', enabled: true },
   { key: 'import', label: 'Import', path: '/import', enabled: true },
 ]

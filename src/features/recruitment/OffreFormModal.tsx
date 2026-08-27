@@ -149,7 +149,7 @@ export function OffreFormModal({
       </FormField>
       <FormField
         label="Mots-clés requis"
-        hint="Séparés par des virgules — utilisés pour le matching IA et la réactivation automatique des candidatures en attente (EF-REC-12)."
+        hint="Séparés par des virgules — utilisés pour le matching IA et la réactivation automatique des candidatures en attente."
       >
         <Controller
           name="motsClesRequis"

@@ -35,7 +35,14 @@ describe('MobilePointagePage', () => {
   beforeEach(() => {
     localStorage.setItem('hb_pointage_mobile_device_token', 'jeton-test')
     statutActivationAppareilMock.mockResolvedValue(true)
-    mesPointagesRecentsMock.mockResolvedValue([])
+    mesPointagesRecentsMock.mockResolvedValue({
+      content: [],
+      page: 0,
+      size: 5,
+      totalElements: 0,
+      totalPages: 0,
+      last: true,
+    })
   })
 
   afterEach(() => {
@@ -73,16 +80,23 @@ describe('MobilePointagePage', () => {
 
   it('affiche les 5 derniers pointages au chargement', async () => {
     const horodatage = '2026-01-14T17:00:00Z'
-    mesPointagesRecentsMock.mockResolvedValue([
-      {
-        id: 'p1',
-        employeId: 'emp-1',
-        typeScan: 'sortie',
-        horodatage,
-        corrigeManuellement: false,
-        motifCorrection: null,
-      },
-    ])
+    mesPointagesRecentsMock.mockResolvedValue({
+      content: [
+        {
+          id: 'p1',
+          employeId: 'emp-1',
+          typeScan: 'sortie',
+          horodatage,
+          corrigeManuellement: false,
+          motifCorrection: null,
+        },
+      ],
+      page: 0,
+      size: 5,
+      totalElements: 1,
+      totalPages: 1,
+      last: true,
+    })
     render(<MobilePointagePage />)
 
     expect(await screen.findByText('Mes derniers pointages')).toBeInTheDocument()

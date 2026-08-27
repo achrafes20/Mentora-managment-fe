@@ -2,20 +2,24 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useEffect, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
+import { format } from 'date-fns'
 import { Plus } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { PageHeader } from '@/components/ui/StatCard'
 import { StatusTag } from '@/components/ui/StatusTag'
+import { EmailLink } from '@/components/ui/EmailLink'
 import { SortableTh } from '@/components/ui/SortableTh'
 import { useTriLocal } from '@/components/ui/useTriLocal'
 import { Dialog } from '@/components/ui/Dialog'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
+import { DatePicker } from '@/components/ui/DatePicker'
 import { Button } from '@/components/ui/Button'
 import { Alert } from '@/components/ui/Alert'
 import { toast } from '@/components/ui/toast'
 import { confirm } from '@/components/ui/confirm'
+import { useDepartements } from '../employee/useDepartements'
 import {
   type RoleUtilisateur,
   type UserResponse,
@@ -25,6 +29,10 @@ import {
   listUsers,
   updateUser,
 } from '@/lib/authApi'
+
+// Même liste que EmployeFormModal — pas de constante partagée entre les deux (typeContrat n'est
+// qu'une String côté backend UserCreateRequest, converti en enum côté module employee).
+const TYPES_CONTRAT = ['CDI', 'CDD', 'STAGIAIRE', 'STAGIAIRE_REMUNERE'] as const
 
 const ROLE_LABELS: Record<RoleUtilisateur, string> = {
   admin: 'Admin',
@@ -38,24 +46,65 @@ const ROLE_OPTIONS = [
 
 // ---- Formulaire création ----
 
-const createSchema = z.object({
-  nom: z.string().min(1, 'Obligatoire'),
-  prenom: z.string().min(1, 'Obligatoire'),
-  email: z.string().min(1, 'Obligatoire').email('Format invalide'),
-  role: z.enum(['admin', 'manager'], { required_error: 'Obligatoire' }),
-  motDePasse: z.string().min(1, 'Obligatoire'),
-  mattermostUserId: z.string().max(64, '64 caracteres maximum').optional(),
-})
+// EF-EMP-18 : un Manager est aussi un employé — fiche RH obligatoire uniquement pour ce rôle,
+// vérifié via superRefine (dépend d'un autre champ du même formulaire, pas exprimable par un
+// simple .min()/.optional() par champ).
+const createSchema = z
+  .object({
+    nom: z.string().min(1, 'Obligatoire'),
+    prenom: z.string().min(1, 'Obligatoire'),
+    email: z.string().min(1, 'Obligatoire').email('Format invalide'),
+    role: z.enum(['admin', 'manager'], { required_error: 'Obligatoire' }),
+    motDePasse: z.string().min(1, 'Obligatoire'),
+    mattermostUserId: z.string().max(64, '64 caracteres maximum').optional(),
+    departementId: z.string().optional(),
+    poste: z.string().optional(),
+    typeContrat: z.enum(TYPES_CONTRAT).optional(),
+    dateEmbauche: z.date().nullable().optional(),
+  })
+  .superRefine((valeurs, ctx) => {
+    if (valeurs.role !== 'manager') return
+    if (!valeurs.departementId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['departementId'],
+        message: 'Obligatoire pour un Manager',
+      })
+    }
+    if (!valeurs.poste?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['poste'],
+        message: 'Obligatoire pour un Manager',
+      })
+    }
+    if (!valeurs.typeContrat) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['typeContrat'],
+        message: 'Obligatoire pour un Manager',
+      })
+    }
+    if (!valeurs.dateEmbauche) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['dateEmbauche'],
+        message: 'Obligatoire pour un Manager',
+      })
+    }
+  })
 
 type CreateForm = z.infer<typeof createSchema>
 
 function CreateUserModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const queryClient = useQueryClient()
   const [apiError, setApiError] = useState<string | null>(null)
+  const { data: departements = [] } = useDepartements()
   const {
     control,
     handleSubmit,
     reset,
+    watch,
     formState: { errors },
   } = useForm<CreateForm>({
     resolver: zodResolver(createSchema),
@@ -66,11 +115,28 @@ function CreateUserModal({ open, onClose }: { open: boolean; onClose: () => void
       role: 'manager',
       motDePasse: '',
       mattermostUserId: '',
+      departementId: '',
+      poste: '',
+      typeContrat: 'CDI',
+      dateEmbauche: new Date(),
     },
   })
+  const roleActuel = watch('role')
 
   const mutation = useMutation({
-    mutationFn: createUser,
+    mutationFn: (v: CreateForm) =>
+      createUser({
+        ...v,
+        mattermostUserId: v.mattermostUserId?.trim() || null,
+        // EF-EMP-18 : ignoré côté backend pour un Admin, mais on n'envoie même pas les champs RH
+        // dans ce cas — évite d'envoyer des valeurs par défaut (typeContrat/dateEmbauche) sans
+        // rapport avec un rôle qui n'en a pas besoin.
+        departementId: v.role === 'manager' ? v.departementId : null,
+        poste: v.role === 'manager' ? v.poste : null,
+        typeContrat: v.role === 'manager' ? v.typeContrat : null,
+        dateEmbauche:
+          v.role === 'manager' && v.dateEmbauche ? format(v.dateEmbauche, 'yyyy-MM-dd') : null,
+      }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['users'] })
       toast.success('Compte créé avec succès.')
@@ -148,6 +214,66 @@ function CreateUserModal({ open, onClose }: { open: boolean; onClose: () => void
             )}
           />
         </FormField>
+        {roleActuel === 'manager' && (
+          <>
+            {/* EF-EMP-18 : un Manager est aussi un employé — sa fiche RH est créée avec son
+                compte, ces champs sont donc obligatoires pour ce rôle uniquement. */}
+            <p className="mt-2 mb-1 text-[10px] font-semibold tracking-wider text-[#9CA3AF] uppercase">
+              Fiche RH du Manager
+            </p>
+            <div className="grid grid-cols-2 gap-x-4">
+              <FormField label="Département" required error={errors.departementId?.message}>
+                <Controller
+                  name="departementId"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      placeholder="Sélectionner"
+                      options={departements.map((d) => ({ label: d.nom ?? '', value: d.id ?? '' }))}
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                    />
+                  )}
+                />
+              </FormField>
+              <FormField label="Poste" required error={errors.poste?.message}>
+                <Controller
+                  name="poste"
+                  control={control}
+                  render={({ field }) => <Input {...field} />}
+                />
+              </FormField>
+              <FormField label="Type de contrat" required error={errors.typeContrat?.message}>
+                <Controller
+                  name="typeContrat"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      options={TYPES_CONTRAT.map((t) => ({ label: t, value: t }))}
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                    />
+                  )}
+                />
+              </FormField>
+              <FormField label="Date d'embauche" required error={errors.dateEmbauche?.message}>
+                <Controller
+                  name="dateEmbauche"
+                  control={control}
+                  render={({ field }) => (
+                    <DatePicker
+                      value={field.value}
+                      onChange={(d) => field.onChange(d)}
+                      onBlur={field.onBlur}
+                    />
+                  )}
+                />
+              </FormField>
+            </div>
+          </>
+        )}
         <FormField
           label="Mot de passe temporaire"
           required
@@ -420,7 +546,7 @@ export function UserManagementPage() {
                     style={{ fontFamily: 'var(--font-code)' }}
                     className="px-4 py-3.5 text-[13px] text-[#1B2A41]"
                   >
-                    {u.email}
+                    <EmailLink email={u.email} />
                   </td>
                   <td className="px-4 py-3.5">
                     <span
@@ -497,8 +623,8 @@ export function UserManagementPage() {
       <EditUserModal user={editUser} onClose={() => setEditUser(null)} />
 
       <p className="mt-4 text-[12px] text-[#9CA3AF]">
-        Ce tableau ne contient pas les fiches employés. Les comptes ici donnent uniquement accès à
-        la plateforme (rôle Admin ou Manager).
+        Comptes de connexion à la plateforme (rôle Admin ou Manager). Un Manager a aussi une fiche
+        RH associée, créée automatiquement avec son compte ; un Admin n'en a pas besoin.
       </p>
     </div>
   )
