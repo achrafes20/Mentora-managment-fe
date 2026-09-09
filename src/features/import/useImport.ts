@@ -10,6 +10,7 @@ import {
   type ImportApercu,
   type ImportCible,
   type ImportRapport,
+  type StrategieDoublon,
 } from './importApi'
 
 export const CLE_HISTORIQUE_IMPORTS = ['import', 'historique'] as const
@@ -18,6 +19,7 @@ interface RequeteMapping {
   fichier: File
   cible: ImportCible
   mapping: Record<string, number>
+  strategieDoublon: StrategieDoublon
 }
 
 export function usePrevisualiserImport() {
@@ -28,14 +30,16 @@ export function usePrevisualiserImport() {
 
 export function useAnalyserImport() {
   return useMutation<ImportRapport, ApiError, RequeteMapping>({
-    mutationFn: ({ fichier, cible, mapping }) => analyserImport(fichier, cible, mapping),
+    mutationFn: ({ fichier, cible, mapping, strategieDoublon }) =>
+      analyserImport(fichier, cible, mapping, strategieDoublon),
   })
 }
 
 export function useExecuterImport() {
   const queryClient = useQueryClient()
   return useMutation<ImportRapport, ApiError, RequeteMapping>({
-    mutationFn: ({ fichier, cible, mapping }) => executerImport(fichier, cible, mapping),
+    mutationFn: ({ fichier, cible, mapping, strategieDoublon }) =>
+      executerImport(fichier, cible, mapping, strategieDoublon),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: CLE_HISTORIQUE_IMPORTS }),
   })
 }

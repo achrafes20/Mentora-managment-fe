@@ -97,6 +97,12 @@ export async function createUser(data: {
   nom: string
   prenom: string
   mattermostUserId?: string | null
+  // EF-EMP-18 : un Manager est aussi un employé — obligatoires côté backend pour role === 'manager'
+  // (fiche RH créée avec le compte), ignorés pour un Admin.
+  departementId?: string | null
+  poste?: string | null
+  typeContrat?: string | null
+  dateEmbauche?: string | null
 }): Promise<UserResponse> {
   const res = await apiClient.post<ApiEnvelope<UserResponse>>('/api/users', data)
   return res.data.data

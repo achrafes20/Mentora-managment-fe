@@ -95,13 +95,19 @@ export async function revoquerParJeton(jeton: string): Promise<void> {
   await apiClient.post('/api/kiosque/revoquer-perte', { jeton })
 }
 
-// EF-ATT-17 : historique perso affiché sur /pointage-mobile.
-export async function mesPointagesRecents(jetonAppareil: string): Promise<PointageReponse[]> {
-  const { data } = await apiClient.get<ApiResponse<PointageReponse[]>>(
+// EF-ATT-17 : historique perso paginé affiché sur /pointage-mobile.
+export async function mesPointagesRecents(
+  jetonAppareil: string,
+  filtres?: { type?: 'entree' | 'sortie'; page?: number; taille?: number },
+): Promise<PagedResponse<PointageReponse>> {
+  const { data } = await apiClient.get<ApiResponse<PagedResponse<PointageReponse>>>(
     '/api/kiosque/mes-pointages',
-    { headers: { [EN_TETE_JETON_APPAREIL]: jetonAppareil } },
+    {
+      headers: { [EN_TETE_JETON_APPAREIL]: jetonAppareil },
+      params: { type: filtres?.type, page: filtres?.page, taille: filtres?.taille },
+    },
   )
-  return data.data ?? []
+  return data.data ?? { content: [], page: 0, size: 0, totalElements: 0, totalPages: 0, last: true }
 }
 
 // ---- QR de site (Admin, ou délégué actif) ----

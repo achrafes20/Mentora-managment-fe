@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/ui/StatCard'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Select, type SelectOption } from '@/components/ui/Select'
+import { PersonSearch } from '@/components/ui/PersonSearch'
 import { DatePicker } from '@/components/ui/DatePicker'
 import { Spinner } from '@/components/ui/Spinner'
 import { toast } from '@/components/ui/toast'
@@ -130,9 +131,6 @@ export function AuditPage() {
     { champ: 'horodatage', direction: 'desc' },
   )
 
-  const utilisateurOptions: SelectOption[] =
-    utilisateurs?.map((u) => ({ value: u.id, label: `${u.prenom} ${u.nom} (${u.email})` })) ?? []
-
   async function lancerExport(fmt: 'xlsx' | 'pdf') {
     setShowExport(false)
     try {
@@ -186,14 +184,15 @@ export function AuditPage() {
           options={MODULE_OPTIONS}
           placeholder="Tous les modules"
         />
-        <Select
-          value={utilisateurId}
+        <PersonSearch
+          label=""
+          placeholder="Tous les utilisateurs"
+          personnes={utilisateurs ?? []}
+          value={utilisateurId ?? ''}
           onChange={(v) => {
             setPage(0)
-            setUtilisateurId(v)
+            setUtilisateurId(v || undefined)
           }}
-          options={utilisateurOptions}
-          placeholder="Tous les utilisateurs"
         />
         <DatePicker
           value={debut}

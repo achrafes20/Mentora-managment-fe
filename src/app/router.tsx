@@ -17,6 +17,7 @@ import { CandidatDetailPage } from '@/features/recruitment/CandidatDetailPage'
 import { OffresPage } from '@/features/recruitment/OffresPage'
 import { OffreDetailPage } from '@/features/recruitment/OffreDetailPage'
 import { DemandesPage } from '@/features/admin-requests/DemandesPage'
+import { JoursFeriesPage } from '@/features/admin-requests/JoursFeriesPage'
 import { DocumentsPage } from '@/features/documents/DocumentsPage'
 import { ConfigurationPage } from '@/features/config/ConfigurationPage'
 import { DelegationPage } from '@/features/delegation/DelegationPage'
@@ -103,6 +104,14 @@ export const router = createBrowserRouter([
         element: (
           <RequireAuth requiredRole="admin">
             <AuditPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'jours-feries',
+        element: (
+          <RequireAuth requiredRole="admin">
+            <JoursFeriesPage />
           </RequireAuth>
         ),
       },

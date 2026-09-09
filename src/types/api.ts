@@ -1742,6 +1742,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/demandes-administratives/employes/{employeId}/mouvements/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["exporterRegistre"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/delegations/moi": {
         parameters: {
             query?: never;
@@ -2118,6 +2134,8 @@ export interface components {
             /** Format: date */
             periodeEssaiFinLe?: string;
             salaireBrutMensuel?: number;
+            /** Format: uuid */
+            utilisateurId?: string;
             /** Format: date-time */
             creeLe?: string;
             /** Format: date-time */
@@ -2240,6 +2258,12 @@ export interface components {
             nom: string;
             prenom: string;
             mattermostUserId?: string;
+            /** Format: uuid */
+            departementId?: string;
+            poste?: string;
+            typeContrat?: string;
+            /** Format: date */
+            dateEmbauche?: string;
         };
         AnalyseIaReponse: {
             /** Format: uuid */
@@ -2585,7 +2609,7 @@ export interface components {
             /** Format: uuid */
             employeId: string;
             /** @enum {string} */
-            typeDemande: "conge" | "bon_sortie" | "autre" | "conge_mariage" | "conge_naissance" | "conge_deces" | "conge_maladie";
+            typeDemande: "conge" | "bon_sortie" | "autre" | "conge_mariage" | "conge_naissance" | "conge_deces" | "conge_maladie" | "demande_document";
             /** @enum {string} */
             granularite?: "journee" | "demi_matin" | "demi_apres_midi";
             /** Format: date */
@@ -2614,7 +2638,7 @@ export interface components {
             /** Format: uuid */
             managerId?: string;
             /** @enum {string} */
-            typeDemande?: "conge" | "bon_sortie" | "autre" | "conge_mariage" | "conge_naissance" | "conge_deces" | "conge_maladie";
+            typeDemande?: "conge" | "bon_sortie" | "autre" | "conge_mariage" | "conge_naissance" | "conge_deces" | "conge_maladie" | "demande_document";
             /** @enum {string} */
             granularite?: "journee" | "demi_matin" | "demi_apres_midi";
             /** Format: date */
@@ -2984,13 +3008,6 @@ export interface components {
         ApiResponseListSiteQrCodeReponse: {
             success?: boolean;
             data?: components["schemas"]["SiteQrCodeReponse"][];
-            error?: string;
-            /** Format: date-time */
-            timestamp?: string;
-        };
-        ApiResponseListPointageReponse: {
-            success?: boolean;
-            data?: components["schemas"]["PointageReponse"][];
             error?: string;
             /** Format: date-time */
             timestamp?: string;
@@ -4312,6 +4329,7 @@ export interface operations {
         parameters: {
             query: {
                 cible: "DEPARTEMENTS" | "EMPLOYES" | "SOLDES_CONGES_INITIAUX";
+                strategieDoublon?: "ECRASER" | "IGNORER";
             };
             header?: never;
             path?: never;
@@ -4344,6 +4362,7 @@ export interface operations {
         parameters: {
             query: {
                 cible: "DEPARTEMENTS" | "EMPLOYES" | "SOLDES_CONGES_INITIAUX";
+                strategieDoublon?: "ECRASER" | "IGNORER";
             };
             header?: never;
             path?: never;
@@ -4951,7 +4970,7 @@ export interface operations {
         parameters: {
             query: {
                 employeId?: string;
-                type?: "conge" | "bon_sortie" | "autre" | "conge_mariage" | "conge_naissance" | "conge_deces" | "conge_maladie";
+                type?: "conge" | "bon_sortie" | "autre" | "conge_mariage" | "conge_naissance" | "conge_deces" | "conge_maladie" | "demande_document";
                 statut?: "en_attente" | "approuvee" | "rejetee" | "annulee";
                 debut?: string;
                 fin?: string;
@@ -5993,7 +6012,11 @@ export interface operations {
     };
     mesPointages: {
         parameters: {
-            query?: never;
+            query?: {
+                type?: "entree" | "sortie";
+                page?: number;
+                taille?: number;
+            };
             header?: {
                 "X-Kiosque-Device-Token"?: string;
             };
@@ -6008,7 +6031,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["ApiResponseListPointageReponse"];
+                    "*/*": components["schemas"]["ApiResponsePagedResponsePointageReponse"];
                 };
             };
         };
@@ -6400,7 +6423,7 @@ export interface operations {
             query: {
                 format: "xlsx" | "pdf";
                 employeId?: string;
-                type?: "conge" | "bon_sortie" | "autre" | "conge_mariage" | "conge_naissance" | "conge_deces" | "conge_maladie";
+                type?: "conge" | "bon_sortie" | "autre" | "conge_mariage" | "conge_naissance" | "conge_deces" | "conge_maladie" | "demande_document";
                 statut?: "en_attente" | "approuvee" | "rejetee" | "annulee";
                 debut?: string;
                 fin?: string;
@@ -6462,6 +6485,30 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseListMouvementCongeReponse"];
+                };
+            };
+        };
+    };
+    exporterRegistre: {
+        parameters: {
+            query: {
+                format: "xlsx" | "pdf";
+            };
+            header?: never;
+            path: {
+                employeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
                 };
             };
         };

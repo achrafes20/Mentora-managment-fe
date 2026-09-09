@@ -33,7 +33,12 @@ import { PageHeader } from '@/components/ui/StatCard'
 import { StatusTag } from '@/components/ui/StatusTag'
 import { formatStatut } from '@/components/ui/tokens'
 import { toast } from '@/components/ui/toast'
-import { exporterEmployes, exporterPaie, televerserPhotoEmploye } from './employesApi'
+import {
+  exporterEmployes,
+  exporterPaie,
+  televerserPhotoEmploye,
+  modifierSalaireEmploye,
+} from './employesApi'
 import { useEmployePhotoUrl } from './useEmployePhoto'
 
 // Lecture minimale de la candidature source (EF-EMP-05/EF-REC-13) — appel direct à l'endpoint
@@ -167,6 +172,11 @@ export function EmployesListTab() {
       .then(async (employe) => {
         if (photo && employe.id) {
           await televerserPhotoEmploye(employe.id, photo)
+        }
+        if (valeurs.salaireBrutMensuel != null && employe.id) {
+          await modifierSalaireEmploye(employe.id, valeurs.salaireBrutMensuel)
+        }
+        if ((photo || valeurs.salaireBrutMensuel != null) && employe.id) {
           await queryClient.invalidateQueries({ queryKey: CLE_EMPLOYES })
         }
         void toast.success('Employé créé — carte badge générée.')

@@ -15,7 +15,7 @@ import {
   Send,
   Trash2,
 } from 'lucide-react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from '@/components/ui/toast'
 import { useQueryClient } from '@tanstack/react-query'
@@ -24,6 +24,8 @@ import type { ApiError } from '@/lib/apiClient'
 import { EmployeeBadge } from '@/components/ui/EmployeeBadge'
 import { CornerMark } from '@/components/ui/CornerMark'
 import { StatusTag } from '@/components/ui/StatusTag'
+import { EmailLink } from '@/components/ui/EmailLink'
+import { WhatsappLink } from '@/components/ui/WhatsappLink'
 import { Input } from '@/components/ui/Input'
 import { formatStatut } from '@/components/ui/tokens'
 import { EmployeFormModal, type EmployeFormValues } from './EmployeFormModal'
@@ -46,7 +48,7 @@ import {
   useEnvoyerCarteEmail,
   CLE_EMPLOYES,
 } from './useEmployes'
-import { televerserPhotoEmploye } from './employesApi'
+import { televerserPhotoEmploye, modifierSalaireEmploye } from './employesApi'
 import { libelleManager, useManagers } from './useManagers'
 import {
   genererQrCode,
@@ -410,6 +412,11 @@ export function EmployeDetailPage() {
             .then(async () => {
               if (photo && id) {
                 await televerserPhotoEmploye(id, photo)
+              }
+              if (values.salaireBrutMensuel !== (employe?.salaireBrutMensuel ?? null) && id) {
+                await modifierSalaireEmploye(id, values.salaireBrutMensuel)
+              }
+              if (id) {
                 await queryClient.invalidateQueries({ queryKey: CLE_EMPLOYES })
                 await queryClient.invalidateQueries({ queryKey: ['employes', id] })
               }
@@ -567,7 +574,7 @@ export function EmployeDetailPage() {
               {[
                 { label: 'Manager', value: managerNom },
                 { label: 'Contrat', value: formatStatut(employe.typeContrat ?? '') },
-                { label: 'Email', value: employe.email ?? '—' },
+                { label: 'Email', value: <EmailLink email={employe.email} /> },
               ].map(({ label, value }) => (
                 <div
                   key={label}
@@ -597,7 +604,7 @@ export function EmployeDetailPage() {
                 </div>
               </div>
               <button
-                onClick={() => navigate('/demandes')}
+                onClick={() => navigate(`/demandes?tab=registre&employeId=${employe.id}`)}
                 className="flex flex-shrink-0 items-center gap-1 text-[11px] text-[#4A7C6B] hover:underline"
               >
                 <BookOpen size={11} /> Voir le registre des mouvements
@@ -654,18 +661,20 @@ export function EmployeDetailPage() {
                 Informations personnelles
               </p>
               <div className="grid grid-cols-2 gap-x-10 gap-y-4">
-                {[
-                  ['Nom complet', `${employe.prenom} ${employe.nom}`],
-                  ['Email professionnel', employe.email ?? '—'],
-                  ['Département', employe.departementNom ?? '—'],
-                  ['Manager direct', managerNom],
-                  ['Type de contrat', formatStatut(employe.typeContrat ?? '')],
+                {(
                   [
-                    "Date d'embauche",
-                    employe.dateEmbauche ? dayjs(employe.dateEmbauche).format('DD/MM/YYYY') : '—',
-                  ],
-                  ['Téléphone', employe.telephone ?? '—'],
-                ].map(([label, value]) => (
+                    ['Nom complet', `${employe.prenom} ${employe.nom}`],
+                    ['Email professionnel', <EmailLink key="email" email={employe.email} />],
+                    ['Département', employe.departementNom ?? '—'],
+                    ['Manager direct', managerNom],
+                    ['Type de contrat', formatStatut(employe.typeContrat ?? '')],
+                    [
+                      "Date d'embauche",
+                      employe.dateEmbauche ? dayjs(employe.dateEmbauche).format('DD/MM/YYYY') : '—',
+                    ],
+                    ['Téléphone', <WhatsappLink key="telephone" telephone={employe.telephone} />],
+                  ] as [string, ReactNode][]
+                ).map(([label, value]) => (
                   <div key={label} className="border-b border-[#D8D4CC]/50 pb-3">
                     <p className="text-[10px] tracking-wider text-[#9CA3AF] uppercase">{label}</p>
                     <p className="mt-0.5 text-[13px] text-[#1B2A41]">{value}</p>

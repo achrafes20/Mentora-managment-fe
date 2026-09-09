@@ -1,5 +1,15 @@
 import { toast } from '@/components/ui/toast'
-import { Camera, CheckCircle2, History, LogIn, LogOut, WifiOff, XCircle } from 'lucide-react'
+import {
+  Camera,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  History,
+  LogIn,
+  LogOut,
+  WifiOff,
+  XCircle,
+} from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import dayjs from 'dayjs'
 import { HBLogo } from '@/components/ui/HBLogo'
@@ -108,16 +118,39 @@ function EcranPointageMobile() {
   const [resultat, setResultat] = useState<PointageReponse | null>(null)
   const [erreur, setErreur] = useState<string | null>(null)
   const [historique, setHistorique] = useState<PointageReponse[]>([])
+  const [totalPagesHistorique, setTotalPagesHistorique] = useState(0)
+  // Filtre du tableau "Mes derniers pointages" — distinct du type de scan en cours (Entrée/Sortie
+  // ci-dessus), qui reste toujours indépendant de ce que l'historique affiche.
+  const [filtreHistorique, setFiltreHistorique] = useState<'' | 'entree' | 'sortie'>('')
+  const [pageHistorique, setPageHistorique] = useState(0)
+  const TAILLE_PAGE_HISTORIQUE = 5
 
-  const chargerHistorique = useCallback(async () => {
-    const jetonAppareil = lireJetonAppareilPersonnel()
-    if (!jetonAppareil) return
-    try {
-      setHistorique(await mesPointagesRecents(jetonAppareil))
-    } catch {
-      // Pas critique : l'historique reste vide, le pointage lui-même n'en dépend pas.
-    }
-  }, [])
+  function filtrerHistorique(valeur: '' | 'entree' | 'sortie') {
+    setFiltreHistorique(valeur)
+    setPageHistorique(0)
+  }
+
+  // `pageOverride` : appel immédiat sur une page précise sans attendre le prochain rendu — utile
+  // juste après un scan, où setPageHistorique(0) seul ne suffirait pas si la page était déjà à 0
+  // (la fermeture de chargerHistorique() capturerait alors encore l'ancienne page).
+  const chargerHistorique = useCallback(
+    async (pageOverride?: number) => {
+      const jetonAppareil = lireJetonAppareilPersonnel()
+      if (!jetonAppareil) return
+      try {
+        const resultat = await mesPointagesRecents(jetonAppareil, {
+          type: filtreHistorique || undefined,
+          page: pageOverride ?? pageHistorique,
+          taille: TAILLE_PAGE_HISTORIQUE,
+        })
+        setHistorique(resultat.content)
+        setTotalPagesHistorique(resultat.totalPages)
+      } catch {
+        // Pas critique : l'historique reste vide, le pointage lui-même n'en dépend pas.
+      }
+    },
+    [filtreHistorique, pageHistorique],
+  )
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -138,7 +171,9 @@ function EcranPointageMobile() {
         const pointage = await scannerPersonnel(typeScan, valeurQrSite, jetonAppareil)
         setResultat(pointage)
         jouerBip(true)
-        void chargerHistorique()
+        // Nouveau pointage visible sur la première page, quelle que soit la page consultée avant.
+        setPageHistorique(0)
+        void chargerHistorique(0)
       } catch (err: unknown) {
         const apiErr = err as { status?: number; message?: string }
         if (apiErr?.status === 401) {
@@ -270,26 +305,92 @@ function EcranPointageMobile() {
             </div>
           )}
 
-          {historique.length > 0 && (
-            <div className="border-t border-[#D8D4CC] pt-4">
-              <p className="mb-2 flex items-center gap-1.5 text-[11px] font-medium tracking-wide text-[#9CA3AF] uppercase">
-                <History size={12} /> Mes derniers pointages
-              </p>
-              <ul className="space-y-1.5">
-                {historique.map((p) => (
-                  <li
-                    key={p.id}
-                    className="flex items-center justify-between text-[12px] text-[#1B2A41]"
-                  >
-                    <span>{p.typeScan === 'entree' ? 'Entrée' : 'Sortie'}</span>
-                    <span style={{ fontFamily: 'var(--font-code)' }} className="text-[#6B7280]">
-                      {dayjs(p.horodatage).format('DD/MM HH:mm')}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+          <div className="border-t border-[#D8D4CC] pt-4">
+            <p className="mb-2 flex items-center gap-1.5 text-[11px] font-medium tracking-wide text-[#9CA3AF] uppercase">
+              <History size={12} /> Mes derniers pointages
+            </p>
+
+            <div className="mb-2 flex gap-1">
+              {(
+                [
+                  { valeur: '', label: 'Tous' },
+                  { valeur: 'entree', label: 'Entrée' },
+                  { valeur: 'sortie', label: 'Sortie' },
+                ] as const
+              ).map(({ valeur, label }) => (
+                <button
+                  key={valeur}
+                  aria-label={`Filtrer l'historique : ${label}`}
+                  onClick={() => filtrerHistorique(valeur)}
+                  className={`rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                    filtreHistorique === valeur
+                      ? 'bg-[#1B2A41] text-white'
+                      : 'bg-[#F7F7F4] text-[#6B7280] hover:bg-[#D8D4CC]/50'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
-          )}
+
+            {historique.length === 0 ? (
+              <p className="py-3 text-center text-[12px] text-[#9CA3AF]">
+                Aucun pointage pour ce filtre.
+              </p>
+            ) : (
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-[#D8D4CC]/60">
+                    <th className="py-1.5 text-left text-[10px] font-medium tracking-wide text-[#9CA3AF] uppercase">
+                      Type
+                    </th>
+                    <th className="py-1.5 text-right text-[10px] font-medium tracking-wide text-[#9CA3AF] uppercase">
+                      Date
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {historique.map((p) => (
+                    <tr key={p.id} className="border-b border-[#D8D4CC]/30 last:border-0">
+                      <td className="py-1.5 text-[12px] text-[#1B2A41]">
+                        {p.typeScan === 'entree' ? 'Entrée' : 'Sortie'}
+                      </td>
+                      <td
+                        style={{ fontFamily: 'var(--font-code)' }}
+                        className="py-1.5 text-right text-[12px] text-[#6B7280]"
+                      >
+                        {dayjs(p.horodatage).format('DD/MM HH:mm')}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+
+            {totalPagesHistorique > 1 && (
+              <div className="mt-3 flex items-center justify-between">
+                <button
+                  disabled={pageHistorique === 0}
+                  onClick={() => setPageHistorique((p) => Math.max(0, p - 1))}
+                  className="flex items-center gap-1 text-[11px] text-[#6B7280] hover:text-[#1B2A41] disabled:opacity-30"
+                >
+                  <ChevronLeft size={13} /> Précédent
+                </button>
+                <span className="text-[11px] text-[#9CA3AF]">
+                  Page {pageHistorique + 1} / {totalPagesHistorique}
+                </span>
+                <button
+                  disabled={pageHistorique >= totalPagesHistorique - 1}
+                  onClick={() =>
+                    setPageHistorique((p) => Math.min(totalPagesHistorique - 1, p + 1))
+                  }
+                  className="flex items-center gap-1 text-[11px] text-[#6B7280] hover:text-[#1B2A41] disabled:opacity-30"
+                >
+                  Suivant <ChevronRight size={13} />
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

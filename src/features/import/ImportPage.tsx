@@ -19,7 +19,7 @@ export function ImportPage() {
       >
         ← Retour aux employés
       </button>
-      <PageHeader title="Import Excel/CSV" subtitle="Migration de données en masse (EF-EMP-07)" />
+      <PageHeader title="Import Excel/CSV" />
 
       <div className="mb-6 flex gap-1 border-b border-[#D8D4CC]">
         {(

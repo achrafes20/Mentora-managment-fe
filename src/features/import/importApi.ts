@@ -2,6 +2,7 @@ import { apiClient } from '../../lib/apiClient'
 import type { components } from '../../types/api'
 
 export type ImportCible = 'DEPARTEMENTS' | 'EMPLOYES' | 'SOLDES_CONGES_INITIAUX'
+export type StrategieDoublon = 'ECRASER' | 'IGNORER'
 export type ImportApercu = components['schemas']['ImportApercuReponse']
 export type ImportRapport = components['schemas']['ImportRapportReponse']
 export type ImportLigne = components['schemas']['ImportLigneReponse']
@@ -39,6 +40,7 @@ export async function analyserImport(
   fichier: File,
   cible: ImportCible,
   mapping: Record<string, number>,
+  strategieDoublon: StrategieDoublon,
 ): Promise<ImportRapport> {
   const formData = new FormData()
   formData.append('fichier', fichier)
@@ -47,7 +49,7 @@ export async function analyserImport(
     '/api/import/analyser',
     formData,
     {
-      params: { cible },
+      params: { cible, strategieDoublon },
       headers: { 'Content-Type': 'multipart/form-data' },
     },
   )
@@ -58,6 +60,7 @@ export async function executerImport(
   fichier: File,
   cible: ImportCible,
   mapping: Record<string, number>,
+  strategieDoublon: StrategieDoublon,
 ): Promise<ImportRapport> {
   const formData = new FormData()
   formData.append('fichier', fichier)
@@ -66,7 +69,7 @@ export async function executerImport(
     '/api/import/executer',
     formData,
     {
-      params: { cible },
+      params: { cible, strategieDoublon },
       headers: { 'Content-Type': 'multipart/form-data' },
     },
   )

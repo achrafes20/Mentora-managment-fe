@@ -277,11 +277,9 @@ export function ConfigurationPage() {
 
         <section className="rounded-xl border border-[#D8D4CC] bg-white p-5">
           <h3 className="mb-2 text-[13px] font-semibold text-[#1B2A41]">Jours fériés</h3>
-          <p className="mb-3 text-[12px] text-[#6B7280]">
-            Calendrier annuel — onglet dédié dans Demandes administratives.
-          </p>
+          <p className="mb-3 text-[12px] text-[#6B7280]">Calendrier annuel des jours fériés.</p>
           <button
-            onClick={() => navigate('/demandes?tab=feries')}
+            onClick={() => navigate('/jours-feries')}
             className="text-[12px] text-[#4A7C6B] hover:underline"
           >
             Gérer les jours fériés →
