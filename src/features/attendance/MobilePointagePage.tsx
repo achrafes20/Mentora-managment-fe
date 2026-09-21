@@ -5,6 +5,7 @@ import {
   ChevronLeft,
   ChevronRight,
   History,
+  ImageUp,
   LogIn,
   LogOut,
   WifiOff,
@@ -14,7 +15,7 @@ import { useCallback, useEffect, useState } from 'react'
 import dayjs from 'dayjs'
 import { HBLogo } from '@/components/ui/HBLogo'
 import { ROSE_MARQUE } from '@/components/ui/tokens'
-import { QrScanner } from './QrScanner'
+import { QrScannerCamera, QrScannerUpload } from './QrScanner'
 import {
   mesPointagesRecents,
   scannerPersonnel,
@@ -114,6 +115,7 @@ export function MobilePointagePage() {
 function EcranPointageMobile() {
   const enLigne = useEnLigne()
   const [typeScanEnAttente, setTypeScanEnAttente] = useState<'entree' | 'sortie' | null>(null)
+  const [modeScanner, setModeScanner] = useState<'camera' | 'upload'>('camera')
   const [loading, setLoading] = useState(false)
   const [resultat, setResultat] = useState<PointageReponse | null>(null)
   const [erreur, setErreur] = useState<string | null>(null)
@@ -239,17 +241,49 @@ function EcranPointageMobile() {
           {typeScanEnAttente ? (
             <div className="space-y-3">
               <p className="text-center text-[12px] text-[#6B7280]">
-                Présentez le QR du lieu devant la caméra (
-                {typeScanEnAttente === 'entree' ? 'Entrée' : 'Sortie'})
+                Présentez le QR du lieu ({typeScanEnAttente === 'entree' ? 'Entrée' : 'Sortie'})
               </p>
-              <QrScanner
-                actif
-                onScan={onQrDetecte}
-                onErreur={(msg) => {
-                  setErreur(msg)
-                  setTypeScanEnAttente(null)
-                }}
-              />
+
+              {/* Onglets Caméra / Photo */}
+              <div className="flex rounded-lg border border-[#D8D4CC] bg-[#F7F7F4] p-0.5">
+                <button
+                  onClick={() => setModeScanner('camera')}
+                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-md py-1.5 text-[12px] font-medium transition-colors ${
+                    modeScanner === 'camera'
+                      ? 'bg-white text-[#1B2A41] shadow-sm'
+                      : 'text-[#9CA3AF] hover:text-[#6B7280]'
+                  }`}
+                >
+                  <Camera size={13} />
+                  Caméra
+                </button>
+                <button
+                  onClick={() => setModeScanner('upload')}
+                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-md py-1.5 text-[12px] font-medium transition-colors ${
+                    modeScanner === 'upload'
+                      ? 'bg-white text-[#1B2A41] shadow-sm'
+                      : 'text-[#9CA3AF] hover:text-[#6B7280]'
+                  }`}
+                >
+                  <ImageUp size={13} />
+                  Photo
+                </button>
+              </div>
+
+              {/* Scanner actif selon le mode */}
+              {modeScanner === 'camera' ? (
+                <QrScannerCamera
+                  actif
+                  onScan={onQrDetecte}
+                  onErreur={(msg) => {
+                    setErreur(msg)
+                    setTypeScanEnAttente(null)
+                  }}
+                />
+              ) : (
+                <QrScannerUpload onScan={onQrDetecte} onErreur={(msg) => setErreur(msg)} />
+              )}
+
               <button
                 onClick={() => setTypeScanEnAttente(null)}
                 className="w-full text-center text-[12px] text-[#9CA3AF] hover:text-[#1B2A41]"

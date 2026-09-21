@@ -80,7 +80,20 @@ export function KiosqueActivationsPanel() {
     '' | 'en_attente' | 'active' | 'expire' | 'revoquee'
   >('')
 
-  const activationsFiltrees = (activations ?? []).filter((a) => {
+  const activationsUniques = Object.values(
+    (activations ?? []).reduce(
+      (acc, current) => {
+        const cle = current.employeId || current.id
+        if (!acc[cle] || dayjs(current.emisLe).isAfter(dayjs(acc[cle].emisLe))) {
+          acc[cle] = current
+        }
+        return acc
+      },
+      {} as Record<string, KiosqueActivationReponse>,
+    ),
+  )
+
+  const activationsFiltrees = activationsUniques.filter((a) => {
     if (filtreEmployeId && a.employeId !== filtreEmployeId) return false
     if (filtreStatut && statutEffectif(a) !== filtreStatut) return false
     return true
@@ -278,6 +291,7 @@ export function KiosqueActivationsPanel() {
           <thead>
             <tr className="border-b border-[#D8D4CC] bg-[#F7F7F4]">
               <SortableTh label="Type" champ="employe" tri={tri} onChange={handleTri} />
+              <SortableTh label="Employé" champ="employe" tri={tri} onChange={handleTri} />
               <SortableTh label="Généré le" champ="emisLe" tri={tri} onChange={handleTri} />
               <SortableTh label="Statut" champ="statut" tri={tri} onChange={handleTri} />
               <SortableTh label="Activée le" champ="activeeLe" tri={tri} onChange={handleTri} />
